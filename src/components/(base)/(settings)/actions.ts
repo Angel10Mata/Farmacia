@@ -1,0 +1,45 @@
+"use server";
+
+import { createClient } from "@/utils/supabase/server";
+import { AppSettingsUpdate } from "./zod";
+
+export async function getAppSettings(): Promise<AppSettingsUpdate | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("id, require_device_authorization, enable_passkeys")
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function updateAppSettings(settings: AppSettingsUpdate): Promise<void> {
+  const supabase = await createClient();
+
+  if (settings.id) {
+    const { error } = await supabase
+      .from("app_settings")
+      .update({
+        require_device_authorization: settings.require_device_authorization,
+        enable_passkeys: settings.enable_passkeys,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", settings.id);
+
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase
+      .from("app_settings")
+      .insert({
+        require_device_authorization: settings.require_device_authorization,
+        enable_passkeys: settings.enable_passkeys,
+      });
+
+    if (error) throw new Error(error.message);
+  }
+}
