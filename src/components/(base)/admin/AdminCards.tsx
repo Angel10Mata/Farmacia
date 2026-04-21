@@ -7,7 +7,7 @@ import AnimatedIcon from "@/components/ui/AnimatedIcon";
 const adminOptions = [
   {
     id: "dispositivos",
-    href: "/cermadsa/admin/dispositivos",
+    href: "/siget/admin/dispositivos",
     title: "Dispositivos",
     desc: "Autorizar o rechazar solicitudes de acceso por dispositivo.",
     iconKey: "gzqipvbr",
@@ -15,15 +15,15 @@ const adminOptions = [
   },
   {
     id: "usuarios",
-    href: "/cermadsa/admin/usuarios",
+    href: "/siget/admin/usuarios",
     title: "Usuarios",
     desc: "Gestionar cuentas de usuario, roles y permisos.",
-    iconKey: "btgcyfug",
+    iconKey: "vxfekxur",
     color: "border-purple-500/20 bg-purple-500/5 dark:border-purple-500/40",
   },
   {
     id: "configuraciones",
-    href: "/cermadsa/admin/settings",
+    href: "/siget/admin/configuraciones",
     title: "Configuraciones",
     desc: "Ajustes generales del sistema y seguridad.",
     iconKey: "plusmrxr",
@@ -48,11 +48,12 @@ export function AdminCards({ pendingDevices }: { pendingDevices: number }) {
             className="w-full h-full flex flex-row items-center justify-start gap-4 md:gap-6 p-4 md:p-6 outline-none relative z-10"
           >
             <div className="relative z-10 shrink-0">
-              <div className="p-2 md:p-3 bg-gray-50 rounded-xl md:rounded-2xl border border-border/50 shadow-sm group-hover:scale-105 transition-transform">
+              <div className="p-2 md:p-3 bg-gray-50 dark:bg-white/5 rounded-xl md:rounded-2xl border border-border/50 shadow-sm group-hover:scale-105 transition-transform flex items-center justify-center">
                 <AnimatedIcon
                   iconKey={opt.iconKey}
                   target={`#card-${opt.id}`}
-                  className="w-8 h-8 md:w-12 md:h-12"
+                  className="size-8 md:size-12"
+                  size={48}
                 />
               </div>
             </div>

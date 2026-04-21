@@ -129,8 +129,8 @@ export function PushNotificationToggle() {
   if (isInitializing) {
     return (
       <div 
-        className="flex-shrink-0 flex items-center justify-center"
-        style={{ width: '32px', height: '32px', backgroundColor: 'transparent' }}
+        className="flex-shrink-0 flex items-center justify-center p-2"
+        style={{ width: '42px', height: '42px', backgroundColor: 'transparent' }}
       />
     )
   }
@@ -143,19 +143,19 @@ export function PushNotificationToggle() {
     <button
       onClick={handleToggle}
       disabled={loading}
-      className="flex-shrink-0 flex items-center justify-center cursor-pointer transition-all duration-200 hover:opacity-80 active:scale-95"
+      className="flex items-center justify-center cursor-pointer transition-all duration-200 hover:opacity-80 active:scale-95 bg-muted/20 hover:bg-muted/30 rounded-xl"
       style={{
-        width: '32px',
-        height: '32px',
+        width: '42px',
+        height: '42px',
         backgroundColor: 'transparent',
       }}
       title={isSubscribed ? 'Desactivar notificaciones' : 'Activar notificaciones'}
     >
       {loading ? (
-        <Loader2 className="animate-spin" style={{ width: '16px', height: '16px', color: '#2563EB' }} />
+        <Loader2 className="animate-spin" style={{ width: '22px', height: '22px', color: '#2563EB' }} />
       ) : isSubscribed ? (
         <div style={{ position: 'relative', display: 'flex' }}>
-          <Bell strokeWidth={2} style={{ width: '18px', height: '18px', color: bellColor, fill: bellColor }} />
+          <Bell strokeWidth={2} style={{ width: '26px', height: '26px', color: bellColor, fill: bellColor }} />
           <div style={{
             position: 'absolute',
             top: '-5px',
@@ -173,7 +173,7 @@ export function PushNotificationToggle() {
           </div>
         </div>
       ) : (
-        <BellOff strokeWidth={2} style={{ width: '18px', height: '18px', color: bellColor }} />
+        <BellOff strokeWidth={2} style={{ width: '26px', height: '26px', color: bellColor }} />
       )}
     </button>
   )

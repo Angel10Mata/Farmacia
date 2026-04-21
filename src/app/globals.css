@@ -49,6 +49,8 @@
 }
 
 @theme inline {
+  --color-azul-trifinio: #2c5f9b;
+  --color-celeste-trifinio: #1a95d3;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);

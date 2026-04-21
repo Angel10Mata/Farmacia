@@ -2,10 +2,10 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "CERMADSAPP - Plataforma de Gestión Empresarial",
-    short_name: "CERMADSAPP",
+    name: "SIGET - Sistema Integral de Gestión Trifinio",
+    short_name: "SIGET",
     description:
-      "Aplicación de gestión empresarial para CERMAD S.A., optimizando operaciones y mejorando la eficiencia en la industria de materiales de construcción.",
+      "Sistema Integral de Gestión Trifinio para la optimización de operaciones y mejora de la eficiencia.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

@@ -9,12 +9,12 @@ export function BreadcrumbNav() {
   const pathname = usePathname();
   const router = useRouter();
 
-  if (pathname === "/cermadsa") return null;
+  if (pathname === "/siget") return null;
 
   const segments = pathname.split("/").filter((item) => item !== "");
 
   const parentPath =
-    segments.length > 1 ? `/${segments.slice(0, -1).join("/")}` : "/cermadsa";
+    segments.length > 1 ? `/${segments.slice(0, -1).join("/")}` : "/siget";
 
   return (
     <LayoutGroup id="breadcrumb">
@@ -34,7 +34,7 @@ export function BreadcrumbNav() {
 
         <motion.div layout="position" className="flex items-center">
           <Link
-            href="/cermadsa"
+            href="/siget"
             className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
           >
             <Home className="size-4 md:size-5" />
@@ -44,7 +44,7 @@ export function BreadcrumbNav() {
         <div className="flex items-center gap-1 overflow-hidden mask-gradient">
           <AnimatePresence mode="popLayout" initial={false}>
             {segments.map((segment, index) => {
-              if (segment === "cermadsa") return null;
+              if (segment === "siget") return null;
 
               const href = `/${segments.slice(0, index + 1).join("/")}`;
               const isLast = index === segments.length - 1;

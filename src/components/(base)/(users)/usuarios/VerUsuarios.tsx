@@ -110,7 +110,7 @@ export function VerUsuarios() {
 
   return (
     <>
-      <div className="flex flex-col h-[calc(100vh-140px)] w-full max-w-3xl mx-auto py-10 overflow-hidden">
+      <div className="flex flex-col h-[calc(100vh-4rem)] w-full max-w-3xl mx-auto pt-32 md:pt-36 pb-10 overflow-hidden">
         <div className="flex flex-col gap-6 mb-6 px-4">
           <div className="flex items-center justify-between">
             <div>

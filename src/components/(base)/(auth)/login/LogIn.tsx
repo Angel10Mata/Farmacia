@@ -67,7 +67,7 @@ useEffect(() => {
   }, []);
   useEffect(() => {
     if (state?.success) {
-      window.location.href = "/cermadsa";
+      window.location.href = "/siget";
     } else if (state?.message === "DEVICE_LIMIT") {
       window.location.href = "/esperando-acceso?reason=limit";
     } else if (state?.message === "DEVICE_PENDING") {
@@ -86,7 +86,7 @@ useEffect(() => {
 
       if (verification.success) {
         localStorage.setItem("cermad-device-passkey-enabled", "true");
-        window.location.href = "/cermadsa";
+        window.location.href = "/siget";
       } else if (verification.error === "DEVICE_LIMIT") {
         window.location.href = "/esperando-acceso?reason=limit";
       } else if (verification.error === "DEVICE_PENDING") {

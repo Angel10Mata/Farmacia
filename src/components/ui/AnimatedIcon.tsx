@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 interface AnimatedIconProps {
   iconKey: string;
   className?: string;
+  size?: string | number;
   target?: string;
   delay?: string | number;
   speed?: string | number;
@@ -14,7 +15,8 @@ interface AnimatedIconProps {
 
 export default function AnimatedIcon({
   iconKey,
-  className = "w-24 h-24",
+  className,
+  size = "100%",
   target,
   delay = 0,
   speed = 2,
@@ -34,7 +36,7 @@ export default function AnimatedIcon({
   if (secondaryColor) colors.push(`secondary:${secondaryColor}`);
 
   return (
-    <div className={className}>
+    <div className={className} style={{ width: size, height: size }}>
       {/* @ts-ignore */}
       <lord-icon
         src={`https://cdn.lordicon.com/${iconKey}.json`}

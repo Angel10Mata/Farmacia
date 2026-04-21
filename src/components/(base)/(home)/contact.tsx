@@ -28,7 +28,7 @@ export function ContactSection() {
             </span>
           </div>
           <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter italic leading-none">
-            Cotice con nosotros
+            Escríbanos
           </h2>
         </motion.div>
 
@@ -42,8 +42,8 @@ export function ContactSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="space-y-4 lg:space-y-6 text-center lg:text-left">
               <p className="text-muted-foreground text-sm lg:text-base font-medium leading-relaxed">
-                Visite nuestra bodega de materiales o contáctenos en línea para
-                recibir asesoría técnica en su proyecto de construcción.
+                Contáctenos para recibir asesoría sobre el Sistema Integral de Gestión Trifinio
+                y optimizar sus procesos operativos.
               </p>
               <div className="flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl bg-muted/50 border border-zinc-200 dark:border-zinc-800">
                 <MapPin className="text-primary size-4 shrink-0" />
@@ -66,7 +66,7 @@ export function ContactSection() {
                       WhatsApp
                     </p>
                     <p className="text-sm lg:text-lg text-inherit">
-                      Chat de Ventas
+                      Asistencia SIGET
                     </p>
                   </div>
                 </div>
@@ -101,7 +101,7 @@ export function ContactSection() {
         className="text-center mt-auto space-y-1"
       >
         <p className="text-xs font-bold uppercase tracking-widest opacity-40">
-          © 2026 CERMAD S.A.
+          © 2026 SIGET
         </p>
         <p className="text-xs font-bold uppercase tracking-widest">
           Desarrollado por{" "}
@@ -111,7 +111,7 @@ export function ContactSection() {
             rel="noopener noreferrer"
             className="hover:underline cursor-pointer transition-all inline-block"
           >
-            <AuroraText>CERMAD | Construcción</AuroraText>
+            <AuroraText>SIGET | Gestión Inteligente</AuroraText>
           </a>
         </p>
       </motion.div>

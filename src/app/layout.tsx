@@ -29,13 +29,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "CERMAD S.A.",
-  description:
-    "Soluciones integrales en construcción y suministro de materiales de alta calidad.",
+  title: "SIGET",
+  description: "Sistema Integral de Gestión Trifinio",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "CERMAD",
+    title: "SIGET",
   },
   icons: {
     icon: "/apple-touch-icon.png",
@@ -68,31 +67,32 @@ export default async function RootLayout({
           >
             <UserProvider user={user}>
               <Header />
-              <main className="flex-1 w-full flex flex-col pb-8">
+              <main className="flex-1 w-full flex flex-col">
                 {children}
               </main>
-              <footer className="w-full pt-6 pb-10 md:pb-6 border-t border-border/20 bg-background z-10">
-                <div className="max-w-400 mx-auto px-6">
+              <footer className="w-full transition-all backdrop-blur-3xl bg-white/50 dark:bg-black/50 border-t border-white/50 dark:border-white/10 relative z-10 mt-auto">
+                <div className="mx-auto flex h-14 md:h-16 items-center justify-center px-4 md:px-8">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5 }}
-                    className="flex flex-col items-center justify-center space-y-3 md:space-y-4"
+                    className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-4"
                   >
-                    <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-zinc-400">
-                      © 2026 CERMADSAPP
+                    <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+                      © 2026 SIGET
                     </p>
-                    <div className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 text-center">
+                    <div className="hidden md:block w-px h-3 bg-zinc-300 dark:bg-zinc-700"></div>
+                    <div className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
                       Powered by{" "}
                       <a
                         href="https://www.oscar27jimenez.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:underline cursor-pointer transition-all inline-flex items-center text-zinc-900 dark:text-zinc-100 mt-1 md:mt-0"
+                        className="hover:underline cursor-pointer transition-all inline-flex items-center text-zinc-900 dark:text-zinc-100"
                       >
                         <AuroraText className="text-[10px] md:text-sm whitespace-nowrap">
-                          Kore | Ingeniería de Software
+                          Kore | Ing. de Software
                         </AuroraText>
                       </a>
                     </div>

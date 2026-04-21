@@ -13,6 +13,7 @@ interface MagicCardProps {
   gradientOpacity?: number;
   gradientFrom?: string;
   gradientTo?: string;
+  style?: React.CSSProperties;
 }
 
 export function MagicCard({
@@ -23,6 +24,7 @@ export function MagicCard({
   gradientOpacity = 0.8, // Ya no afecta
   gradientFrom = "#9E7AFF",
   gradientTo = "#FE8BBB",
+  style,
 }: MagicCardProps) {
   const mouseX = useMotionValue(-gradientSize);
   const mouseY = useMotionValue(-gradientSize);
@@ -74,6 +76,7 @@ export function MagicCard({
       onPointerMove={handlePointerMove}
       onPointerLeave={reset}
       onPointerEnter={reset}
+      style={style}
     >
       <motion.div
         className="bg-border pointer-events-none absolute inset-0 rounded-[inherit] duration-300 group-hover:opacity-100"
@@ -89,7 +92,7 @@ export function MagicCard({
       />
 
       <div className="bg-background absolute inset-px rounded-[inherit]" />
-      <div className="relative">{children}</div>
+      <div className="relative z-10 h-full w-full flex flex-col">{children}</div>
     </div>
   );
 }

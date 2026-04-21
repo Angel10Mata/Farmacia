@@ -1,112 +1,358 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import Link from "next/link";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
+import { useRouter } from "next/navigation";
+import AnimatedIcon from "@/components/ui/AnimatedIcon";
+import { useUserContext } from "@/components/(base)/providers/UserProvider";
+import LogoTrifinio from "@/components/(SIGET)/logo/LogoTrifinio";
+import LogoTrifinioMobile from "@/components/(SIGET)/logo/LogoTrifinio-mobile";
+import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
+import PassKeysModal from "@/components/(base)/layout/modals/PassKeysModal";
+import { User as UserIcon, Fingerprint, ScanFace, KeyRound } from "lucide-react";
+
+const MODULES = [
+  {
+    id: "observatorio",
+    title: "Observatorio",
+    subtitle: "Web",
+    desc: "Visualización de datos y estadísticas regionales del SIGET.",
+    icon: "qqvpjphn",
+    href: "/siget/observatorio",
+  },
+  {
+    id: "perfil",
+    title: "Gestión de",
+    subtitle: "Mi Perfil",
+    desc: "Actualización de credenciales y datos personales del usuario.",
+    icon: "btgcyfug",
+    href: "/siget/perfil",
+  },
+  {
+    id: "dispositivos",
+    title: "Gestión de",
+    subtitle: "Dispositivos",
+    desc: "Administración de dispositivos autorizados y seguridad Passkeys.",
+    icon: "gzqipvbr",
+    href: "/siget/admin/dispositivos",
+    requiresAdmin: true,
+  },
+  {
+    id: "usuarios",
+    title: "Gestión de",
+    subtitle: "Usuarios",
+    desc: "Control absoluto de perfiles, permisos y acceso al sistema.",
+    icon: "vxfekxur",
+    href: "/siget/admin/usuarios",
+    requiresAdmin: true,
+  },
+  {
+    id: "configuracion",
+    title: "Ajustes",
+    subtitle: "Avanzados",
+    desc: "Configuración y auditoría de variables del entorno SIGET.",
+    icon: "plusmrxr",
+    href: "/siget/admin/configuraciones",
+    requiresAdmin: true,
+  },
+];
 
 export function Dashboard() {
+  const { user, effectiveRole } = useUserContext();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [expandedPerfil, setExpandedPerfil] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isPasskeysOpen, setIsPasskeysOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const router = useRouter();
 
-  const handleNavigation = (id: string) => {
-    if (activeId) return;
-    setActiveId(id);
+  const { scrollY } = useScroll();
+  const logoY = useTransform(scrollY, [0, 600], [0, -300]);
+  const logoOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  // Zoom sutil y suavizado
+  const bgScaleRaw = useTransform(scrollY, [0, 800], [1, 1.05]);
+  const bgScale = useSpring(bgScaleRaw, { stiffness: 100, damping: 30, restDelta: 0.001 });
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const isSuperOrAdmin = ["super", "admin"].includes(effectiveRole);
+
+  const visibleModules = MODULES.filter((mod) => {
+    if (mod.requiresAdmin) return isSuperOrAdmin;
+    return true;
+  });
+
+  const handleCardClick = (id: string, href: string) => {
+    if (isMobile) {
+      if (activeId === id) {
+        router.push(href);
+      } else {
+        setActiveId(id);
+      }
+    } else {
+      router.push(href);
+    }
   };
 
-  return (
-    <div className="flex-1 w-full px-4 lg:px-12 space-y-10 mx-auto pb-10 pt-2">
+  const CardsGrid = () => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 w-full">
+      {visibleModules.map((mod, index) => {
+        const isActive = isMobile && activeId === mod.id;
+        const isFirstMobile = isMobile && index === 0;
 
-      {/* BANNER CORPORATIVO CERMAD S.A. */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative w-full rounded-3xl border border-red-500/20 bg-card p-6 md:p-8 shadow-sm overflow-hidden flex flex-col md:flex-row md:items-center justify-between"
-      >
-        <div className="relative z-10 flex flex-col gap-2 mt-2 md:mt-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground">
-              CERMAD S.A.
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground font-medium max-w-xl pr-12 md:pr-0">
-            Centro de Operaciones Empresariales. Selecciona la unidad de negocio para comenzar.
-          </p>
-        </div>
-
-        {/* ELEMENTO VISUAL A LA DERECHA */}
-        <div className="absolute top-6 right-6 md:static flex items-center justify-center z-10 scale-[0.6] md:scale-100 origin-top-right md:pr-4">
-          <div className="relative flex items-center gap-2">
-            <motion.div
-              animate={{ y: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-              className="w-3 h-12 rounded-full bg-red-600/80 shadow-[0_0_15px_rgba(220,38,38,0.5)]"
-            />
-            <motion.div
-              animate={{ y: [0, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-              className="w-3 h-16 rounded-full bg-red-500/60"
-            />
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-              className="w-3 h-20 rounded-full bg-red-400/80 shadow-[0_0_15px_rgba(248,113,113,0.5)]"
-            />
-          </div>
-        </div>
-
-        {/* DECORACIÓN DE FONDO */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-linear-to-l from-red-500/5 to-transparent pointer-events-none" />
-      </motion.div>
-
-      <div className="w-full space-y-4">
-        <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/80 pl-2">Unidades de Negocio</h2>
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+        return (
           <motion.div
-            layoutId="la-arada"
-            onClick={() => handleNavigation("la-arada")}
-            whileHover={{ scale: 1.02, y: -5 }}
-            animate={
-              activeId === "la-arada"
-                ? {
-                    scale: [1, 1.05, 1],
-                    transition: { duration: 1.5, ease: "easeInOut" },
-                  }
-                : { scale: 1, y: 0 }
-            }
-            className={cn(
-              "group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-orange-500/20 flex bg-transparent shadow-sm cursor-pointer h-32 sm:h-40 transition-colors md:col-span-2",
-              "hover:bg-orange-500/5",
-            )}
+            key={mod.id}
+            className={[
+              "cursor-pointer w-full h-auto min-h-[400px] lg:h-[380px] relative",
+              isFirstMobile ? "-mt-[20%]" : "" 
+            ].join(" ").trim()}
+            id={`${mod.id}-card`}
+            initial="idle"
+            whileHover="hover"
+            animate={isActive ? "active" : "idle"}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <Link href="/cermadsa/laarada" className="w-full h-full flex items-center p-5 sm:p-6 md:p-8 outline-none text-left">
-              <div className="relative z-10 shrink-0 mr-4 sm:mr-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 p-2 sm:p-3 bg-white rounded-xl sm:rounded-2xl border border-orange-500/20 group-hover:scale-110 transition-transform duration-500 shadow-sm flex items-center justify-center">
-                  <div className="relative w-full h-full">
-                    <Image
-                      src="/logos/LaArada.png"
-                      alt="Logo La Arada"
-                      fill
-                      className="object-contain"
-                      priority
-                    />
+            {mod.id === "perfil" ? (
+              <div className="group flex flex-col border border-slate-200 dark:border-slate-700 overflow-hidden h-full w-full rounded-2xl bg-white dark:bg-[#111] transition-all duration-500 hover:border-azul-trifinio hover:-translate-y-2">
+                <AnimatePresence mode="wait">
+                  {expandedPerfil ? (
+                    <motion.div
+                      key="perfil-expanded"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      className="w-full h-full min-h-[300px] flex flex-col justify-center items-center p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
+                    >
+                      <div className="absolute top-0 left-0 w-full h-[calc(100%-70px)] bg-gradient-to-t from-azul-trifinio to-celeste-trifinio pointer-events-none z-0 rounded-t-[inherit]" />
+                      <button
+                        onClick={() => setExpandedPerfil(false)}
+                        className="absolute bottom-0 left-0 w-full h-[70px] flex justify-center items-center z-10 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                      >
+                        <span className="flex items-center gap-2 text-azul-trifinio font-black uppercase text-xs tracking-[0.25em]">
+                          ← Volver
+                        </span>
+                      </button>
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.15, ease: "easeOut" }}
+                        className="relative z-10 w-full flex flex-col gap-3 pb-[40px]"
+                      >
+                        <button
+                          onClick={() => setIsProfileOpen(true)}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left"
+                        >
+                          <UserIcon className="size-5 shrink-0 text-white" />
+                          <div>
+                            <p className="text-sm font-bold text-white">Mi Perfil</p>
+                            <p className="text-[10px] text-white/70">Ver y editar perfil</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => setIsPasskeysOpen(true)}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left"
+                        >
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Fingerprint className="size-4 text-white/80" />
+                            <ScanFace className="size-4 text-white/80" />
+                            <KeyRound className="size-4 text-white/80" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-white">Ingreso Seguro</p>
+                            <p className="text-[10px] text-white/70">Administrar dispositivos</p>
+                          </div>
+                        </button>
+                      </motion.div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="perfil-normal"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      onClick={() => setExpandedPerfil(true)}
+                      className="w-full h-full min-h-[300px] flex flex-col justify-center items-center p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
+                    >
+                      <div className="absolute top-0 left-0 w-full h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-azul-trifinio to-celeste-trifinio transition-transform duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
+                      <div className="absolute bottom-0 left-0 w-full h-[70px] flex justify-center items-center z-10 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
+                        <span className="flex items-center gap-2 text-celeste-trifinio dark:text-white font-black uppercase text-xs tracking-[0.25em]">
+                          Ver opciones
+                        </span>
+                      </div>
+                      <div className="w-full h-full flex flex-col justify-center items-center relative z-10 pb-[40px]">
+                        <div className="relative z-10 w-full flex justify-center mb-4">
+                          <div className="size-[90px] flex items-center justify-center transition-transform duration-700 ease-out group-hover:-translate-y-4">
+                            <AnimatedIcon iconKey={mod.icon} target={`#${mod.id}-card`} size={90} speed={1.5} />
+                          </div>
+                        </div>
+                        <div className="relative z-10 w-full flex flex-col items-start text-left space-y-4 transition-transform duration-700 group-hover:-translate-y-2">
+                          <h3 className="text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words transition-colors duration-500">
+                            {mod.title}<br />
+                            <span className="text-celeste-trifinio group-hover:text-white/90 transition-colors duration-500">{mod.subtitle}</span>
+                          </h3>
+                          <p className="text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 transition-colors duration-500">
+                            {mod.desc}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <div
+                onClick={() => handleCardClick(mod.id, mod.href)}
+                className="group flex flex-col border border-slate-200 dark:border-slate-700 overflow-hidden h-full w-full rounded-2xl transition-[border-color] duration-500 cursor-pointer bg-white dark:bg-[#111]"
+                style={{
+                  borderColor: isActive ? "#2c5f9b" : undefined,
+                }}
+              >
+                <div className="w-full h-full min-h-[300px] flex flex-col justify-center items-center p-6 outline-none relative z-10 rounded-[inherit] overflow-hidden">
+                  <motion.div 
+                    variants={{
+                      idle: { scaleY: 0 },
+                      hover: { scaleY: 1 },
+                      active: { scaleY: 1 }
+                    }}
+                    transition={{ duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
+                    className="absolute top-0 left-0 w-full h-[calc(100%-70px)] origin-bottom bg-gradient-to-t from-azul-trifinio to-celeste-trifinio pointer-events-none z-0 rounded-t-[inherit]"
+                  />
+                  <div className="absolute inset-0 rounded-[inherit] border border-slate-200 dark:border-slate-700 pointer-events-none z-20" />
+                  <div className="absolute bottom-0 left-0 w-full h-[70px] flex justify-center items-center z-10">
+                    <motion.span
+                      variants={{
+                        idle: { opacity: 0, y: 16 },
+                        hover: { opacity: 1, y: 0 },
+                        active: { opacity: 1, y: 0 }
+                      }}
+                      className={[
+                        "flex items-center gap-2 font-black uppercase text-xs tracking-[0.25em] transition-colors duration-500",
+                        isActive ? "text-celeste-trifinio" : "text-celeste-trifinio dark:text-white"
+                      ].join(" ")}
+                    >
+                      {isActive ? "Toca de nuevo para entrar" : "Haz click para entrar"}
+                    </motion.span>
                   </div>
+                  <motion.div
+                    className="w-full h-full flex flex-col justify-center items-center relative z-10 pb-[40px]"
+                    variants={{
+                      idle: { opacity: 1 },
+                      hover: { opacity: 1 },
+                      active: { opacity: [1, 0.4, 1] }
+                    }}
+                    transition={{ duration: 1.4, repeat: isActive ? Infinity : 0, ease: "easeInOut" }}
+                  >
+                    <div className="relative z-10 w-full flex justify-center mb-4">
+                      <motion.div 
+                        variants={{
+                          idle: { y: 0 },
+                          hover: { y: -16 },
+                          active: { y: -16 }
+                        }}
+                        className="size-[90px] flex items-center justify-center transition-transform duration-700"
+                      >
+                        <AnimatedIcon iconKey={mod.icon} target={`#${mod.id}-card`} size={90} speed={1.5} />
+                      </motion.div>
+                    </div>
+                    <div className="relative z-10 w-full flex flex-col items-start text-left space-y-4">
+                      <motion.h3
+                        variants={{
+                          idle: { y: 0 },
+                          hover: { y: -8 },
+                          active: { y: -8 }
+                        }}
+                        className="text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter uppercase leading-none w-full break-words transition-colors duration-500"
+                      >
+                        <span className="text-slate-900 dark:text-white group-hover:text-white transition-colors duration-500" style={{ color: isActive ? '#ffffff' : undefined }}>{mod.title}</span><br />
+                        <span className="text-celeste-trifinio group-hover:text-white/90 transition-colors duration-500" style={{ color: isActive ? 'rgba(255,255,255,0.9)' : undefined }}>{mod.subtitle}</span>
+                      </motion.h3>
+                      <motion.p
+                        variants={{
+                          idle: { y: 0 },
+                          hover: { y: -8 },
+                          active: { y: -8 }
+                        }}
+                        className="text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 transition-colors duration-500"
+                        style={{ color: isActive ? 'rgba(255,255,255,0.8)' : undefined }}
+                      >
+                        {mod.desc}
+                      </motion.p>
+                    </div>
+                  </motion.div>
                 </div>
               </div>
-
-              <div className="space-y-1 sm:space-y-2 relative z-10 flex-1">
-                <h3 className="text-2xl sm:text-3xl font-bold tracking-tight transition-colors text-orange-600 dark:text-orange-500 leading-none">
-                  La Arada
-                </h3>
-                <p className="text-sm sm:text-base text-orange-600 dark:text-orange-500 font-medium italic mt-1 sm:mt-2">
-                  Construyendo Junto a ti el futuro.
-                </p>
-              </div>
-
-              <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-linear-to-l from-orange-500/5 to-transparent pointer-events-none" />
-            </Link>
+            )}
           </motion.div>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div className="relative w-full min-h-screen">
+
+      {/* MODALES */}
+      <VerPerfil isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} userId={null} />
+      <PassKeysModal isOpen={isPasskeysOpen} onClose={() => setIsPasskeysOpen(false)} user={user} />
+
+      <div className="flex flex-col md:hidden w-full bg-white dark:bg-[#09090b]">
+        <div className="w-full pt-16 pb-0 -mb-[6%] relative z-[2]">
+          <LogoTrifinioMobile backgroundEffect="blur" />
         </div>
+
+        <div className="w-full overflow-hidden">
+          <motion.img
+            src="/trifinio/hero-background2.jpg"
+            alt="Plan Trifinio"
+            style={{ 
+              y: useTransform(scrollY, [0, 800], [0, 150]), 
+              scale: bgScale 
+            }}
+            className="w-full h-auto object-contain block origin-center"
+          />
+        </div>
+
+        <div className="w-full px-4 pt-8 pb-20">
+          <CardsGrid />
+        </div>
+      </div>
+
+      <div className="hidden md:block relative w-full min-h-screen">
+        <div className="fixed top-0 left-0 w-full h-[75vh] z-0 bg-[#0a1628] overflow-hidden">
+          <motion.div
+            className="absolute inset-0 bg-cover bg-center origin-center"
+            style={{ 
+              backgroundImage: "url('/trifinio/hero-background2.jpg')",
+              scale: bgScale
+            }}
+          />
+        </div>
+
+        <motion.div 
+          className="fixed top-0 left-0 w-full h-[65vh] flex justify-center items-center z-[5] pt-16 pb-[140px]"
+          style={{ y: logoY, opacity: logoOpacity }}
+        >
+          <div className="relative flex justify-center items-center px-8">
+            <LogoTrifinio />
+          </div>
+        </motion.div>
+
+        <div className="relative z-10 w-full mt-[65vh]">
+          <div className="w-full min-h-screen bg-[#f8fafc] dark:bg-[#09090b] rounded-t-[3rem] px-8 lg:px-12 pt-10 pb-20">
+            <div className="w-full max-w-[1400px] mx-auto -mt-[140px]">
+              <CardsGrid />
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

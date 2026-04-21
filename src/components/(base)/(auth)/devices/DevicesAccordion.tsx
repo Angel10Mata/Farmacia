@@ -15,6 +15,7 @@ import {
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
 
 interface Device {
   id: string;
@@ -62,7 +63,7 @@ export function DevicesAccordion({ groups }: { groups: UserGroup[] }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre de usuario..."
-          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
@@ -78,9 +79,9 @@ export function DevicesAccordion({ groups }: { groups: UserGroup[] }) {
         const pending = pendingCount(group.devices);
 
         return (
-          <div
+          <Card
             key={group.user_id}
-            className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
+            className="rounded-2xl border border-border bg-white shadow-sm overflow-hidden"
           >
             {/* Header row */}
             <button
@@ -204,7 +205,7 @@ export function DevicesAccordion({ groups }: { groups: UserGroup[] }) {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         );
       })}
     </div>

@@ -8,7 +8,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
 
-  if (!user && pathname.startsWith("/cermadsa")) {
+  if (!user && pathname.startsWith("/siget")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -26,7 +26,7 @@ if (user) {
     if (pathname === "/esperando-acceso") {
       if (!requireAuth) {
         const url = request.nextUrl.clone();
-        url.pathname = "/cermadsa";
+        url.pathname = "/siget ";
         return NextResponse.redirect(url);
       }
 
@@ -35,7 +35,7 @@ if (user) {
 
       if (["super", "admin", "rrhh"].includes(realRole)) {
         const url = request.nextUrl.clone();
-        url.pathname = "/cermadsa";
+        url.pathname = "/siget";
         return NextResponse.redirect(url);
       }
 
@@ -50,23 +50,23 @@ if (user) {
 
       if (device && device.is_authorized) {
         const url = request.nextUrl.clone();
-        url.pathname = "/cermadsa";
+        url.pathname = "/siget";
         return NextResponse.redirect(url);
       }
     }
 
     if (pathname === "/login") {
       const url = request.nextUrl.clone();
-      url.pathname = "/cermadsa";
+      url.pathname = "/siget";
       return NextResponse.redirect(url);
     }
 
-    if (pathname.startsWith("/cermadsa")) {
+    if (pathname.startsWith("/siget")) {
       const metadata = user.user_metadata || {};
       const realRole = (metadata.rol || user.role || "user") as string;
 
       if (
-        pathname.startsWith("/cermadsa/admin") &&
+        pathname.startsWith("/siget/admin") &&
         !["super", "admin", "rrhh"].includes(realRole)
       ) {
         const url = request.nextUrl.clone();
