@@ -40,11 +40,9 @@ export async function sendPushToUsers(userIds: string[], payload: { title: strin
 
     try {
       await webpush.sendNotification(pushSubscription, pushPayload);
-    } catch (err: any) {
-      if (err.statusCode === 410 || err.statusCode === 404) {
-        // Subscription expired or invalid - using an admin-like client if this was from a client-side call
-        // But here we can use the default supabase client if it has RLS permissions or an admin client
-        // For simplicity, we just log and try to delete
+    } catch (err: unknown) {
+      const pushErr = err as { statusCode?: number };
+      if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
         console.warn(`Deleting invalid subscription: ${sub.id}`);
         await supabase.from("push_subscriptions").delete().eq("id", sub.id);
       } else {

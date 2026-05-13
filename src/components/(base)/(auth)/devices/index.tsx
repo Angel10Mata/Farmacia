@@ -34,7 +34,7 @@ export async function Dispositivos() {
 
   // Fetch user profiles
   const userIds = [...new Set(devices.map((d) => d.user_id))];
-  let profiles: Record<string, string> = {};
+  const profiles: Record<string, string> = {};
 
   if (userIds.length > 0) {
     const { data: profilesData } = await supabaseAdmin

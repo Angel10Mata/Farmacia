@@ -43,11 +43,11 @@ export function RegisterPasskey() {
       } else {
         setStatus(`Error al verificar: ${verificationResp.error}`);
       }
-    } catch (error: any) {
-      if (error.name === "InvalidStateError") {
+    } catch (error: unknown) {
+      if ((error as Error).name === "InvalidStateError") {
         localStorage.setItem("cermad-device-passkey-enabled", "true");
       }
-      setStatus(`Error: ${error.message}`);
+      setStatus(`Error: ${(error as Error).message}`);
     } finally {
       setIsLoading(false);
     }

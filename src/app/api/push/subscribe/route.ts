@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
 export async function POST(req: Request) {
+  if (process.env.APP_ENV !== 'production') {
+    return NextResponse.json({ error: 'Push notifications are disabled in non-production environments.' }, { status: 503 })
+  }
   try {
     const { subscription, userId } = await req.json();
     const supabase = await createClient();
@@ -26,12 +29,15 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
+  if (process.env.APP_ENV !== 'production') {
+    return NextResponse.json({ error: 'Push notifications are disabled in non-production environments.' }, { status: 503 })
+  }
   try {
     const { endpoint } = await req.json();
     const supabase = await createClient();
@@ -48,7 +54,7 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }

@@ -62,12 +62,12 @@ export function PasskeyPrompt() {
       } else {
         setErrorStatus(`Error: ${verification.error}`);
       }
-    } catch (error: any) {
-      if (error.name === "InvalidStateError") {
+    } catch (error: unknown) {
+      if ((error as Error).name === "InvalidStateError") {
         localStorage.setItem("cermad-device-passkey-enabled", "true");
         setErrorStatus("Este dispositivo ya está registrado.");
       } else {
-        setErrorStatus(`Error: ${error.message}`);
+        setErrorStatus(`Error: ${(error as Error).message}`);
       }
     } finally {
       setIsPending(false);

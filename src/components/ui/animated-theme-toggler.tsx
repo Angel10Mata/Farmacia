@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AnimatedThemeTogglerProps extends React.ComponentPropsWithoutRef<"button"> {
@@ -36,7 +35,6 @@ export const AnimatedThemeToggler = ({
   const toggleTheme = useCallback(async () => {
     if (!buttonRef.current) return;
 
-    // @ts-ignore
     if (!document.startViewTransition) {
       const newTheme = !isDark;
       setIsDark(newTheme);
@@ -46,7 +44,6 @@ export const AnimatedThemeToggler = ({
       return;
     }
 
-    // @ts-ignore
     await document.startViewTransition(() => {
       flushSync(() => {
         const newTheme = !isDark;

@@ -29,12 +29,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "SIGET - Plan Trifinio",
-  description: "Sistema Integral de Gestión - Plan Trifinio",
+  title: "Kore - Plan Kore",
+  description: "Sistema Integral de Gestión - Plan Kore",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "SIGET - Plan Trifinio",
+    title: "Kore - Plan Kore",
   },
   icons: {
     icon: "/apple-touch-icon.png",
@@ -80,7 +80,7 @@ export default async function RootLayout({
                     className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-4"
                   >
                     <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
-                      © 2026 SIGET
+                      © 2026 Kore
                     </p>
                     <div className="hidden md:block w-px h-3 bg-zinc-300 dark:bg-zinc-700"></div>
                     <div className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 flex items-center gap-1">

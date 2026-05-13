@@ -15,8 +15,13 @@ export async function login(
   formData: FormData,
 ): Promise<ActionState> {
   const supabase = await createClient();
-  const email = formData.get("email") as string;
+  let email = formData.get("email") as string;
   const password = formData.get("password") as string;
+
+  // Si el usuario ingresa solo "kore" (u otro usuario sin arroba), auto-completamos el correo
+  if (email && !email.includes("@")) {
+    email = `${email}@app.com`;
+  }
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -26,7 +31,7 @@ export async function login(
   if (error) {
     return {
       success: false,
-      message: "Credenciales inválidas",
+      message: `Error: ${error.message} (Email: ${email})`,
       errorType: "invalid",
       fields: { email },
     };

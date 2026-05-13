@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
 export async function POST(req: Request) {
+  if (process.env.APP_ENV !== 'production') {
+    return NextResponse.json({ error: 'Push notifications are disabled in non-production environments.' }, { status: 503 })
+  }
   try {
     const { title, body, url, userId, broadcast } = await req.json();
     const supabase = await createClient();
@@ -47,8 +50,8 @@ export async function POST(req: Request) {
 
       try {
         await webpush.sendNotification(pushSubscription, payload);
-      } catch (err: any) {
-        if (err.statusCode === 410 || err.statusCode === 404) {
+      } catch (err: unknown) {
+        if ((err as { statusCode?: number }).statusCode === 410 || (err as { statusCode?: number }).statusCode === 404) {
           // Subscription expired or invalid
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
         } else {
@@ -60,8 +63,8 @@ export async function POST(req: Request) {
     await Promise.all(sendPromises);
 
     return NextResponse.json({ success: true, message: `Notifications sent to ${subscriptions.length} devices.` });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Push Error: ", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 }

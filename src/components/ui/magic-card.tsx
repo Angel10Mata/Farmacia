@@ -20,8 +20,6 @@ export function MagicCard({
   children,
   className,
   gradientSize = 200,
-  gradientColor = "#262626", // Ya no afecta, pero se deja por compatibilidad
-  gradientOpacity = 0.8, // Ya no afecta
   gradientFrom = "#9E7AFF",
   gradientTo = "#FE8BBB",
   style,

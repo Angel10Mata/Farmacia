@@ -3,12 +3,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
-interface AnimacionLogoTrifinioProps {
+interface AnimacionLogoKoreProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function AnimacionLogoTrifinio({ isOpen, onClose }: AnimacionLogoTrifinioProps) {
+export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKoreProps) {
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -18,13 +18,13 @@ export default function AnimacionLogoTrifinio({ isOpen, onClose }: AnimacionLogo
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-[1000000] flex items-center justify-center bg-white/70 dark:bg-[#09090b]/80 backdrop-blur-[20px] cursor-pointer p-4 lg:p-12 overflow-hidden"
+          className="fixed inset-0 z-[1000000] flex items-center justify-center bg-white/70 dark:bg-black/80 backdrop-blur-[20px] cursor-pointer p-4 lg:p-12 overflow-hidden"
           style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
         >
           <motion.button
             initial={{ opacity: 0, rotate: -90 }}
             animate={{ opacity: 1, rotate: 0 }}
-            className="absolute top-8 right-8 p-3 rounded-full bg-black/10 dark:bg-white/10 text-azul-trifinio dark:text-white hover:bg-black/20 dark:hover:bg-white/20 transition-colors z-20"
+            className="absolute top-8 right-8 p-3 rounded-full bg-black/10 dark:bg-white/10 text-black dark:text-white hover:bg-black/20 dark:hover:bg-white/20 transition-colors z-20"
             onClick={(e) => {
               e.stopPropagation();
               onClose();
@@ -50,8 +50,8 @@ export default function AnimacionLogoTrifinio({ isOpen, onClose }: AnimacionLogo
                 className="flex-shrink-0"
               >
                 <Image
-                  src="/trifinio/logo.png"
-                  alt="Plan Trifinio"
+                  src="/kore/logo.png"
+                  alt="Plan Kore"
                   width={250}
                   height={250}
                   className="w-[120px] lg:w-[250px] h-auto object-contain"
@@ -69,45 +69,18 @@ export default function AnimacionLogoTrifinio({ isOpen, onClose }: AnimacionLogo
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ type: "spring", stiffness: 40, damping: 18, duration: 1.3 }}
-                  className="font-black whitespace-nowrap text-azul-trifinio dark:text-white leading-[0.95]"
+                  className="font-black whitespace-nowrap text-black dark:text-white leading-[0.95]"
                   style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "clamp(2rem, 6vw, 5rem)" }}
                 >
-                  Plan Trifinio
+                  Kore
                 </motion.h1>
 
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: "spring", stiffness: 50, damping: 16, duration: 1.1 }}
-                  className="font-bold italic mt-1 text-azul-trifinio dark:text-white leading-tight"
-                  style={{ fontFamily: "Arial, sans-serif", fontSize: "clamp(1rem, 3vw, 2.5rem)" }}
-                >
-                  &ldquo;Agua sin fronteras&rdquo;
-                </motion.p>
 
-                <div className="flex flex-col items-center w-fit">
-                  <motion.div
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ duration: 1.2, ease: "easeInOut" }}
-                    className="w-full h-[2px] mt-2 bg-azul-trifinio dark:bg-white origin-center"
-                  />
-
-                  <motion.p
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="font-semibold mt-2 text-azul-trifinio dark:text-white"
-                    style={{ fontFamily: "Arial, sans-serif", fontSize: "clamp(0.6rem, 1.5vw, 1.2rem)", letterSpacing: "0.18em" }}
-                  >
-                    El Salvador&ensp;•&ensp;Guatemala&ensp;•&ensp;Honduras
-                  </motion.p>
-                </div>
               </motion.div>
             </div>
           </motion.div>
           
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-azul-trifinio/60 dark:text-white/40 text-[10px] font-black tracking-[0.5em] uppercase pointer-events-none animate-bounce">
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-black/60 dark:text-white/40 text-[10px] font-black tracking-[0.5em] uppercase pointer-events-none animate-bounce">
             Click en cualquier lugar para cerrar
           </div>
         </motion.div>

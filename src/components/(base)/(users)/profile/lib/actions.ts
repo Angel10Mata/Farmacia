@@ -22,6 +22,7 @@ function getAdminClient() {
 }
 
 export async function getProfileById(userId: string) {
+  if (!userId) return null;
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -31,6 +32,19 @@ export async function getProfileById(userId: string) {
     .single();
 
   if (error) {
+    if (error.code === 'PGRST116') {
+      // Fallback a admin client por si RLS bloquea (típico en usuarios nuevos)
+      const admin = getAdminClient();
+      const { data: adminData, error: adminErr } = await admin
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      
+      if (!adminErr && adminData) {
+        return adminData;
+      }
+    }
     throw new Error(error.message);
   }
 
@@ -161,6 +175,6 @@ export async function toggleUserStatus(userId: string, isBanned: boolean) {
     throw new Error(error.message);
   }
 
-  revalidatePath("/siget/admin/usuarios");
+  revalidatePath("/kore/admin/usuarios");
   return { success: true };
 }

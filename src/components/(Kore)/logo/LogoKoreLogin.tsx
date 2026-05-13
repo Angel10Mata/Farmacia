@@ -3,21 +3,22 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import AnimacionLogoTrifinio from "./AnimacionLogoTrifinio";
+import AnimacionLogoKore from "./AnimacionLogoKore";
 import { createPortal } from "react-dom";
 
-interface LogoTrifinioLoginProps {
+interface LogoKoreLoginProps {
   backgroundEffect?: "blur" | "glow" | "none";
 }
 
-export default function LogoTrifinioLogin({
+export default function LogoKoreLogin({
   backgroundEffect = "none",
-}: LogoTrifinioLoginProps) {
+}: LogoKoreLoginProps) {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const init = async () => setMounted(true);
+    init();
   }, []);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -93,8 +94,8 @@ export default function LogoTrifinioLogin({
         <div className="flex flex-row items-center justify-center gap-4 w-full">
           <motion.div variants={logoVariants} className="flex-shrink-0">
             <Image
-              src="/trifinio/logo.png"
-              alt="Plan Trifinio"
+              src="/kore/logo.png"
+              alt="Plan Kore"
               width={100}
               height={100}
               className="w-[85px] h-auto object-contain"
@@ -110,38 +111,19 @@ export default function LogoTrifinioLogin({
           >
             <motion.h1
               variants={titleVariants}
-              className="font-black whitespace-nowrap text-azul-trifinio dark:text-white leading-[0.95]"
+              className="font-black whitespace-nowrap text-azul-kore dark:text-white leading-[0.95]"
               style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "1.65rem" }}
             >
-              Plan Trifinio
+              Kore
             </motion.h1>
 
-            <motion.p
-              variants={sloganVariants}
-              className="font-bold italic mt-1 text-azul-trifinio dark:text-white leading-tight"
-              style={{ fontFamily: "Arial, sans-serif", fontSize: "1.05rem" }}
-            >
-              &ldquo;Agua sin fronteras&rdquo;
-            </motion.p>
 
-            <motion.div
-              variants={lineVariants}
-              className="w-full h-[2px] mt-2 bg-azul-trifinio dark:bg-white origin-center"
-            />
-
-            <motion.p
-              variants={countriesVariants}
-              className="font-semibold mt-2 text-azul-trifinio dark:text-white"
-              style={{ fontFamily: "Arial, sans-serif", fontSize: "0.55rem", letterSpacing: "0.15em" }}
-            >
-              El Salvador&ensp;•&ensp;Guatemala&ensp;•&ensp;Honduras
-            </motion.p>
           </motion.div>
         </div>
       </motion.div>
 
       {mounted && createPortal(
-        <AnimacionLogoTrifinio isOpen={isFullScreen} onClose={() => setIsFullScreen(false)} />,
+        <AnimacionLogoKore isOpen={isFullScreen} onClose={() => setIsFullScreen(false)} />,
         document.body
       )}
     </>

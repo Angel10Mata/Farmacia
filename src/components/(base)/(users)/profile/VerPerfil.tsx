@@ -7,7 +7,6 @@ import {
   Loader2,
   ShieldCheck,
   Shield,
-  FileText,
   X,
   ChevronDown,
 } from "lucide-react";
@@ -41,7 +40,7 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
     ["admin", "super"].includes(sessionRole) ||
     sessionUser?.id === targetId;
 
-  const { profile, loading } = useProfile(targetId, isOpen);
+  const { profile, loading, error } = useProfile(targetId, isOpen);
 
   useEffect(() => {
     if (isOpen) {
@@ -80,7 +79,7 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
   const handleRoleUpdate = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRole = e.target.value;
     try {
-      await updateProfile(targetId, { rol: newRole as any });
+      await updateProfile(targetId, { rol: newRole as "user" | "admin" | "super" | "proyectos" });
       await queryClient.invalidateQueries({ queryKey: ["profile", targetId] });
 
       Swal.fire({
@@ -92,7 +91,7 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
         timer: 2000,
         showConfirmButton: false,
       });
-    } catch (error) {
+    } catch {
       Swal.fire({
         ...swalTheme,
         toast: true,
@@ -227,18 +226,25 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
               <Loader2 className="animate-spin" size={32} />
               <p className="text-sm">Cargando información...</p>
             </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-40 gap-3 text-red-500">
+              <p className="text-sm font-bold">Error al cargar perfil</p>
+              <p className="text-xs opacity-70">{String(error)}</p>
+            </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className={cn(view !== "perfil" && "hidden")}>
                 <InfoPerfil userId={targetId} canEdit={canEdit} />
               </div>
-              <div className={cn(view !== "usuario" && "hidden")}>
-                <InfoUser
-                  userId={targetId}
-                  canEdit={canEdit}
-                  isSuper={isSuper}
-                />
-              </div>
+              {view === "usuario" && (
+                <div>
+                  <InfoUser
+                    userId={targetId}
+                    canEdit={canEdit}
+                    isSuper={isSuper}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

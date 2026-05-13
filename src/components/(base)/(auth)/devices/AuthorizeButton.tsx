@@ -9,11 +9,9 @@ import { useTheme } from "next-themes";
 export function AuthorizeButton({
   id,
   isAuthorized,
-  deviceName,
 }: {
   id: string;
   isAuthorized: boolean;
-  deviceName?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const { theme } = useTheme();

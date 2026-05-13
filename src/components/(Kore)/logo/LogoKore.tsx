@@ -4,27 +4,28 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import AnimacionLogoTrifinio from "./AnimacionLogoTrifinio";
+import AnimacionLogoKore from "./AnimacionLogoKore";
 
-interface LogoTrifinioProps {
+interface LogoKoreProps {
   scale?: number;
   noAnimation?: boolean;
   refreshInterval?: number;
   backgroundEffect?: "blur" | "glow" | "none";
 }
 
-export default function LogoTrifinio({
+export default function LogoKore({
   scale: scaleValue = 1,
   noAnimation = false,
   refreshInterval = 0,
   backgroundEffect = "blur",
-}: LogoTrifinioProps) {
+}: LogoKoreProps) {
   const [animationKey, setAnimationKey] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const init = async () => setMounted(true);
+    init();
   }, []);
 
   const handleHover = () => {
@@ -116,8 +117,8 @@ export default function LogoTrifinio({
         <div className="flex flex-row items-center justify-center gap-6 lg:gap-10 w-full px-4 lg:px-8">
           <motion.div variants={logoVariants} className="flex-shrink-0">
             <Image
-              src="/trifinio/logo.png"
-              alt="Plan Trifinio"
+              src="/kore/logo.png"
+              alt="Plan Kore"
               width={150}
               height={150}
               className="w-[120px] lg:w-[150px] h-auto object-contain"
@@ -134,38 +135,19 @@ export default function LogoTrifinio({
           >
             <motion.h1
               variants={titleVariants}
-              className="font-black whitespace-nowrap text-azul-trifinio dark:text-white leading-[0.95]"
+              className="font-black whitespace-nowrap text-black dark:text-white leading-[0.95] translate-y-[3px]"
               style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "clamp(1.5rem, 3.5vw, 2.8rem)" }}
             >
-              Plan Trifinio
+              Kore
             </motion.h1>
 
-            <motion.p
-              variants={sloganVariants}
-              className="font-bold italic mt-1 text-azul-trifinio dark:text-white leading-tight"
-              style={{ fontFamily: "Arial, sans-serif", fontSize: "clamp(1rem, 2.2vw, 1.8rem)" }}
-            >
-              &ldquo;Agua sin fronteras&rdquo;
-            </motion.p>
 
-            <motion.div
-              variants={lineVariants}
-              className="w-full h-[2px] mt-2 bg-azul-trifinio dark:bg-white origin-center"
-            />
-
-            <motion.p
-              variants={countriesVariants}
-              className="font-semibold mt-2 text-azul-trifinio dark:text-white"
-              style={{ fontFamily: "Arial, sans-serif", fontSize: "clamp(0.5rem, 1.1vw, 0.9rem)", letterSpacing: "0.22em" }}
-            >
-              El Salvador&ensp;•&ensp;Guatemala&ensp;•&ensp;Honduras
-            </motion.p>
           </motion.div>
         </div>
       </motion.div>
 
       {mounted && createPortal(
-        <AnimacionLogoTrifinio isOpen={isFullScreen} onClose={() => setIsFullScreen(false)} />,
+        <AnimacionLogoKore isOpen={isFullScreen} onClose={() => setIsFullScreen(false)} />,
         document.body
       )}
     </>

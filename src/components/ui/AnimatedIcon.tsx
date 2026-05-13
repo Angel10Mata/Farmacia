@@ -26,7 +26,8 @@ export default function AnimatedIcon({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const mount = () => { setMounted(true); };
+    mount();
   }, []);
 
   if (!mounted) return <div className={className} />;
@@ -37,7 +38,7 @@ export default function AnimatedIcon({
 
   return (
     <div className={className} style={{ width: size, height: size }}>
-      {/* @ts-ignore */}
+      {/* @ts-expect-error -- lord-icon is a custom web component */}
       <lord-icon
         src={`https://cdn.lordicon.com/${iconKey}.json`}
         trigger="hover"

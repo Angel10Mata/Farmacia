@@ -181,14 +181,17 @@ export function InfoUser({ userId, canEdit }: InfoUserProps) {
   const [savedData, setSavedData] = useState({ user: "", pass: "" });
 
   useEffect(() => {
-    if (credentials) {
-      setFormData({
-        username: credentials.username || "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      setHasChanges(false);
-    }
+    const applyCredentials = async () => {
+      if (credentials) {
+        setFormData({
+          username: credentials.username || "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+        setHasChanges(false);
+      }
+    };
+    applyCredentials();
   }, [credentials]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,11 +243,11 @@ export function InfoUser({ userId, canEdit }: InfoUserProps) {
       });
       setStep(2);
       setHasChanges(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: error.message,
+        text: (error as Error).message,
         background: theme === "dark" ? "#18181b" : "#fff",
         color: theme === "dark" ? "#fff" : "#000",
       });

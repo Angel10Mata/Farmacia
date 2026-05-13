@@ -42,7 +42,7 @@ export function ContactSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="space-y-4 lg:space-y-6 text-center lg:text-left">
               <p className="text-muted-foreground text-sm lg:text-base font-medium leading-relaxed">
-                Contáctenos para recibir asesoría sobre el Sistema Integral de Gestión Trifinio
+                Contáctenos para recibir asesoría sobre el Sistema Integral de Gestión Kore
                 y optimizar sus procesos operativos.
               </p>
               <div className="flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl bg-muted/50 border border-zinc-200 dark:border-zinc-800">
@@ -66,7 +66,7 @@ export function ContactSection() {
                       WhatsApp
                     </p>
                     <p className="text-sm lg:text-lg text-inherit">
-                      Asistencia SIGET
+                      Asistencia Kore
                     </p>
                   </div>
                 </div>
@@ -101,7 +101,7 @@ export function ContactSection() {
         className="text-center mt-auto space-y-1"
       >
         <p className="text-xs font-bold uppercase tracking-widest opacity-40">
-          © 2026 SIGET
+          © 2026 Kore
         </p>
         <p className="text-xs font-bold uppercase tracking-widest">
           Desarrollado por{" "}
@@ -111,7 +111,7 @@ export function ContactSection() {
             rel="noopener noreferrer"
             className="hover:underline cursor-pointer transition-all inline-block"
           >
-            <AuroraText>SIGET | Gestión Inteligente</AuroraText>
+            <AuroraText>Kore | Gestión Inteligente</AuroraText>
           </a>
         </p>
       </motion.div>

@@ -1,9 +1,10 @@
 "use client";
 
+import type { User } from "@supabase/supabase-js";
+
 import { useState, useEffect, useCallback } from "react";
 import { X, Trash2, Fingerprint, Plus } from "lucide-react";
 import { MagicCard } from "@/components/ui/magic-card";
-import { cn } from "@/lib/utils";
 import Swal from "sweetalert2";
 import {
   getRegistrationOptions,
@@ -13,12 +14,11 @@ import {
   PasskeyDevice,
 } from "@/components/(base)/(auth)/login/passkeys/passkeys-actions";
 import { startRegistration } from "@simplewebauthn/browser";
-import AnimatedIcon from "@/components/ui/AnimatedIcon";
 
 interface PassKeysModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user: any;
+  user: User | null;
 }
 
 export default function PassKeysModal({ isOpen, onClose, user }: PassKeysModalProps) {
@@ -138,8 +138,9 @@ export default function PassKeysModal({ isOpen, onClose, user }: PassKeysModalPr
           color: isDark ? "#ffffff" : "#000000",
         });
       }
-    } catch (error: any) {
-      if (error.name === "InvalidStateError") {
+    } catch (error: unknown) {
+      const err = error as { name?: string; message?: string };
+      if (err.name === "InvalidStateError") {
         localStorage.setItem("cermad-device-passkey-enabled", "true");
         Swal.fire({
           title: "Dispositivo ya registrado",
@@ -148,8 +149,8 @@ export default function PassKeysModal({ isOpen, onClose, user }: PassKeysModalPr
           background: isDark ? "#09090b" : "#ffffff",
           color: isDark ? "#ffffff" : "#000000",
         });
-      } else if (error.name !== "NotAllowedError" && error.name !== "AbortError") {
-        alert("Error de hardware/navegador: " + error.message);
+      } else if (err.name !== "NotAllowedError" && err.name !== "AbortError") {
+        alert("Error de hardware/navegador: " + err.message);
       }
     } finally {
       setIsLoading(false);

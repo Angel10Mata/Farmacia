@@ -2,10 +2,10 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "SIGET - Sistema Integral de Gestión Trifinio",
-    short_name: "SIGET",
+    name: "Kore - Sistema Integral de Gestión Kore",
+    short_name: "Kore",
     description:
-      "Sistema Integral de Gestión Trifinio para la optimización de operaciones y mejora de la eficiencia.",
+      "Sistema Integral de Gestión Kore para la optimización de operaciones y mejora de la eficiencia.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

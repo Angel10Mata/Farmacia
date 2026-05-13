@@ -9,10 +9,9 @@ import { BreadcrumbNav } from "@/components/ui/breadcrumb-nav";
 import { Menu as MenuIcon, X, RefreshCw } from "lucide-react";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import Menu from "./Menu";
-import { getPendingDevicesCount } from "@/components/(SIGET)/admin/lib/actions";
-import Image from "next/image";
+import { getPendingDevicesCount } from "@/components/(Kore)/admin/lib/actions";
 import { createPortal } from "react-dom";
-import AnimacionLogoTrifinio from "@/components/(SIGET)/logo/AnimacionLogoTrifinio";
+import AnimacionLogoKore from "@/components/(Kore)/logo/AnimacionLogoKore";
 
 export default function Header() {
   const user = useUser();
@@ -21,16 +20,20 @@ export default function Header() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const isRoot = pathname === "/siget";
+  const isRoot = pathname === "/kore";
 
   const metadata = user?.user_metadata || {};
   const role = metadata.rol || user?.role || "user";
   const canManage = ["super", "admin"].includes(role);
 
   useEffect(() => {
-    setMounted(true);
-    if (!canManage) return;
-    getPendingDevicesCount().then((c) => setPendingDevices(c ?? 0));
+    const init = async () => {
+      setMounted(true);
+      if (!canManage) return;
+      const c = await getPendingDevicesCount();
+      setPendingDevices(c ?? 0);
+    };
+    init();
   }, [canManage]);
 
   const handleLogoClick = (e: React.MouseEvent) => {
@@ -41,12 +44,12 @@ export default function Header() {
 
   return (
     <>
-      <header className="w-full fixed top-0 left-0 transition-all bg-white dark:bg-[#09090b] border-b border-border/40 z-[100] shadow-sm">
+      <header className="w-full fixed top-0 left-0 transition-all bg-white dark:bg-black border-b border-border/40 z-[100] shadow-sm">
         <div className="mx-auto flex h-14 md:h-16 items-center justify-between px-4 md:px-8 gap-4">
           <div className="flex items-center h-full">
             <div className="flex items-center shrink-0">
               <Link
-                href={user ? "/siget" : "/"}
+                href={user ? "/kore" : "/"}
                 onClick={handleLogoClick}
                 className="flex flex-row items-center shrink-0 group gap-1 md:gap-1.5 cursor-pointer"
               >
@@ -54,17 +57,17 @@ export default function Header() {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="text-2xl md:text-4xl font-extrabold tracking-tighter leading-none text-azul-trifinio dark:text-white transition-transform duration-300 group-hover:scale-105 origin-left"
+                  className="text-2xl md:text-4xl font-extrabold tracking-tighter leading-none text-black dark:text-white transition-transform duration-300 group-hover:scale-105 origin-left translate-y-[1px]"
                 >
-                  SIGET
+                  Kore
                 </motion.h1>
                 <motion.div 
                   initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
                   animate={{ opacity: 1, clipPath: "inset(0 0 0 0)" }}
                   transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
-                  className="text-xs md:text-sm font-black uppercase tracking-widest leading-[1.15] md:leading-[1.15] text-celeste-trifinio border-l border-border/60 pl-2 md:pl-3 transition-transform duration-300 group-hover:scale-[1.02] origin-left group-hover:text-azul-trifinio dark:group-hover:text-[#FFFDD0]"
+                  className="text-xs md:text-sm font-black uppercase tracking-widest leading-[1.15] md:leading-[1.15] text-celeste-kore border-l border-border/60 pl-2 md:pl-3 transition-transform duration-300 group-hover:scale-[1.02] origin-left group-hover:text-white dark:group-hover:text-[#FFFDD0]"
                 >
-                  SISTEMA INTEGRAL DE<br />GESTIÓN TRIFINIO
+                  ERP KORE
                 </motion.div>
               </Link>
             </div>
@@ -80,7 +83,7 @@ export default function Header() {
             <button
               id="refresh-btn"
               onClick={() => window.location.reload()}
-              className="flex items-center justify-center text-azul-trifinio hover:text-celeste-trifinio dark:text-white dark:hover:text-white/80 cursor-pointer transition-all hover:rotate-180 duration-500 active:scale-95"
+              className="flex items-center justify-center text-black hover:text-celeste-kore dark:text-white dark:hover:text-celeste-kore cursor-pointer transition-all hover:rotate-180 duration-500 active:scale-95"
             >
               <RefreshCw className="size-5 md:size-6" />
             </button>
@@ -114,7 +117,7 @@ export default function Header() {
                 </AnimatePresence>
               </button>
               {!isOpen && canManage && pendingDevices > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-[10px] font-bold text-white animate-pulse pointer-events-none">
+                <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-celeste-kore text-[10px] font-bold text-white animate-pulse pointer-events-none">
                   {pendingDevices}
                 </span>
               )}
@@ -124,7 +127,7 @@ export default function Header() {
       </header>
 
       {user && !isRoot && (
-        <div className="fixed top-14 left-0 md:hidden w-full px-6 py-3 border-b border-border/40 bg-white dark:bg-[#09090b] z-[99]">
+        <div className="fixed top-14 left-0 md:hidden w-full px-6 py-3 border-b border-border/40 bg-white dark:bg-black z-[99]">
           <BreadcrumbNav />
         </div>
       )}
@@ -132,7 +135,7 @@ export default function Header() {
       <Menu isOpen={isOpen} setIsOpen={setIsOpen} user={user} />
 
       {mounted && createPortal(
-        <AnimacionLogoTrifinio isOpen={isFullScreen} onClose={() => setIsFullScreen(false)} />,
+        <AnimacionLogoKore isOpen={isFullScreen} onClose={() => setIsFullScreen(false)} />,
         document.body
       )}
     </>

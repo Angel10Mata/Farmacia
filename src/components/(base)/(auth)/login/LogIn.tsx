@@ -11,7 +11,7 @@ import { DotPattern } from "@/components/ui/dot-pattern";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "next-themes";
 import Swal from "sweetalert2";
-import LogoTrifinioLogin from "@/components/(SIGET)/logo/LogoTrifinioLogin";
+import LogoKoreLogin from "@/components/(Kore)/logo/LogoKoreLogin";
 
 export default function LogIn() {
   const [mounted, setMounted] = useState(false);
@@ -68,7 +68,7 @@ useEffect(() => {
   }, []);
   useEffect(() => {
     if (state?.success) {
-      window.location.href = "/siget";
+      window.location.href = "/kore";
     } else if (state?.message === "DEVICE_LIMIT") {
       window.location.href = "/esperando-acceso?reason=limit";
     } else if (state?.message === "DEVICE_PENDING") {
@@ -76,6 +76,7 @@ useEffect(() => {
     } else if (state?.message) {
       showError(state.message);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, theme]);
 
   const handlePasskeyLogin = async () => {
@@ -87,7 +88,7 @@ useEffect(() => {
 
       if (verification.success) {
         localStorage.setItem("cermad-device-passkey-enabled", "true");
-        window.location.href = "/siget";
+        window.location.href = "/kore";
       } else if (verification.error === "DEVICE_LIMIT") {
         window.location.href = "/esperando-acceso?reason=limit";
       } else if (verification.error === "DEVICE_PENDING") {
@@ -95,11 +96,12 @@ useEffect(() => {
       } else if (verification.error) {
         showError(verification.error);
       }
-    } catch (error: any) {
-      const msg = error.message || "";
+    } catch (error: unknown) {
+      const err = error as Error;
+      const msg = err.message || "";
       if (
-        error.name === "NotAllowedError" ||
-        error.name === "AbortError" ||
+        err.name === "NotAllowedError" ||
+        err.name === "AbortError" ||
         msg.includes("timed out") ||
         msg.includes("not allowed")
       ) {
@@ -124,7 +126,7 @@ useEffect(() => {
           <div className="flex flex-col items-center space-y-6 p-10 border-b border-border/50 text-center">
             
             <div className="w-full -mt-2 pb-2">
-              <LogoTrifinioLogin backgroundEffect="none" />
+              <LogoKoreLogin backgroundEffect="none" />
             </div>
 
             <div className="space-y-1">

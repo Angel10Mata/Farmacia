@@ -10,7 +10,6 @@ import {
   Loader2,
   UserPlus,
   ClipboardCopy,
-  Check,
   MessageCircle,
   ArrowLeft,
 } from "lucide-react";
@@ -130,14 +129,11 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
     setStep(1);
     setSavedData({ user: "", pass: "" });
     hasMovedToStep2.current = false;
-    if (logic.state) {
-      logic.state.success = false;
-      logic.state.errors = undefined;
-    }
   };
 
   useEffect(() => {
     if (isOpen) resetForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   useEffect(() => {
@@ -304,7 +300,7 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
                         onChange={(e) => logic.setRol(e.target.value)}
                       >
                         <option value="user">Usuario (Estándar)</option>
-                        <option value="observatorio">Observatorio</option>
+                        <option value="proyectos">Operador</option>
                         <option value="admin">Administrador</option>
                         {currentUserRole === "super" && (
                           <option value="super">Super Admin</option>

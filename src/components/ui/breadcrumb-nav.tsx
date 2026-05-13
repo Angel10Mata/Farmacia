@@ -1,20 +1,19 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 export function BreadcrumbNav() {
   const pathname = usePathname();
-  const router = useRouter();
 
-  if (pathname === "/siget") return null;
+  if (pathname === "/kore") return null;
 
   const segments = pathname.split("/").filter((item) => item !== "");
 
   const parentPath =
-    segments.length > 1 ? `/${segments.slice(0, -1).join("/")}` : "/siget";
+    segments.length > 1 ? `/${segments.slice(0, -1).join("/")}` : "/kore";
 
   return (
     <LayoutGroup id="breadcrumb">
@@ -34,7 +33,7 @@ export function BreadcrumbNav() {
 
         <motion.div layout="position" className="flex items-center">
           <Link
-            href="/siget"
+            href="/kore"
             className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
           >
             <Home className="size-4 md:size-5" />
@@ -44,7 +43,7 @@ export function BreadcrumbNav() {
         <div className="flex items-center gap-1 overflow-hidden mask-gradient">
           <AnimatePresence mode="popLayout" initial={false}>
             {segments.map((segment, index) => {
-              if (segment === "siget") return null;
+              if (segment === "kore") return null;
 
               const href = `/${segments.slice(0, index + 1).join("/")}`;
               const isLast = index === segments.length - 1;

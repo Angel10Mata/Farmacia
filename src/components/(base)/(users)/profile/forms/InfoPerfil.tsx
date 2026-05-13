@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import {
   User,
-  Phone,
   MapPin,
   Fingerprint,
   Calendar,
@@ -88,7 +87,7 @@ export const InfoPerfil = ({ userId, canEdit }: InfoPerfilProps) => {
   const queryClient = useQueryClient();
   const { profile: perfilData } = useProfile(userId, true);
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<Record<string, string>>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -104,7 +103,7 @@ export const InfoPerfil = ({ userId, canEdit }: InfoPerfilProps) => {
   ) => {
     if (!canEdit) return;
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData((prev: Record<string, string>) => ({ ...prev, [name]: value }));
     setHasChanges(true);
   };
 
@@ -129,12 +128,12 @@ export const InfoPerfil = ({ userId, canEdit }: InfoPerfilProps) => {
         icon: "success",
         title: "Guardado",
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       Swal.fire({
         ...swalConfig,
         icon: "error",
         title: "Error",
-        text: e.message,
+        text: (e as Error).message,
         timer: 4000,
       });
     } finally {

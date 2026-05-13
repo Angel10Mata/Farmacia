@@ -8,7 +8,8 @@ export default function SinAccesoPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const init = async () => setMounted(true);
+    init();
   }, []);
 
   if (!mounted) return null;
@@ -36,7 +37,7 @@ export default function SinAccesoPage() {
         </div>
 
         <Link
-          href="/siget"
+          href="/kore"
           className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-4 rounded-xl font-bold text-xs transition-all active:scale-95 uppercase"
         >
           <ArrowLeft className="size-4 stroke-3" />

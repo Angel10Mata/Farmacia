@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAppSettings, useUpdateAppSettings } from "./hooks";
-import { Settings, Shield, Key, Save, Loader2 } from "lucide-react";
-import LogoTrifinio from "@/components/(SIGET)/logo/LogoTrifinio";
+import { Settings, Shield, Key, Loader2 } from "lucide-react";
+import LogoKore from "@/components/(Kore)/logo/LogoKore";
 import { Card } from "@/components/ui/card";
 
 export default function AppSettings() {
@@ -14,10 +14,13 @@ export default function AppSettings() {
   const [enablePasskeys, setEnablePasskeys] = useState<boolean>(false);
 
   useEffect(() => {
-    if (settings) {
-      setRequireAuth(settings.require_device_authorization);
-      setEnablePasskeys(settings.enable_passkeys);
-    }
+    const applySettings = async () => {
+      if (settings) {
+        setRequireAuth(settings.require_device_authorization);
+        setEnablePasskeys(settings.enable_passkeys);
+      }
+    };
+    applySettings();
   }, [settings]);
 
   if (isLoading) {
@@ -58,7 +61,7 @@ const handleAuthChange = (checked: boolean) => {
     <div className="w-full max-w-3xl mx-auto flex flex-col items-center space-y-8 p-4 md:p-6 mt-16 lg:mt-24">
       {/* LOGO CENTRADO */}
       <div className="w-full flex justify-center mb-4">
-        <LogoTrifinio scale={0.7} backgroundEffect="none" />
+        <LogoKore scale={0.7} backgroundEffect="none" />
       </div>
 
       <div className="flex flex-col gap-1 w-full text-center items-center">

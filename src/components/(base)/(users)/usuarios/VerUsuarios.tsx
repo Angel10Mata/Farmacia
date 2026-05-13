@@ -6,7 +6,6 @@ import { useUser } from "@/components/(base)/providers/UserProvider";
 import {
   Loader2,
   UserX,
-  Shield,
   ChevronLeft,
   ChevronRight,
   Plus,
@@ -42,7 +41,7 @@ export function VerUsuarios() {
 
   const roleLabels: Record<string, string> = {
     user: "Usuario (Estándar)",
-    observatorio: "Observatorio",
+    proyectos: "Proyectos",
     admin: "Administrador",
     super: "Super Admin",
   };

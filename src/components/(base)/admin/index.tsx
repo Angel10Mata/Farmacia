@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { getPendingDevicesCount } from "@/components/(SIGET)/admin/lib/actions";
+import { getPendingDevicesCount } from "@/components/(Kore)/admin/lib/actions";
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
 import { AdminCards } from "./AdminCards";
 
@@ -17,7 +17,7 @@ export async function AdminPanel() {
   const role = metadata.rol || user.role || "user";
 
   if (!["super", "admin"].includes(role)) {
-    redirect("/siget");
+    redirect("/kore");
   }
 
   const pendingDevices = (await getPendingDevicesCount()) ?? 0;
