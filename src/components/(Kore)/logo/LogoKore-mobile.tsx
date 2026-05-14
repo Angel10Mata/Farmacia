@@ -111,8 +111,6 @@ export default function LogoKoreMobile({
             >
               Kore
             </motion.h1>
-
-
           </motion.div>
         </div>
       </motion.div>

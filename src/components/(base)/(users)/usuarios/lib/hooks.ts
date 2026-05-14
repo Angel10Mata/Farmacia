@@ -25,9 +25,9 @@ export function useUsers(userRole?: string) {
 
       return data;
     },
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     enabled: !!userRole,
   });
 }

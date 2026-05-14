@@ -43,6 +43,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProyecto, setSelectedProyecto] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showList, setShowList] = useState(true);
 
   const fetchData = async () => {
     setLoading(true);
@@ -120,7 +121,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     });
 
     return [
-      { name: "Activos", value: counts["En Progress"] || counts["En Progreso"] || 0, color: "#B7494E" },
+      { name: "Activos", value: counts["En Progreso"] || 0, color: "#B7494E" },
       { name: "En pausa", value: counts["En pausa"] || 0, color: "#3D3C3C" },
       { name: "Finalizados", value: counts["Finalizados"] || 0, color: "#a1a1aa" },
     ].filter(d => d.value > 0);
@@ -183,7 +184,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 text-foreground">
+    <div className="w-full flex flex-col gap-6 text-foreground pt-12 sm:pt-20">
       {/* HEADER SECTION */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
@@ -344,28 +345,52 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           {/* TABLE SECTION - Admin only */}
           <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-              <h3 className="text-sm font-black uppercase tracking-widest">
-                Lista de Proyectos
-              </h3>
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input 
-                      type="text" 
-                      placeholder="BUSCAR PROYECTO..." 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="bg-muted/20 border border-border/60 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-celeste-kore/30 w-[240px] transition-all placeholder:text-muted-foreground/40 shadow-inner"
-                    />
-                  </div>
-                  <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl border border-border/50 bg-card hover:bg-muted/50 hover:border-celeste-kore/30 transition-all text-sm font-bold shadow-sm group">
-                    <Download size={16} className="text-celeste-kore group-hover:scale-110 transition-transform" />
-                    <span className="uppercase tracking-widest text-[11px]">Exportar</span>
-                  </button>
-                </div>
+                <button 
+                  onClick={() => setShowList(!showList)}
+                  className="p-2 hover:bg-muted/50 rounded-lg transition-colors group"
+                >
+                  <motion.div
+                    animate={{ rotate: showList ? 0 : -90 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Filter size={18} className="text-celeste-kore" />
+                  </motion.div>
+                </button>
+                <h3 className="text-sm font-black uppercase tracking-widest text-foreground/90">
+                  Lista de Proyectos
+                </h3>
               </div>
+              <motion.div 
+                initial={false}
+                animate={{ opacity: showList ? 1 : 0, scale: showList ? 1 : 0.95, x: showList ? 0 : 20 }}
+                className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto ${!showList ? 'pointer-events-none' : ''}`}
+              >
+                <div className="relative flex-1 sm:w-[240px]">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input 
+                    type="text" 
+                    placeholder="BUSCAR PROYECTO..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-muted/20 border border-border/60 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-celeste-kore/30 transition-all placeholder:text-muted-foreground/40 shadow-inner"
+                  />
+                </div>
+                <button className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border border-border/50 bg-card hover:bg-muted/50 hover:border-celeste-kore/30 transition-all text-sm font-bold shadow-sm group whitespace-nowrap">
+                  <Download size={16} className="text-celeste-kore group-hover:scale-110 transition-transform" />
+                  <span className="uppercase tracking-widest text-[11px]">Exportar</span>
+                </button>
+              </motion.div>
+            </div>
 
-              <div className="w-full">
+              <motion.div 
+                initial={false}
+                animate={{ 
+                  height: showList ? "auto" : 0,
+                  opacity: showList ? 1 : 0
+                }}
+                className="w-full overflow-hidden"
+              >
                 {loading ? (
                   <div className="flex justify-center items-center py-10">
                     <RefreshCw className="animate-spin text-celeste-kore" />
@@ -480,68 +505,68 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                       const restante = precio - comision - iva - doc;
 
                       return (
-                        <div key={p.id} className="rounded-xl border border-border/30 bg-muted/10 p-4 space-y-3">
+                        <div key={p.id} className="rounded-xl border border-border/30 bg-muted/5 p-4 sm:p-5 space-y-4">
                           {/* Card Header */}
-                          <div className="flex items-start justify-between">
+                          <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
                                 <code className="text-[10px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border border-celeste-kore/20' :
-                                  p.estado === 'Finalizados' ? 'bg-celeste-kore/10 text-celeste-kore border border-celeste-kore/20' :
-                                  'bg-red-400/10 text-red-400 border border-red-400/20'
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border ${
+                                  p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
+                                  p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
+                                  'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
                                 }`}>
                                   {p.estado}
                                 </span>
                               </div>
-                              <p className="font-bold text-sm text-foreground truncate">{p.nombre}</p>
-                              <p className="text-[10px] text-muted-foreground">{p.cliente_nombre || 'Sin cliente'} · {p.vendedor_nombre || 'Sin vendedor'}</p>
+                              <p className="font-black text-base text-foreground truncate tracking-tight">{p.nombre}</p>
+                              <p className="text-[11px] font-medium text-muted-foreground mt-0.5">{p.cliente_nombre || 'Sin cliente'} · {p.vendedor_nombre || 'Sin vendedor'}</p>
                             </div>
-                            <div className="flex items-center gap-1 ml-2 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <button 
                                 onClick={() => { setSelectedProyecto(p); setIsModalOpen(true); }}
-                                className="p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors"
+                                className="p-2.5 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-xl transition-all shadow-sm"
                               >
-                                <Edit size={14} />
+                                <Edit size={16} />
                               </button>
                               <button 
                                 onClick={() => handleDelete(p.id)}
-                                className="p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors"
+                                className="p-2.5 bg-muted/50 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-xl transition-all shadow-sm"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </div>
 
                           {/* Card Price */}
-                          <div className="flex items-center justify-between pt-2 border-t border-border/20">
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Precio Total</span>
-                            <span className="font-bold text-sm">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                          <div className="flex items-center justify-between pt-3 border-t border-border/20">
+                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-black">Precio Total</span>
+                            <span className="font-black text-lg text-foreground">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                           </div>
 
                           {/* Cost Breakdown */}
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex justify-between items-center bg-muted/20 rounded-lg px-3 py-2">
-                              <span className="text-muted-foreground">Comisión</span>
-                              <span className={comision > 0 ? 'text-red-400 font-bold' : 'text-muted-foreground'}>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
+                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Comisión</span>
+                              <span className={`text-xs font-black ${comision > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
                                 {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center bg-muted/20 rounded-lg px-3 py-2">
-                              <span className="text-muted-foreground">IVA</span>
-                              <span className={iva > 0 ? 'text-azul-kore font-bold' : 'text-muted-foreground'}>
+                            <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
+                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">IVA</span>
+                              <span className={`text-xs font-black ${iva > 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
                                 {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center bg-muted/20 rounded-lg px-3 py-2">
-                              <span className="text-muted-foreground">Doc</span>
-                              <span className={doc > 0 ? 'text-azul-kore font-bold' : 'text-muted-foreground'}>
+                            <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
+                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Doc</span>
+                              <span className={`text-xs font-black ${doc > 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
                                 {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center bg-celeste-kore/5 border border-celeste-kore/20 rounded-lg px-3 py-2">
-                              <span className="text-muted-foreground">Restante</span>
-                              <span className="text-celeste-kore font-black">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                            <div className="flex flex-col gap-1 p-3 bg-celeste-kore/5 border border-celeste-kore/20 rounded-xl shadow-inner shadow-celeste-kore/5">
+                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Restante</span>
+                              <span className="text-sm font-black text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                             </div>
                           </div>
                         </div>
@@ -550,7 +575,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   </div>
                 </>
               )}
-            </div>
+            </motion.div>
           </div>
         </>
       )}

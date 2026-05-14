@@ -106,14 +106,6 @@ export default function LogoKore({
         initial="hidden"
         animate="visible"
       >
-        {backgroundEffect === "blur" && (
-          <div className="absolute inset-x-[-25px] lg:inset-x-[-40px] inset-y-[-15px] lg:inset-y-[-25px] bg-white/55 dark:bg-white/10 backdrop-blur-md border border-white/50 dark:border-white/10 rounded-2xl -z-10 shadow-xl" />
-        )}
-        
-        {backgroundEffect === "glow" && (
-          <div className="absolute inset-x-[-20%] inset-y-[-10%] bg-white/50 dark:bg-transparent blur-[60px] -z-10 rounded-[100px]" />
-        )}
-
         <div className="flex flex-row items-center justify-center gap-6 lg:gap-10 w-full px-4 lg:px-8">
           <motion.div variants={logoVariants} className="flex-shrink-0">
             <Image
@@ -140,8 +132,6 @@ export default function LogoKore({
             >
               Kore
             </motion.h1>
-
-
           </motion.div>
         </div>
       </motion.div>

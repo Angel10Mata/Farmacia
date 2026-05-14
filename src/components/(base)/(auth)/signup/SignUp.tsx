@@ -349,6 +349,12 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
                       </div>
                     </div>
 
+                    {logic.state?.message && (
+                      <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-bold animate-shake">
+                        {logic.state.message}
+                      </div>
+                    )}
+
                     <button
                       type="submit"
                       disabled={logic.isPending}
