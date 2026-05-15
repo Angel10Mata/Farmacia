@@ -17,6 +17,8 @@ export const proyectoSchema = z.object({
   estado: z.string().default("En Progreso"),
   mantenimiento_fecha: z.string().optional().or(z.literal("")),
   mantenimiento_categoria: z.string().optional(),
+  aplica_mantenimiento: z.coerce.boolean().default(false),
+  monto_mantenimiento: z.coerce.number().min(0).default(0),
 });
 
 export type ProyectoFormValues = z.infer<typeof proyectoSchema>;

@@ -66,6 +66,8 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
       estado: "En Progreso",
       mantenimiento_fecha: "",
       mantenimiento_categoria: "",
+      aplica_mantenimiento: false,
+      monto_mantenimiento: 0,
     },
   });
 
@@ -95,6 +97,8 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
           estado: "En Progreso",
           mantenimiento_fecha: "",
           mantenimiento_categoria: "",
+          aplica_mantenimiento: false,
+          monto_mantenimiento: 0,
         });
       }
     }
@@ -228,7 +232,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                   </div>
 
                   {/* Configuraciones de Porcentajes */}
-                  <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/20 p-4 rounded-xl border border-border/30", isOperator && "opacity-60 pointer-events-none")}>
+                  <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-muted/20 p-4 rounded-xl border border-border/30", isOperator && "opacity-60 pointer-events-none")}>
                     <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_vendedor') ? 'opacity-40' : ''}`}>
                       <div className="flex items-center justify-between">
                         <Label htmlFor="aplica_vendedor" className="flex items-center gap-2 cursor-pointer">
@@ -265,6 +269,19 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                       <div className="flex items-center gap-2">
                         <Input type="number" step="0.1" {...register("porcentaje_doc", { valueAsNumber: true })} className={`w-20 text-center ${!watch('aplica_doc') ? 'pointer-events-none opacity-50' : ''}`} disabled={isOperator} />
                         <span className="text-xs font-bold text-muted-foreground">%</span>
+                      </div>
+                    </div>
+
+                    <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_mantenimiento') ? 'opacity-40' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="aplica_mantenimiento" className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" id="aplica_mantenimiento" {...register("aplica_mantenimiento")} className="rounded bg-background border-border text-celeste-kore focus:ring-red-600" disabled={isOperator} />
+                          <span className={!watch('aplica_mantenimiento') ? 'line-through' : ''}>Cuota Mantenimiento</span>
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input type="number" step="0.01" {...register("monto_mantenimiento", { valueAsNumber: true })} className={`w-24 text-center ${!watch('aplica_mantenimiento') ? 'pointer-events-none opacity-50' : ''}`} disabled={isOperator} />
+                        <span className="text-xs font-bold text-muted-foreground">Q (Mes)</span>
                       </div>
                     </div>
                   </div>

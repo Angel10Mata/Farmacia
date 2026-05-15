@@ -60,6 +60,8 @@ export async function updateProyecto(id: string, data: Partial<ProyectoFormValue
     estado: data.estado,
     mantenimiento_fecha: data.mantenimiento_fecha || null,
     mantenimiento_categoria: data.mantenimiento_categoria,
+    aplica_mantenimiento: data.aplica_mantenimiento,
+    monto_mantenimiento: data.monto_mantenimiento,
   };
   
   const { data: result, error } = await supabase.from("proyectos").update(payload).eq("id", id).select();

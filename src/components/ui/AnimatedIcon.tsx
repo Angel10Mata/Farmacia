@@ -11,6 +11,7 @@ interface AnimatedIconProps {
   speed?: string | number;
   primaryColor?: string;
   secondaryColor?: string;
+  trigger?: "hover" | "loop" | "morph" | "click" | "hover-loop" | "loop-on-hover";
 }
 
 export default function AnimatedIcon({
@@ -22,6 +23,7 @@ export default function AnimatedIcon({
   speed = 2,
   primaryColor,
   secondaryColor,
+  trigger = "hover",
 }: AnimatedIconProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -41,7 +43,7 @@ export default function AnimatedIcon({
       {/* @ts-expect-error -- lord-icon is a custom web component */}
       <lord-icon
         src={`https://cdn.lordicon.com/${iconKey}.json`}
-        trigger="hover"
+        trigger={trigger}
         target={target}
         delay={delay}
         speed={speed}

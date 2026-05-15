@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
 import {
   Briefcase,
@@ -13,7 +13,9 @@ import {
   Edit,
   Trash2,
   RefreshCw,
-  Clock
+  Clock,
+  ChevronDown,
+  Calendar
 } from "lucide-react";
 import {
   BarChart,
@@ -37,13 +39,18 @@ interface DashboardProyectosProps {
 export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   const isAdmin = ["super", "admin"].includes(role);
 
-  const [chartTab, setChartTab] = useState<"MES" | "TRIM." | "AÑO">("MES");
+  const [chartTab, setChartTab] = useState<"MES" | "AÑO" | "RANGO">("MES");
+  const [dateRange, setDateRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
   const [proyectos, setProyectos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProyecto, setSelectedProyecto] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showList, setShowList] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -101,51 +108,133 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     let totalPrecio = 0;
     let totalIva = 0;
     let totalComisiones = 0;
+    let totalMantenimiento = 0;
 
     proyectos.forEach(p => {
       const precio = Number(p.precio) || 0;
       totalPrecio += precio;
       if (p.aplica_iva) totalIva += precio * (Number(p.porcentaje_iva) || 0) / 100;
       if (p.aplica_vendedor) totalComisiones += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
+      if (p.aplica_mantenimiento) totalMantenimiento += Number(p.monto_mantenimiento) || 0;
     });
 
-    return { totalPrecio, totalIva, totalComisiones, count: proyectos.length };
+    return { totalPrecio, totalIva, totalComisiones, totalMantenimiento, count: proyectos.length };
   }, [proyectos]);
 
   const pieData = useMemo(() => {
-    const counts = { "En Progreso": 0, "En pausa": 0, "Finalizados": 0 };
+    const counts = { 
+      "En Progreso": { count: 0, mant: 0 }, 
+      "En pausa": { count: 0, mant: 0 }, 
+      "Finalizados": { count: 0, mant: 0 } 
+    };
     proyectos.forEach(p => {
-      if (p.estado === "En Progreso") counts["En Progreso"]++;
-      else if (p.estado === "En pausa") counts["En pausa"]++;
-      else counts["Finalizados"]++;
+      const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
+      if (p.estado === "En Progreso") { counts["En Progreso"].count++; counts["En Progreso"].mant += mant; }
+      else if (p.estado === "En pausa") { counts["En pausa"].count++; counts["En pausa"].mant += mant; }
+      else { counts["Finalizados"].count++; counts["Finalizados"].mant += mant; }
     });
-
+ 
     return [
-      { name: "Activos", value: counts["En Progreso"] || 0, color: "#B7494E" },
-      { name: "En pausa", value: counts["En pausa"] || 0, color: "#3D3C3C" },
-      { name: "Finalizados", value: counts["Finalizados"] || 0, color: "#a1a1aa" },
+      { name: "Activos", value: counts["En Progreso"].count || 0, mant: counts["En Progreso"].mant, color: "#B7494E" },
+      { name: "En pausa", value: counts["En pausa"].count || 0, mant: counts["En pausa"].mant, color: "#3D3C3C" },
+      { name: "Finalizados", value: counts["Finalizados"].count || 0, mant: counts["Finalizados"].mant, color: "#a1a1aa" },
     ].filter(d => d.value > 0);
   }, [proyectos]);
 
   const barData = useMemo(() => {
-    const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    const currentYear = new Date().getFullYear();
-    const dataByMonth = Array.from({ length: 12 }, (_, i) => ({ name: months[i], precio: 0, comision: 0, iva: 0 }));
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
 
-    proyectos.forEach(p => {
-      const date = new Date(p.created_at);
-      if (date.getFullYear() === currentYear) {
-        const m = date.getMonth();
-        const precio = Number(p.precio) || 0;
-        dataByMonth[m].precio += precio;
-        if (p.aplica_vendedor) dataByMonth[m].comision += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
-        if (p.aplica_iva) dataByMonth[m].iva += precio * (Number(p.porcentaje_iva) || 0) / 100;
+    if (chartTab === "RANGO") {
+      const start = new Date(dateRange.start + "T00:00:00");
+      const end = new Date(dateRange.end + "T23:59:59");
+      const data: any[] = [];
+      
+      // Creamos un mapa para agrupar
+      const diffDays = Math.ceil(Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays <= 45) {
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          data.push({ name: d.getDate().toString(), dateStr: d.toISOString().split('T')[0], precio: 0, comision: 0, iva: 0 });
+        }
+        proyectos.forEach(p => {
+          const pDate = new Date(p.created_at);
+          if (pDate >= start && pDate <= end) {
+            const s = pDate.toISOString().split('T')[0];
+            const item = data.find(i => i.dateStr === s);
+            if (item) {
+              const precio = Number(p.precio) || 0;
+              item.precio += precio;
+              if (p.aplica_vendedor) item.comision += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
+              if (p.aplica_iva) item.iva += precio * (Number(p.porcentaje_iva) || 0) / 100;
+            }
+          }
+        });
+      } else {
+        const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+        // Agrupación por mes si el rango es largo
+        proyectos.forEach(p => {
+          const pDate = new Date(p.created_at);
+          if (pDate >= start && pDate <= end) {
+            const mName = months[pDate.getMonth()] + " " + pDate.getFullYear().toString().slice(2);
+            let item = data.find(i => i.name === mName);
+            if (!item) {
+              item = { name: mName, precio: 0, comision: 0, iva: 0, sortKey: pDate.getFullYear() * 100 + pDate.getMonth() };
+              data.push(item);
+            }
+            const precio = Number(p.precio) || 0;
+            item.precio += precio;
+            if (p.aplica_vendedor) item.comision += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
+            if (p.aplica_iva) item.iva += precio * (Number(p.porcentaje_iva) || 0) / 100;
+          }
+        });
+        data.sort((a, b) => a.sortKey - b.sortKey);
       }
-    });
+      return data;
+    }
 
-    const currentMonth = new Date().getMonth();
-    return dataByMonth.slice(0, Math.min(12, currentMonth + 2)).filter(d => d.precio > 0 || d.name === months[currentMonth]);
-  }, [proyectos]);
+    if (chartTab === "MES") {
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const dataByDay = Array.from({ length: daysInMonth }, (_, i) => ({
+        name: (i + 1).toString(),
+        precio: 0,
+        comision: 0,
+        iva: 0
+      }));
+
+      proyectos.forEach(p => {
+        const date = new Date(p.created_at);
+        if (date.getFullYear() === currentYear && date.getMonth() === currentMonth) {
+          const d = date.getDate() - 1;
+          const precio = Number(p.precio) || 0;
+          dataByDay[d].precio += precio;
+          if (p.aplica_vendedor) dataByDay[d].comision += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
+          if (p.aplica_iva) dataByDay[d].iva += precio * (Number(p.porcentaje_iva) || 0) / 100;
+        }
+      });
+
+      // Si es el mes actual, podemos limitar hasta hoy para no mostrar días vacíos futuros
+      // Pero usualmente se prefiere ver el mes completo. Dejaremos el mes completo.
+      return dataByDay.filter(d => d.precio > 0 || Number(d.name) <= now.getDate());
+    } else {
+      const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      const dataByMonth = Array.from({ length: 12 }, (_, i) => ({ name: months[i], precio: 0, comision: 0, iva: 0 }));
+
+      proyectos.forEach(p => {
+        const date = new Date(p.created_at);
+        if (date.getFullYear() === currentYear) {
+          const m = date.getMonth();
+          const precio = Number(p.precio) || 0;
+          dataByMonth[m].precio += precio;
+          if (p.aplica_vendedor) dataByMonth[m].comision += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
+          if (p.aplica_iva) dataByMonth[m].iva += precio * (Number(p.porcentaje_iva) || 0) / 100;
+        }
+      });
+
+      return dataByMonth.slice(0, Math.min(12, currentMonth + 2)).filter(d => d.precio > 0 || d.name === months[currentMonth]);
+    }
+  }, [proyectos, chartTab, dateRange]);
 
   const filteredProyectos = useMemo(() => {
     if (!searchTerm) return proyectos;
@@ -184,7 +273,11 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 text-foreground pt-12 sm:pt-20">
+    <div className="w-full flex flex-col gap-6 text-foreground pt-12 sm:pt-20 relative">
+      {/* Decorative Background Glows */}
+      <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-celeste-kore/10 rounded-full blur-[120px] pointer-events-none -z-10 animate-pulse" />
+      <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-azul-kore/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+
       {/* HEADER SECTION */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
@@ -215,8 +308,8 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       {isAdmin && (
         <>
           {/* SUMMARY CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="rounded-2xl border border-border/50 bg-card/40 p-6 flex flex-col justify-between relative overflow-hidden group">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20 flex flex-col justify-between relative overflow-hidden group">
               <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center mb-4 border border-red-200 dark:border-red-900/30">
                 <Briefcase size={20} className="text-celeste-kore" />
               </div>
@@ -226,7 +319,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
               <h3 className="text-3xl font-black">{summary.count}</h3>
             </div>
 
-            <div className="rounded-2xl border border-border/50 bg-card/40 p-6 flex flex-col justify-between relative overflow-hidden group">
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20 flex flex-col justify-between relative overflow-hidden group">
               <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center mb-4 border border-red-200 dark:border-red-900/30">
                 <CircleDollarSign size={20} className="text-celeste-kore" />
               </div>
@@ -235,18 +328,28 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
               </p>
               <h3 className="text-3xl font-black">Q{summary.totalPrecio.toLocaleString('en-US', {minimumFractionDigits: 2})}</h3>
             </div>
+
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20 flex flex-col justify-between relative overflow-hidden group">
+              <div className="w-10 h-10 rounded-lg bg-celeste-kore/10 flex items-center justify-center mb-4 border border-celeste-kore/20">
+                <Clock size={20} className="text-celeste-kore" />
+              </div>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
+                Mant. Mensual
+              </p>
+              <h3 className="text-3xl font-black text-celeste-kore">Q{summary.totalMantenimiento.toLocaleString('en-US', {minimumFractionDigits: 2})}</h3>
+            </div>
           </div>
 
           {/* CHARTS SECTION */}
           <div className="grid grid-cols-1 lg:grid-cols-[60%_1fr] gap-4">
             {/* Bar Chart */}
-            <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                 <h3 className="text-sm font-black uppercase tracking-widest">
-                  Ingresos por Mes ({new Date().getFullYear()})
+                  Ingresos por {chartTab === "MES" ? "Día" : "Mes"} ({chartTab === "MES" ? new Date().toLocaleDateString('es-GT', { month: 'long', year: 'numeric' }) : new Date().getFullYear()})
                 </h3>
                 <div className="flex items-center rounded-full bg-muted/30 border border-border/30 p-1">
-                  {["MES", "TRIM.", "AÑO"].map((tab) => (
+                  {["MES", "AÑO", "RANGO"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setChartTab(tab as any)}
@@ -261,6 +364,29 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   ))}
                 </div>
               </div>
+
+              {chartTab === "RANGO" && (
+                <div className="flex flex-wrap items-center gap-4 mb-6 p-4 rounded-xl bg-card/40 border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground">Desde:</span>
+                    <input 
+                      type="date" 
+                      value={dateRange.start}
+                      onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      className="bg-muted/50 border border-border/50 rounded-lg px-3 py-1.5 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground">Hasta:</span>
+                    <input 
+                      type="date" 
+                      value={dateRange.end}
+                      onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      className="bg-muted/50 border border-border/50 rounded-lg px-3 py-1.5 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
+                    />
+                  </div>
+                </div>
+              )}
               
               <div className="flex items-center gap-4 mb-6">
                 <div className="flex items-center gap-1.5">
@@ -283,7 +409,18 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                     <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} dy={10} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} tickFormatter={(val) => `Q${val/1000}k`} />
-                      <RechartsTooltip cursor={{ fill: "rgba(255,255,255,0.05)" }} contentStyle={{ backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "12px", fontSize: "12px" }} />
+                      <RechartsTooltip 
+                        cursor={{ fill: "rgba(255,255,255,0.05)" }} 
+                        contentStyle={{ 
+                          backgroundColor: "#18181b", 
+                          borderColor: "rgba(255,255,255,0.1)", 
+                          borderRadius: "12px", 
+                          fontSize: "12px",
+                          color: "#fff",
+                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)"
+                        }}
+                        itemStyle={{ color: "#fff" }}
+                      />
                       <Bar dataKey="precio" fill="#B7494E" radius={[4, 4, 0, 0]} barSize={12} />
                       <Bar dataKey="comision" fill="#3D3C3C" radius={[4, 4, 0, 0]} barSize={12} />
                       <Bar dataKey="iva" fill="#a1a1aa" radius={[4, 4, 0, 0]} barSize={12} />
@@ -298,7 +435,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
             </div>
 
             {/* Donut Chart */}
-            <div className="rounded-2xl border border-border/50 bg-card/40 p-6 flex flex-col">
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20 flex flex-col">
               <h3 className="text-sm font-black uppercase tracking-widest mb-6">
                 Estado de Proyectos
               </h3>
@@ -318,7 +455,17 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <RechartsTooltip contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", borderRadius: "12px", fontSize: "12px", color: "var(--foreground)" }} />
+                      <RechartsTooltip 
+                        contentStyle={{ 
+                          backgroundColor: "#18181b", 
+                          borderColor: "rgba(255,255,255,0.1)", 
+                          borderRadius: "12px", 
+                          fontSize: "12px",
+                          color: "#fff",
+                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)"
+                        }}
+                        itemStyle={{ color: "#fff" }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
@@ -328,13 +475,20 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
               
               <div className="w-full space-y-3 mt-6">
                 {pieData.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between">
+                  <div key={item.name} className="flex items-center justify-between group">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
-                      <span className="text-xs font-bold text-muted-foreground">{item.name}</span>
+                      <span className="text-xs font-bold text-muted-foreground uppercase">{item.name}</span>
                     </div>
-                    <div className="text-xs font-black">
-                      {item.value} <span className="text-muted-foreground">— {Math.round((item.value / Math.max(1, summary.count)) * 100)}%</span>
+                    <div className="flex items-center gap-4">
+                      {item.mant > 0 && (
+                        <span className="text-[10px] font-black text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
+                          Q{item.mant.toLocaleString()}
+                        </span>
+                      )}
+                      <div className="text-xs font-black">
+                        {item.value} <span className="text-muted-foreground">— {Math.round((item.value / Math.max(1, summary.count)) * 100)}%</span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -343,7 +497,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           </div>
 
           {/* TABLE SECTION - Admin only */}
-          <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
+          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <div className="flex items-center gap-3">
                 <button 
@@ -414,6 +568,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             <th className="pb-2 px-2 font-black text-right">Comisión</th>
                             <th className="pb-2 px-2 font-black text-right">IVA</th>
                             <th className="pb-2 px-2 font-black text-right">Doc</th>
+                            <th className="pb-2 px-2 font-black text-right">Mant.</th>
                             <th className="pb-2 px-2 font-black text-right">Restante</th>
                             <th className="pb-2 px-4 font-black text-right">Acciones</th>
                           </tr>
@@ -424,10 +579,11 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             const comision = p.aplica_vendedor ? precio * (Number(p.porcentaje_vendedor) || 0) / 100 : 0;
                             const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
                             const doc = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
+                            const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
                             const restante = precio - comision - iva - doc;
 
                             return (
-                            <tr key={p.id} className="group border-y border-border/10 bg-card/30 hover:bg-muted/30 transition-all duration-300">
+                            <tr key={p.id} className="group border-y border-white/5 bg-card/20 hover:bg-card/40 transition-all duration-300">
                               <td className="py-3 px-4 rounded-l-xl border-y border-l border-border/30 group-hover:border-celeste-kore/20">
                               <code className="text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-1 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
                             </td>
@@ -469,7 +625,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                               </p>
                               {doc > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_doc}%</p>}
                             </td>
-                            <td className="py-4 text-right">
+                            <td className="py-4 text-right"><p className={`text-sm ${mant > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>{mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}</p>{mant > 0 && <p className="text-[10px] text-muted-foreground">Mes</p>}</td><td className="py-4 text-right">
                               <p className="font-black text-sm text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
                             </td>
                             <td className="py-4 text-right">
@@ -502,10 +658,10 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                       const comision = p.aplica_vendedor ? precio * (Number(p.porcentaje_vendedor) || 0) / 100 : 0;
                       const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
                       const doc = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
+                      const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
                       const restante = precio - comision - iva - doc;
-
                       return (
-                        <div key={p.id} className="rounded-xl border border-border/30 bg-muted/5 p-4 sm:p-5 space-y-4">
+                        <div key={p.id} className="rounded-xl border border-white/10 bg-gradient-to-br from-card/80 to-card/30 backdrop-blur-lg p-0 space-y-0 shadow-lg shadow-black/10">
                           {/* Card Header */}
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
@@ -538,37 +694,65 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             </div>
                           </div>
 
-                          {/* Card Price */}
-                          <div className="flex items-center justify-between pt-3 border-t border-border/20">
-                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-black">Precio Total</span>
-                            <span className="font-black text-lg text-foreground">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                          {/* Card Price Toggle */}
+                          <div 
+                            onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                            className="flex items-center justify-between pt-3 border-t border-border/20 cursor-pointer group"
+                          >
+                            <div>
+                              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-black">Precio Total</span>
+                              <p className="font-black text-lg text-foreground">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                            </div>
+                            <motion.div
+                              animate={{ rotate: expandedId === p.id ? 180 : 0 }}
+                              className="p-1.5 rounded-lg bg-muted/30 group-hover:bg-celeste-kore/20 transition-colors"
+                            >
+                              <ChevronDown size={18} className="text-celeste-kore" />
+                            </motion.div>
                           </div>
 
-                          {/* Cost Breakdown */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
-                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Comisión</span>
-                              <span className={`text-xs font-black ${comision > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
-                                {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                              </span>
-                            </div>
-                            <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
-                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">IVA</span>
-                              <span className={`text-xs font-black ${iva > 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
-                                {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                              </span>
-                            </div>
-                            <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
-                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Doc</span>
-                              <span className={`text-xs font-black ${doc > 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
-                                {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                              </span>
-                            </div>
-                            <div className="flex flex-col gap-1 p-3 bg-celeste-kore/5 border border-celeste-kore/20 rounded-xl shadow-inner shadow-celeste-kore/5">
-                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Restante</span>
-                              <span className="text-sm font-black text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                            </div>
-                          </div>
+                          {/* Cost Breakdown Accordion */}
+                          <AnimatePresence>
+                            {expandedId === p.id && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="grid grid-cols-2 gap-2 pt-1">
+                                  <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
+                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Comisión</span>
+                                    <span className={`text-xs font-black ${comision > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                      {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
+                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">IVA</span>
+                                    <span className={`text-xs font-black ${iva > 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
+                                      {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
+                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Doc</span>
+                                    <span className={`text-xs font-black ${doc > 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
+                                      {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
+                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Mant.</span>
+                                    <span className={`text-xs font-black ${mant > 0 ? 'text-celeste-kore' : 'text-muted-foreground'}`}>
+                                      {mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-1 p-3 bg-celeste-kore/5 border border-celeste-kore/20 rounded-xl shadow-inner shadow-celeste-kore/5 col-span-2">
+                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Restante</span>
+                                    <span className="text-sm font-black text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       );
                     })}
@@ -582,7 +766,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
       {/* ========== NORMAL USER VIEW: Only payment dates ========== */}
       {!isAdmin && (
-        <div className="rounded-2xl border border-border/50 bg-card/40 p-6">
+        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30">
               <CalendarDays size={20} className="text-celeste-kore" />
@@ -614,7 +798,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                 const isUrgent = days > 0 && days <= 7;
 
                 return (
-                  <div key={p.id} className="flex items-center justify-between p-4 rounded-xl border border-border/30 bg-muted/10 hover:bg-muted/20 transition-colors">
+                  <div key={p.id} className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-card/40 hover:bg-card/60 backdrop-blur-sm transition-all duration-300 shadow-sm">
                     <div className="flex items-center gap-4">
                       <code className="text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-1 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
                       <div>
@@ -662,3 +846,5 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     </div>
   );
 }
+
+
