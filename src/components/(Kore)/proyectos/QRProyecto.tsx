@@ -28,7 +28,7 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
 
   // URL del proyecto (enlace de compartición pública)
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://koreapp.vercel.app";
-  const shareUrl = `${baseUrl}/proyecto?c=${encodeURIComponent(shortCode)}&n=${encodeURIComponent(proyecto.nombre)}&cl=${encodeURIComponent(proyecto.cliente_nombre || "N/A")}&v=${encodeURIComponent(proyecto.vendedor_nombre || "N/A")}&e=${encodeURIComponent(proyecto.estado || "N/A")}`;
+  const shareUrl = `${baseUrl}/proyecto?c=${encodeURIComponent(shortCode)}&n=${encodeURIComponent(proyecto.nombre)}&cl=${encodeURIComponent(proyecto.cliente_nombre || "N/A")}&v=${encodeURIComponent(proyecto.vendedor_nombre || "N/A")}`;
 
   // El QR debe contener la URL directa para que el celular la abra al escanear
   const qrValue = shareUrl;
@@ -171,19 +171,9 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Cliente</span>
                   <span className="text-xs font-bold text-white">{proyecto.cliente_nombre || "N/A"}</span>
                 </div>
-                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
+                 <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Vendedor</span>
                   <span className="text-xs font-bold text-white">{proyecto.vendedor_nombre || "N/A"}</span>
-                </div>
-                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Estado</span>
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border ${
-                    proyecto.estado === "En Progreso"
-                      ? "text-[#B7494E] bg-[#B7494E]/10 border-[#B7494E]/20"
-                      : "text-zinc-400 bg-zinc-800 border-zinc-700"
-                  }`}>
-                    {proyecto.estado || "N/A"}
-                  </span>
                 </div>
                 <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL</span>

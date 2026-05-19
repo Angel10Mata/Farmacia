@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Briefcase, User, UserCheck, CheckCircle2, ShieldAlert, ArrowRight, QrCode } from "lucide-react";
+import { Briefcase, User, UserCheck, ArrowRight } from "lucide-react";
 import LogoKore from "@/components/(Kore)/logo/LogoKore";
 
 export const metadata: Metadata = {
@@ -22,11 +22,6 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
   const nombre = typeof params.n === "string" ? params.n : "Proyecto sin nombre";
   const cliente = typeof params.cl === "string" ? params.cl : "N/A";
   const vendedor = typeof params.v === "string" ? params.v : "N/A";
-  const estado = typeof params.e === "string" ? params.e : "N/A";
-
-  const isEnProgreso = estado.toLowerCase().includes("progreso") || estado.toLowerCase().includes("proceso");
-  const isFinalizado = estado.toLowerCase().includes("finalizado") || estado.toLowerCase().includes("terminado");
-
   return (
     <div className="min-h-screen bg-[#09090b] text-white flex flex-col justify-between relative overflow-hidden select-none translate-y-0">
       {/* Luces de Fondo */}
@@ -88,31 +83,6 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
               <div className="flex-1 text-left">
                 <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Encargado / Vendedor</p>
                 <p className="text-sm font-bold text-white mt-0.5">{vendedor}</p>
-              </div>
-            </div>
-
-            {/* Estado */}
-            <div className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
-              <div className={`p-2 rounded-xl ${
-                isFinalizado 
-                  ? "bg-green-500/10 text-green-400" 
-                  : isEnProgreso 
-                    ? "bg-[#B7494E]/10 text-[#B7494E]" 
-                    : "bg-zinc-500/10 text-zinc-400"
-              }`}>
-                {isFinalizado ? <CheckCircle2 className="size-4" /> : <ShieldAlert className="size-4" />}
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Estado del Proyecto</p>
-                <p className={`text-sm font-bold mt-0.5 ${
-                  isFinalizado 
-                    ? "text-green-400" 
-                    : isEnProgreso 
-                      ? "text-[#B7494E]" 
-                      : "text-zinc-300"
-                }`}>
-                  {estado}
-                </p>
               </div>
             </div>
           </div>
