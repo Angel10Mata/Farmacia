@@ -241,10 +241,6 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Vendedor</span>
                   <span className="text-xs font-bold text-white">{proyecto.vendedor_nombre || "N/A"}</span>
                 </div>
-                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL</span>
-                  <span className="text-[10px] font-mono text-zinc-400 truncate max-w-[180px]">{shareUrl}</span>
-                </div>
               </div>
 
               {/* Download Button */}
