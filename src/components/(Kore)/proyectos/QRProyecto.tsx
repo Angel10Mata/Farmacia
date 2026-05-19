@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { X, Download, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +19,21 @@ interface QRProyectoProps {
 
 export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  
+  // Estados para credenciales y URL de acceso manuales
+  const [usuarioAcceso, setUsuarioAcceso] = useState("");
+  const [passAcceso, setPassAcceso] = useState("");
+  const [urlAcceso, setUrlAcceso] = useState("");
+
+  // Inicializar URL y limpiar campos al abrir el modal o cambiar de proyecto
+  useEffect(() => {
+    if (isOpen && proyecto) {
+      setUsuarioAcceso("");
+      setPassAcceso("");
+      const origin = typeof window !== "undefined" ? window.location.origin : "https://koreapp.vercel.app";
+      setUrlAcceso(`${origin}/login`);
+    }
+  }, [isOpen, proyecto]);
 
   if (!proyecto) return null;
 
@@ -26,9 +41,21 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
   const code = proyecto.id.replace(/-/g, "").slice(0, 6).toUpperCase();
   const shortCode = code.slice(0, 3) + "-" + code.slice(3, 6);
 
-  // URL del proyecto (enlace de compartición pública)
+  // URL del proyecto (enlace de compartición pública con parámetros manuales opcionales)
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://koreapp.vercel.app";
-  const shareUrl = `${baseUrl}/proyecto?c=${encodeURIComponent(shortCode)}&n=${encodeURIComponent(proyecto.nombre)}&cl=${encodeURIComponent(proyecto.cliente_nombre || "N/A")}&v=${encodeURIComponent(proyecto.vendedor_nombre || "N/A")}`;
+  
+  // Construir la URL agregando de forma condicional las credenciales
+  let shareUrl = `${baseUrl}/proyecto?c=${encodeURIComponent(shortCode)}&n=${encodeURIComponent(proyecto.nombre)}&cl=${encodeURIComponent(proyecto.cliente_nombre || "N/A")}&v=${encodeURIComponent(proyecto.vendedor_nombre || "N/A")}`;
+  
+  if (usuarioAcceso.trim()) {
+    shareUrl += `&usr=${encodeURIComponent(usuarioAcceso.trim())}`;
+  }
+  if (passAcceso.trim()) {
+    shareUrl += `&pwd=${encodeURIComponent(passAcceso.trim())}`;
+  }
+  if (urlAcceso.trim()) {
+    shareUrl += `&url=${encodeURIComponent(urlAcceso.trim())}`;
+  }
 
   // El QR debe contener la URL directa para que el celular la abra al escanear
   const qrValue = shareUrl;
@@ -157,6 +184,45 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
                     excavate: true,
                   }}
                 />
+              </div>
+
+              {/* Formulario de Configuración de Acceso manual */}
+              <div className="w-full flex flex-col gap-2.5 bg-white/5 border border-white/10 rounded-2xl p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#B7494E]">
+                  Configurar Acceso Cliente
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1 text-left">
+                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Usuario</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: cliente12"
+                      value={usuarioAcceso}
+                      onChange={(e) => setUsuarioAcceso(e.target.value)}
+                      className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-zinc-600"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 text-left">
+                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Contraseña</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: 123456"
+                      value={passAcceso}
+                      onChange={(e) => setPassAcceso(e.target.value)}
+                      className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-zinc-600"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1 text-left">
+                  <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">URL de Acceso</label>
+                  <input
+                    type="text"
+                    placeholder="URL de entrada"
+                    value={urlAcceso}
+                    onChange={(e) => setUrlAcceso(e.target.value)}
+                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-zinc-600"
+                  />
+                </div>
               </div>
 
               {/* Info Cards */}

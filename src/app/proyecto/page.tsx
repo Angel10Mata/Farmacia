@@ -22,6 +22,11 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
   const nombre = typeof params.n === "string" ? params.n : "Proyecto sin nombre";
   const cliente = typeof params.cl === "string" ? params.cl : "N/A";
   const vendedor = typeof params.v === "string" ? params.v : "N/A";
+  
+  const usuario = typeof params.usr === "string" ? params.usr : null;
+  const password = typeof params.pwd === "string" ? params.pwd : null;
+  const loginUrl = typeof params.url === "string" ? params.url : "/login";
+
   return (
     <div className="min-h-screen bg-[#09090b] text-white flex flex-col justify-between relative overflow-hidden select-none translate-y-0">
       {/* Luces de Fondo */}
@@ -63,7 +68,7 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
           </div>
 
           {/* Información Detallada */}
-          <div className="space-y-4 mb-8">
+          <div className="space-y-4 mb-6">
             {/* Cliente */}
             <div className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
               <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400">
@@ -87,12 +92,39 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
             </div>
           </div>
 
+          {/* Credenciales de Acceso (Opcionales) */}
+          {(usuario || password) && (
+            <div className="mb-8 pt-6 border-t border-white/10 space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#B7494E] text-left">
+                Credenciales de Acceso
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                {usuario && (
+                  <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-[#B7494E]/5 border border-[#B7494E]/10">
+                    <div className="text-left">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Usuario</p>
+                      <p className="text-xs font-mono font-bold text-white mt-0.5 select-all">{usuario}</p>
+                    </div>
+                  </div>
+                )}
+                {password && (
+                  <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-[#B7494E]/5 border border-[#B7494E]/10">
+                    <div className="text-left">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Contraseña</p>
+                      <p className="text-xs font-mono font-bold text-white mt-0.5 select-all">{password}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Botón de Entrada */}
           <Link
-            href="/login"
+            href={loginUrl}
             className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-xs tracking-widest uppercase transition-all duration-300 active:scale-[0.98] shadow-lg shadow-[#B7494E]/20"
           >
-            Entrar al Sistema
+            Entrar al Proyecto
             <ArrowRight className="size-4" />
           </Link>
         </div>
