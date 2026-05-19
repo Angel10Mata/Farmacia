@@ -388,32 +388,11 @@ export function Dashboard() {
           <LogoKoreMobile backgroundEffect="blur" />
         </div>
 
-        <div className="w-full overflow-hidden">
-          <motion.img
-            src="/kore2/hero-background2.jpg"
-            alt="Kore Background"
-            translate="no"
-            style={{
-              y: useTransform(scrollY, [0, 800], [0, 150]),
-              scale: bgScale,
-            }}
-            className="notranslate w-full h-auto object-contain hidden dark:block origin-center"
-          />
-        </div>
-
         <div className="w-full px-4 pt-8 pb-20">{renderCardsGrid()}</div>
       </div>
 
       <div className="hidden md:block relative w-full min-h-screen">
-        <div className="fixed top-0 left-0 w-full h-[22vh] z-0 bg-white dark:bg-black overflow-hidden">
-          <motion.div
-            className="absolute inset-0 bg-cover bg-center origin-center hidden dark:block"
-            style={{
-              backgroundImage: "url('/kore2/hero-background2.jpg')",
-              scale: bgScale,
-            }}
-          />
-        </div>
+        <div className="fixed top-0 left-0 w-full h-[22vh] z-0 bg-white dark:bg-black overflow-hidden" />
 
         <motion.div
           className="fixed top-0 left-0 w-full h-[22vh] flex justify-center items-center z-[5] pt-10"
