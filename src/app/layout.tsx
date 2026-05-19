@@ -79,19 +79,19 @@ export default async function RootLayout({
                     transition={{ duration: 0.5 }}
                     className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-4"
                   >
-                    <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
+                    <AuroraText colors={["#B7494E", "#3D3C3C", "#B7494E", "#a1a1aa"]} className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em]">
                       © 2026 Kore
-                    </p>
+                    </AuroraText>
                     <div className="hidden md:block w-px h-3 bg-zinc-300 dark:bg-zinc-700"></div>
-                    <div className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
+                    <div className="text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center gap-1">
                       Powered by{" "}
                       <a
                         href="https://www.oscar27jimenez.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:underline cursor-pointer transition-all inline-flex items-center text-zinc-900 dark:text-zinc-100"
+                        className="hover:underline cursor-pointer transition-all inline-flex items-center"
                       >
-                        <AuroraText className="text-[10px] md:text-sm whitespace-nowrap">
+                        <AuroraText colors={["#B7494E", "#3D3C3C", "#B7494E", "#a1a1aa"]} className="text-[10px] md:text-sm whitespace-nowrap">
                           Kore | Ing. de Software
                         </AuroraText>
                       </a>
