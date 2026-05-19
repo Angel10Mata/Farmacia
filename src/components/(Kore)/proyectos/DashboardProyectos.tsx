@@ -489,7 +489,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                 <h3 className="text-sm font-black uppercase tracking-widest">
                   Ingresos por {chartTab === "MES" ? "Día" : "Mes"} ({chartTab === "MES" ? new Date().toLocaleDateString('es-GT', { month: 'long', year: 'numeric' }) : new Date().getFullYear()})
                 </h3>
-                <div className="flex items-center rounded-full bg-muted/30 border border-border/30 p-1">
+                <div className="flex items-center rounded-full bg-muted/30 border border-border/30 p-[2px]">
                   {["MES", "AÑO", "RANGO"].map((tab) => (
                     <button
                       key={tab}

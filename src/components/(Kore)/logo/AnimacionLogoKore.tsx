@@ -69,7 +69,8 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ type: "spring", stiffness: 40, damping: 18, duration: 1.3 }}
-                  className="font-black whitespace-nowrap text-black dark:text-white leading-[0.95]"
+                  translate="no"
+                  className="notranslate font-black whitespace-nowrap text-black dark:text-white leading-[0.95]"
                   style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "clamp(2rem, 6vw, 5rem)" }}
                 >
                   Kore

@@ -103,7 +103,8 @@ export default function LogoKoreLogin({
           >
             <motion.h1
               variants={titleVariants}
-              className="font-black whitespace-nowrap text-azul-kore dark:text-white leading-[0.95]"
+              translate="no"
+              className="notranslate font-black whitespace-nowrap text-azul-kore dark:text-white leading-[0.95]"
               style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "1.65rem" }}
             >
               Kore

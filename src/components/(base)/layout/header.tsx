@@ -57,7 +57,8 @@ export default function Header() {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="text-2xl md:text-4xl font-extrabold tracking-tighter leading-none text-black dark:text-white transition-transform duration-300 group-hover:scale-105 origin-left translate-y-[1px]"
+                  translate="no"
+                  className="notranslate text-2xl md:text-4xl font-extrabold tracking-tighter leading-none text-black dark:text-white transition-transform duration-300 group-hover:scale-105 origin-left translate-y-[1px]"
                 >
                   Kore
                 </motion.h1>
@@ -65,9 +66,10 @@ export default function Header() {
                   initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
                   animate={{ opacity: 1, clipPath: "inset(0 0 0 0)" }}
                   transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
-                  className="text-xs md:text-sm font-black uppercase tracking-widest leading-[1.15] md:leading-[1.15] text-celeste-kore border-l border-border/60 pl-2 md:pl-3 transition-transform duration-300 group-hover:scale-[1.02] origin-left group-hover:text-white dark:group-hover:text-[#FFFDD0]"
+                  translate="no"
+                  className="notranslate text-xs md:text-sm font-black uppercase tracking-widest leading-[1.15] md:leading-[1.15] text-celeste-kore border-l border-border/60 pl-2 md:pl-3 transition-transform duration-300 group-hover:scale-[1.02] origin-left group-hover:text-white dark:group-hover:text-[#FFFDD0]"
                 >
-                  ERP KORE
+                  ERP
                 </motion.div>
               </Link>
             </div>

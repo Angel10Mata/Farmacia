@@ -31,6 +31,9 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Kore - Plan Kore",
   description: "Sistema Integral de Gestión - Plan Kore",
+  other: {
+    google: "notranslate",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
