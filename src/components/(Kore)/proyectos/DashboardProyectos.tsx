@@ -31,6 +31,10 @@ import {
 import { getProyectos, deleteProyecto } from "@/app/kore/proyectos/actions";
 import ProyectoModal from "./ProyectoModal";
 import Swal from "sweetalert2";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import QRProyecto from "./QRProyecto";
+import { QrCode } from "lucide-react";
 
 interface DashboardProyectosProps {
   role: string;
@@ -51,6 +55,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showList, setShowList] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [qrProyecto, setQrProyecto] = useState<any | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -62,6 +67,142 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const exportarPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const now = new Date();
+    const fechaReporte = now.toLocaleDateString("es-GT", { day: "2-digit", month: "long", year: "numeric" });
+
+    // ── Fondo header ──
+    doc.setFillColor(18, 18, 20);
+    doc.rect(0, 0, pageW, 38, "F");
+
+    // ── Título KORE ──
+    doc.setTextColor(183, 73, 78);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("KORE", 14, 16);
+
+    doc.setTextColor(161, 161, 170);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("SISTEMA INTEGRAL DE GESTIÓN", 14, 22);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("REPORTE DE PROYECTOS", 14, 32);
+
+    // ── Fecha ──
+    doc.setTextColor(161, 161, 170);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Generado: ${fechaReporte}`, pageW - 14, 32, { align: "right" });
+
+    // ── Tarjetas resumen ──
+    const totalComisiones = proyectos.reduce((acc, p) => {
+      const precio = Number(p.precio) || 0;
+      return acc + (p.aplica_vendedor ? precio * (Number(p.porcentaje_vendedor) || 0) / 100 : 0);
+    }, 0);
+    const totalIva = proyectos.reduce((acc, p) => {
+      const precio = Number(p.precio) || 0;
+      return acc + (p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0);
+    }, 0);
+
+    const cards = [
+      { label: "TOTAL PROYECTOS", value: String(summary.count), color: [183, 73, 78] as [number, number, number] },
+      { label: "INGRESOS TOTALES", value: `Q${summary.totalPrecio.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [61, 60, 60] as [number, number, number] },
+      { label: "COMISIONES", value: `Q${totalComisiones.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [61, 60, 60] as [number, number, number] },
+      { label: "IVA TOTAL", value: `Q${totalIva.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [61, 60, 60] as [number, number, number] },
+      { label: "MANT. MENSUAL", value: `Q${summary.totalMantenimiento.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [183, 73, 78] as [number, number, number] },
+    ];
+
+    const cardW = (pageW - 28 - (cards.length - 1) * 4) / cards.length;
+    cards.forEach((card, i) => {
+      const x = 14 + i * (cardW + 4);
+      const y = 44;
+      doc.setFillColor(30, 30, 32);
+      doc.roundedRect(x, y, cardW, 22, 3, 3, "F");
+      doc.setDrawColor(...card.color);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(x, y, cardW, 22, 3, 3, "S");
+      doc.setTextColor(...card.color);
+      doc.setFontSize(6);
+      doc.setFont("helvetica", "bold");
+      doc.text(card.label, x + cardW / 2, y + 7, { align: "center" });
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text(card.value, x + cardW / 2, y + 16, { align: "center" });
+    });
+
+    // ── Tabla ──
+    const tableRows = filteredProyectos.map((p) => {
+      const precio = Number(p.precio) || 0;
+      const comision = p.aplica_vendedor ? precio * (Number(p.porcentaje_vendedor) || 0) / 100 : 0;
+      const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
+      const docPct = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
+      const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
+      const restante = precio - comision - iva - docPct;
+      const code = p.id.replace(/-/g, "").slice(0, 6).toUpperCase();
+      const shortCode = code.slice(0, 3) + "-" + code.slice(3, 6);
+      return [
+        shortCode,
+        p.nombre || "",
+        p.cliente_nombre || "N/A",
+        p.vendedor_nombre || "N/A",
+        p.estado || "",
+        `Q${precio.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+        comision > 0 ? `Q${comision.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
+        iva > 0 ? `Q${iva.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
+        mant > 0 ? `Q${mant.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
+        `Q${restante.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 72,
+      head: [["Código", "Proyecto", "Cliente", "Vendedor", "Estado", "Precio", "Comisión", "IVA", "Mant.", "Restante"]],
+      body: tableRows,
+      theme: "grid",
+      styles: {
+        fontSize: 7,
+        cellPadding: 3,
+        textColor: [220, 220, 220],
+        fillColor: [24, 24, 27],
+        lineColor: [50, 50, 55],
+        lineWidth: 0.2,
+      },
+      headStyles: {
+        fillColor: [183, 73, 78],
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 7,
+        halign: "center",
+      },
+      alternateRowStyles: { fillColor: [30, 30, 32] },
+      columnStyles: {
+        0: { halign: "center", fontStyle: "bold", textColor: [183, 73, 78] },
+        4: { halign: "center" },
+        5: { halign: "right" },
+        6: { halign: "right" },
+        7: { halign: "right" },
+        8: { halign: "right" },
+        9: { halign: "right", fontStyle: "bold", textColor: [183, 73, 78] },
+      },
+      didDrawPage: (data) => {
+        const pageH = doc.internal.pageSize.getHeight();
+        doc.setFillColor(18, 18, 20);
+        doc.rect(0, pageH - 10, pageW, 10, "F");
+        doc.setTextColor(100, 100, 110);
+        doc.setFontSize(6);
+        doc.text(`© ${now.getFullYear()} Kore — Reporte generado el ${fechaReporte}`, 14, pageH - 3);
+        doc.text(`Pág. ${data.pageNumber}`, pageW - 14, pageH - 3, { align: "right" });
+      },
+    });
+
+    doc.save(`kore-proyectos-${now.toISOString().split("T")[0]}.pdf`);
+  };
 
   const handleDelete = async (id: string) => {
     const result = await Swal.fire({
@@ -530,7 +671,10 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                     className="w-full bg-muted/20 border border-border/60 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-celeste-kore/30 transition-all placeholder:text-muted-foreground/40 shadow-inner"
                   />
                 </div>
-                <button className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border border-border/50 bg-card hover:bg-muted/50 hover:border-celeste-kore/30 transition-all text-sm font-bold shadow-sm group whitespace-nowrap">
+                <button 
+                  onClick={exportarPDF}
+                  className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border border-border/50 bg-card hover:bg-muted/50 hover:border-celeste-kore/30 transition-all text-sm font-bold shadow-sm group whitespace-nowrap"
+                >
                   <Download size={16} className="text-celeste-kore group-hover:scale-110 transition-transform" />
                   <span className="uppercase tracking-widest text-[11px]">Exportar</span>
                 </button>
@@ -630,6 +774,13 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             </td>
                             <td className="py-4 text-right">
                               <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => setQrProyecto(p)}
+                                  className="p-2 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors"
+                                  title="Ver QR"
+                                >
+                                  <QrCode size={16} />
+                                </button>
                                 <button 
                                   onClick={() => { setSelectedProyecto(p); setIsModalOpen(true); }}
                                   className="p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors"
@@ -679,6 +830,13 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                               <p className="text-[11px] font-medium text-muted-foreground mt-0.5">{p.cliente_nombre || 'Sin cliente'} · {p.vendedor_nombre || 'Sin vendedor'}</p>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                onClick={() => setQrProyecto(p)}
+                                className="p-2.5 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-xl transition-all shadow-sm"
+                                title="Ver QR"
+                              >
+                                <QrCode size={16} />
+                              </button>
                               <button 
                                 onClick={() => { setSelectedProyecto(p); setIsModalOpen(true); }}
                                 className="p-2.5 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-xl transition-all shadow-sm"
@@ -842,6 +1000,12 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           fetchData();
         }} 
         proyecto={selectedProyecto} 
+      />
+
+      <QRProyecto
+        isOpen={!!qrProyecto}
+        proyecto={qrProyecto}
+        onClose={() => setQrProyecto(null)}
       />
     </div>
   );
