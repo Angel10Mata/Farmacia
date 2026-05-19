@@ -26,20 +26,12 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
   const code = proyecto.id.replace(/-/g, "").slice(0, 6).toUpperCase();
   const shortCode = code.slice(0, 3) + "-" + code.slice(3, 6);
 
-  // URL del proyecto (usamos el hostname actual + path)
+  // URL del proyecto (enlace de compartición pública)
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://koreapp.vercel.app";
-  const proyectoUrl = `${baseUrl}/kore/proyectos`;
+  const shareUrl = `${baseUrl}/proyecto?c=${encodeURIComponent(shortCode)}&n=${encodeURIComponent(proyecto.nombre)}&cl=${encodeURIComponent(proyecto.cliente_nombre || "N/A")}&v=${encodeURIComponent(proyecto.vendedor_nombre || "N/A")}&e=${encodeURIComponent(proyecto.estado || "N/A")}`;
 
-  // Contenido del QR: datos concatenados en formato legible
-  const qrValue = [
-    `KORE | Proyecto`,
-    `Código: ${shortCode}`,
-    `Nombre: ${proyecto.nombre}`,
-    `Cliente: ${proyecto.cliente_nombre || "N/A"}`,
-    `Vendedor: ${proyecto.vendedor_nombre || "N/A"}`,
-    `Estado: ${proyecto.estado || "N/A"}`,
-    `URL: ${proyectoUrl}`,
-  ].join("\n");
+  // El QR debe contener la URL directa para que el celular la abra al escanear
+  const qrValue = shareUrl;
 
   const handleDownload = () => {
     const canvas = canvasRef.current?.querySelector("canvas");
@@ -195,7 +187,7 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
                 </div>
                 <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">URL</span>
-                  <span className="text-[10px] font-mono text-zinc-400 truncate max-w-[180px]">{proyectoUrl}</span>
+                  <span className="text-[10px] font-mono text-zinc-400 truncate max-w-[180px]">{shareUrl}</span>
                 </div>
               </div>
 
