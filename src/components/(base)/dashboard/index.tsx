@@ -390,13 +390,14 @@ export function Dashboard() {
 
         <div className="w-full overflow-hidden">
           <motion.img
-            src="/kore/hero-background2.jpg"
-            alt="Plan Kore"
+            src="/kore2/hero-background2.jpg"
+            alt="Kore Background"
+            translate="no"
             style={{
               y: useTransform(scrollY, [0, 800], [0, 150]),
               scale: bgScale,
             }}
-            className="w-full h-auto object-contain hidden dark:block origin-center"
+            className="notranslate w-full h-auto object-contain hidden dark:block origin-center"
           />
         </div>
 
@@ -408,7 +409,7 @@ export function Dashboard() {
           <motion.div
             className="absolute inset-0 bg-cover bg-center origin-center hidden dark:block"
             style={{
-              backgroundImage: "url('/kore/hero-background2.jpg')",
+              backgroundImage: "url('/kore2/hero-background2.jpg')",
               scale: bgScale,
             }}
           />
