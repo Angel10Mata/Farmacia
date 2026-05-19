@@ -110,7 +110,7 @@ export default function LogoKore({
           <motion.div variants={logoVariants} className="flex-shrink-0">
             <Image
               src="/kore/logo.png"
-              alt="Plan Kore"
+              alt="Kore"
               width={150}
               height={150}
               className="w-[120px] lg:w-[150px] h-auto object-contain"

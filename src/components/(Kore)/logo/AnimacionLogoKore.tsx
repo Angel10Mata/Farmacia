@@ -51,7 +51,7 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
               >
                 <Image
                   src="/kore/logo.png"
-                  alt="Plan Kore"
+                  alt="Kore"
                   width={250}
                   height={250}
                   className="w-[120px] lg:w-[250px] h-auto object-contain"

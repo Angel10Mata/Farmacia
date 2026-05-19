@@ -90,7 +90,7 @@ export default function LogoKoreMobile({
           <motion.div variants={logoVariants} className="flex-shrink-0">
             <Image
               src="/kore/logo.png"
-              alt="Plan Kore"
+              alt="Kore"
               width={150}
               height={150}
               className="w-[90px] sm:w-[110px] h-auto object-contain"
