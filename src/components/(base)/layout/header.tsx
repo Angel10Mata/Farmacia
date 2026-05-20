@@ -60,7 +60,7 @@ export default function Header() {
                   translate="no"
                   className="notranslate text-2xl md:text-4xl font-extrabold tracking-tighter leading-none text-black dark:text-white transition-transform duration-300 group-hover:scale-105 origin-left translate-y-[1px]"
                 >
-                  Kore
+                  KoreAPP
                 </motion.h1>
                 <motion.div 
                   initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}

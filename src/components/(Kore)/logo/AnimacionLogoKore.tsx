@@ -51,10 +51,10 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
               >
                 <Image
                   src="/kore/logo.png"
-                  alt="Kore"
+                  alt="KoreAPP"
                   width={250}
                   height={250}
-                  className="w-[120px] lg:w-[250px] h-auto object-contain"
+                  className="w-[120px] lg:w-[250px] h-auto object-contain rounded-3xl"
                   priority
                 />
               </motion.div>
@@ -73,7 +73,7 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
                   className="notranslate font-black whitespace-nowrap text-black dark:text-white leading-[0.95]"
                   style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "clamp(2rem, 6vw, 5rem)" }}
                 >
-                  Kore
+                  KoreAPP
                 </motion.h1>
 
 

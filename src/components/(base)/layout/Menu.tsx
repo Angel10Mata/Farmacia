@@ -138,7 +138,7 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
         <div className="mt-auto border-t border-border/30 px-6 py-4">
           <div className="flex flex-col items-center justify-center gap-1">
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
-              © 2026 Kore
+              © 2026 KoreAPP
             </p>
             <div className="text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 flex items-center gap-1 mt-1">
               Powered by{" "}
@@ -149,7 +149,7 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
                 className="hover:underline cursor-pointer transition-all inline-flex items-center text-zinc-900 dark:text-zinc-100"
               >
                 <AuroraText className="text-xs whitespace-nowrap">
-                  Kore | Ing. de Software
+                  KoreAPP | Ing. de Software
                 </AuroraText>
               </a>
             </div>

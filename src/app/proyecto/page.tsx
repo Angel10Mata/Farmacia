@@ -164,7 +164,7 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
 
       {/* Footer */}
       <footer className="w-full py-8 text-center text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em] z-10">
-        © 2026 Kore · Verificación Autorizada
+        © 2026 KoreAPP · Verificación Autorizada
       </footer>
     </div>
   );

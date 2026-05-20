@@ -110,10 +110,10 @@ export default function LogoKore({
           <motion.div variants={logoVariants} className="flex-shrink-0">
             <Image
               src="/kore/logo.png"
-              alt="Kore"
+              alt="KoreAPP"
               width={150}
               height={150}
-              className="w-[120px] lg:w-[150px] h-auto object-contain"
+              className="w-[120px] lg:w-[150px] h-auto object-contain rounded-2xl"
               priority
             />
           </motion.div>
@@ -131,7 +131,7 @@ export default function LogoKore({
               className="notranslate font-black whitespace-nowrap text-black dark:text-white leading-[0.95] translate-y-[3px]"
               style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "clamp(1.5rem, 3.5vw, 2.8rem)" }}
             >
-              Kore
+              KoreAPP
             </motion.h1>
           </motion.div>
         </div>
