@@ -29,9 +29,10 @@ export async function login(
   });
 
   if (error) {
+    const isInvalid = error.message.toLowerCase().includes("invalid login credentials") || error.message.includes("invalid_credentials");
     return {
       success: false,
-      message: `Error: ${error.message} (Email: ${email})`,
+      message: isInvalid ? "Credenciales Incorrectas" : `Error: ${error.message}`,
       errorType: "invalid",
       fields: { email },
     };

@@ -82,7 +82,7 @@ export default async function RootLayout({
                     transition={{ duration: 0.5 }}
                     className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-4"
                   >
-                    <AuroraText colors={["#B7494E", "#3D3C3C", "#B7494E", "#a1a1aa"]} className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em]">
+                    <AuroraText className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em]">
                       © 2026 Kore
                     </AuroraText>
                     <div className="hidden md:block w-px h-3 bg-zinc-300 dark:bg-zinc-700"></div>
@@ -94,7 +94,7 @@ export default async function RootLayout({
                         rel="noopener noreferrer"
                         className="hover:underline cursor-pointer transition-all inline-flex items-center"
                       >
-                        <AuroraText colors={["#B7494E", "#3D3C3C", "#B7494E", "#a1a1aa"]} className="text-[10px] md:text-sm whitespace-nowrap">
+                        <AuroraText className="text-[10px] md:text-sm whitespace-nowrap">
                           Kore | Ing. de Software
                         </AuroraText>
                       </a>

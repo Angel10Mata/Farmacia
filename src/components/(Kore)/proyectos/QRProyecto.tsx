@@ -4,6 +4,8 @@ import { useRef, useState, useEffect } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { X, Download, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2";
+import { updateProyectoOtrosCampos } from "@/app/kore/proyectos/actions";
 
 interface QRProyectoProps {
   proyecto: {
@@ -12,28 +14,80 @@ interface QRProyectoProps {
     cliente_nombre?: string;
     vendedor_nombre?: string;
     estado?: string;
+    otros_campos?: any;
   } | null;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProps) {
+export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRProyectoProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   
   // Estados para credenciales y URL de acceso manuales
   const [usuarioAcceso, setUsuarioAcceso] = useState("");
   const [passAcceso, setPassAcceso] = useState("");
   const [urlAcceso, setUrlAcceso] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  // Inicializar URL y limpiar campos al abrir el modal o cambiar de proyecto
+  // Inicializar URL y cargar campos guardados al abrir el modal o cambiar de proyecto
   useEffect(() => {
     if (isOpen && proyecto) {
-      setUsuarioAcceso("");
-      setPassAcceso("");
-      const origin = typeof window !== "undefined" ? window.location.origin : "https://koreapp.vercel.app";
-      setUrlAcceso(`${origin}/login`);
+      const otros = proyecto.otros_campos || {};
+      setUsuarioAcceso(otros.usuario_acceso || "");
+      setPassAcceso(otros.pass_acceso || "");
+      
+      const isLocalhost = typeof window !== "undefined" && (window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1"));
+      const origin = typeof window !== "undefined" && !isLocalhost ? window.location.origin : "https://koreapp.vercel.app";
+      setUrlAcceso(otros.url_acceso || `${origin}/login`);
     }
   }, [isOpen, proyecto]);
+
+  const handleSave = async () => {
+    if (!proyecto) return;
+    setSaving(true);
+    try {
+      const res = await updateProyectoOtrosCampos(proyecto.id, {
+        usuario_acceso: usuarioAcceso.trim(),
+        pass_acceso: passAcceso.trim(),
+        url_acceso: urlAcceso.trim(),
+      });
+
+      if (res.error) {
+        Swal.fire({
+          icon: "error",
+          title: "Error al guardar",
+          text: res.error,
+          background: "#18181b",
+          color: "#fff",
+        });
+      } else {
+        Swal.fire({
+          icon: "success",
+          title: "Credenciales guardadas",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          background: "#18181b",
+          color: "#fff",
+        });
+        if (onSuccess) {
+          onSuccess();
+        }
+      }
+    } catch (err: any) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message || "Error al intentar guardar",
+        background: "#18181b",
+        color: "#fff",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!proyecto) return null;
 
@@ -42,17 +96,12 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
   const shortCode = code.slice(0, 3) + "-" + code.slice(3, 6);
 
   // URL del proyecto (enlace de compartición pública con parámetros manuales opcionales)
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://koreapp.vercel.app";
+  const isLocal = typeof window !== "undefined" && (window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1"));
+  const baseUrl = typeof window !== "undefined" && !isLocal ? window.location.origin : "https://koreapp.vercel.app";
   
-  // Construir la URL agregando de forma condicional las credenciales
-  let shareUrl = `${baseUrl}/proyecto?c=${encodeURIComponent(shortCode)}&n=${encodeURIComponent(proyecto.nombre)}&cl=${encodeURIComponent(proyecto.cliente_nombre || "N/A")}&v=${encodeURIComponent(proyecto.vendedor_nombre || "N/A")}`;
+  // Construir la URL agregando de forma condicional la URL de acceso (excluyendo credenciales para mantener el QR estático)
+  let shareUrl = `${baseUrl}/proyecto?id=${proyecto.id}&c=${encodeURIComponent(shortCode)}&n=${encodeURIComponent(proyecto.nombre)}&cl=${encodeURIComponent(proyecto.cliente_nombre || "N/A")}&v=${encodeURIComponent(proyecto.vendedor_nombre || "N/A")}`;
   
-  if (usuarioAcceso.trim()) {
-    shareUrl += `&usr=${encodeURIComponent(usuarioAcceso.trim())}`;
-  }
-  if (passAcceso.trim()) {
-    shareUrl += `&pwd=${encodeURIComponent(passAcceso.trim())}`;
-  }
   if (urlAcceso.trim()) {
     shareUrl += `&url=${encodeURIComponent(urlAcceso.trim())}`;
   }
@@ -171,7 +220,7 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
               >
                 <QRCodeCanvas
                   value={qrValue}
-                  size={200}
+                  size={256}
                   bgColor="#ffffff"
                   fgColor="#09090b"
                   level="H"
@@ -223,6 +272,13 @@ export default function QRProyecto({ proyecto, isOpen, onClose }: QRProyectoProp
                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-zinc-600"
                   />
                 </div>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="mt-1.5 w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-[#B7494E]/10 hover:bg-[#B7494E]/20 text-[#B7494E] font-black text-[10px] tracking-widest uppercase border border-[#B7494E]/20 hover:border-[#B7494E]/30 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {saving ? "Guardando..." : "Guardar Credenciales"}
+                </button>
               </div>
 
               {/* Info Cards */}

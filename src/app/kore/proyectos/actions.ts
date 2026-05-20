@@ -91,3 +91,19 @@ export async function deleteProyecto(id: string) {
   revalidatePath("/kore/proyectos");
   return { success: true };
 }
+
+export async function updateProyectoOtrosCampos(id: string, otrosCampos: any) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("proyectos")
+    .update({ otros_campos: otrosCampos })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error updating otros_campos:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/kore/proyectos");
+  return { success: true };
+}

@@ -61,6 +61,15 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     setLoading(true);
     const data = await getProyectos();
     setProyectos(data || []);
+    
+    // Si el modal de QR está abierto, actualizar sus datos con la información más reciente de la DB
+    if (qrProyecto) {
+      const updated = data?.find((p: any) => p.id === qrProyecto.id);
+      if (updated) {
+        setQrProyecto(updated);
+      }
+    }
+    
     setLoading(false);
   };
 
@@ -1006,6 +1015,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
         isOpen={!!qrProyecto}
         proyecto={qrProyecto}
         onClose={() => setQrProyecto(null)}
+        onSuccess={fetchData}
       />
     </div>
   );

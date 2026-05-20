@@ -131,7 +131,7 @@ useEffect(() => {
 
             <div className="space-y-1">
               <h3 className="text-2xl font-black tracking-tight">
-                <AuroraText colors={["#B7494E", "#3D3C3C", "#B7494E", "#a1a1aa"]}>Bienvenido de nuevo</AuroraText>
+                <AuroraText>Bienvenido de nuevo</AuroraText>
               </h3>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
                 KORE AUTHENTICATION SYSTEM

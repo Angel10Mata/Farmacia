@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Briefcase, User, UserCheck, ArrowRight } from "lucide-react";
+import { Briefcase, User, UserCheck, ArrowRight, Key } from "lucide-react";
 import LogoKore from "@/components/(Kore)/logo/LogoKore";
 
 export const metadata: Metadata = {
@@ -23,9 +23,43 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
   const cliente = typeof params.cl === "string" ? params.cl : "N/A";
   const vendedor = typeof params.v === "string" ? params.v : "N/A";
   
-  const usuario = typeof params.usr === "string" ? params.usr : null;
-  const password = typeof params.pwd === "string" ? params.pwd : null;
-  const loginUrl = typeof params.url === "string" ? params.url : "/login";
+  let usuario = typeof params.usr === "string" ? params.usr : null;
+  let password = typeof params.pwd === "string" ? params.pwd : null;
+  let loginUrl = typeof params.url === "string" ? params.url : "/login";
+
+  const projectId = typeof params.id === "string" ? params.id : null;
+  if (projectId) {
+    try {
+      const { createAdminClient } = await import("@/utils/supabase/admin");
+      const adminSupabase = createAdminClient();
+      const { data: dbProyecto } = await adminSupabase
+        .from("proyectos")
+        .select("otros_campos")
+        .eq("id", projectId)
+        .single();
+
+      if (dbProyecto?.otros_campos) {
+        const otros = dbProyecto.otros_campos as any;
+        if (otros.usuario_acceso) usuario = otros.usuario_acceso;
+        if (otros.pass_acceso) password = otros.pass_acceso;
+        if (otros.url_acceso) loginUrl = otros.url_acceso;
+      }
+    } catch (err) {
+      console.error("Error loading project access credentials from database:", err);
+    }
+  }
+
+  // Formatear URL para asegurar que tenga protocolo absoluto si es externa
+  const formatUrl = (url: string): string => {
+    if (!url) return "/login";
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/")) {
+      return url;
+    }
+    return `https://${url}`;
+  };
+
+  const formattedLoginUrl = formatUrl(loginUrl);
+  const isExternal = formattedLoginUrl.startsWith("http://") || formattedLoginUrl.startsWith("https://");
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white flex flex-col justify-between relative overflow-hidden select-none translate-y-0">
@@ -68,7 +102,7 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
           </div>
 
           {/* Información Detallada */}
-          <div className="space-y-4 mb-6">
+          <div className="space-y-4 mb-8">
             {/* Cliente */}
             <div className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
               <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400">
@@ -80,53 +114,51 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
               </div>
             </div>
 
-            {/* Vendedor */}
-            <div className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
-              <div className="p-2 bg-amber-500/10 rounded-xl text-amber-400">
-                <UserCheck className="size-4" />
+            {/* Usuario (si existe) */}
+            {usuario && (
+              <div className="flex items-center gap-4 p-3 rounded-2xl bg-[#B7494E]/5 border border-[#B7494E]/10 hover:border-[#B7494E]/25 transition-colors">
+                <div className="p-2 bg-[#B7494E]/10 rounded-xl text-[#B7494E]">
+                  <UserCheck className="size-4" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-[#B7494E]/80">Usuario</p>
+                  <p className="text-sm font-mono font-bold text-white mt-0.5 select-all">{usuario}</p>
+                </div>
               </div>
-              <div className="flex-1 text-left">
-                <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Encargado / Vendedor</p>
-                <p className="text-sm font-bold text-white mt-0.5">{vendedor}</p>
+            )}
+
+            {/* Contraseña (si existe) */}
+            {password && (
+              <div className="flex items-center gap-4 p-3 rounded-2xl bg-[#B7494E]/5 border border-[#B7494E]/10 hover:border-[#B7494E]/25 transition-colors">
+                <div className="p-2 bg-[#B7494E]/10 rounded-xl text-[#B7494E]">
+                  <Key className="size-4" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-[#B7494E]/80">Contraseña</p>
+                  <p className="text-sm font-mono font-bold text-white mt-0.5 select-all">{password}</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Credenciales de Acceso (Opcionales) */}
-          {(usuario || password) && (
-            <div className="mb-8 pt-6 border-t border-white/10 space-y-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#B7494E] text-left">
-                Credenciales de Acceso
-              </p>
-              <div className="grid grid-cols-1 gap-2">
-                {usuario && (
-                  <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-[#B7494E]/5 border border-[#B7494E]/10">
-                    <div className="text-left">
-                      <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Usuario</p>
-                      <p className="text-xs font-mono font-bold text-white mt-0.5 select-all">{usuario}</p>
-                    </div>
-                  </div>
-                )}
-                {password && (
-                  <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-[#B7494E]/5 border border-[#B7494E]/10">
-                    <div className="text-left">
-                      <p className="text-[8px] font-black uppercase tracking-widest text-zinc-500">Contraseña</p>
-                      <p className="text-xs font-mono font-bold text-white mt-0.5 select-all">{password}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Botón de Entrada */}
-          <Link
-            href={loginUrl}
-            className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-xs tracking-widest uppercase transition-all duration-300 active:scale-[0.98] shadow-lg shadow-[#B7494E]/20"
-          >
-            Entrar al Proyecto
-            <ArrowRight className="size-4" />
-          </Link>
+          {isExternal ? (
+            <a
+              href={formattedLoginUrl}
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-xs tracking-widest uppercase transition-all duration-300 active:scale-[0.98] shadow-lg shadow-[#B7494E]/20"
+            >
+              Entrar
+              <ArrowRight className="size-4" />
+            </a>
+          ) : (
+            <Link
+              href={formattedLoginUrl}
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-xs tracking-widest uppercase transition-all duration-300 active:scale-[0.98] shadow-lg shadow-[#B7494E]/20"
+            >
+              Entrar
+              <ArrowRight className="size-4" />
+            </Link>
+          )}
         </div>
       </main>
 
