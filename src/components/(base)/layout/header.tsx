@@ -69,7 +69,7 @@ export default function Header() {
                   translate="no"
                   className="notranslate text-xs md:text-sm font-black uppercase tracking-widest leading-[1.15] md:leading-[1.15] text-celeste-kore border-l border-border/60 pl-2 md:pl-3 transition-transform duration-300 group-hover:scale-[1.02] origin-left group-hover:text-white dark:group-hover:text-[#FFFDD0]"
                 >
-                  ERP
+                  BMS
                 </motion.div>
               </Link>
             </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
@@ -9,6 +10,26 @@ interface AnimacionLogoKoreProps {
 }
 
 export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKoreProps) {
+  const [lang, setLang] = useState<"en" | "es">("en");
+  const [displayedText, setDisplayedText] = useState("");
+
+  const targetText = lang === "en" 
+    ? "Business Management Suite" 
+    : "Sistema de Gestión empresarial";
+
+  useEffect(() => {
+    let index = 0;
+    setDisplayedText("");
+    const interval = setInterval(() => {
+      setDisplayedText((prev) => prev + targetText.charAt(index));
+      index++;
+      if (index >= targetText.length) {
+        clearInterval(interval);
+      }
+    }, 45);
+    return () => clearInterval(interval);
+  }, [targetText]);
+
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -42,7 +63,13 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="w-full h-full flex items-center justify-center pointer-events-none"
           >
-            <div className="pointer-events-auto flex flex-row items-center justify-center gap-4 sm:gap-6 lg:gap-8 w-fit px-4 sm:px-8">
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                setLang((prev) => (prev === "en" ? "es" : "en"));
+              }}
+              className="pointer-events-auto flex flex-row items-center justify-center gap-4 sm:gap-6 lg:gap-8 w-fit px-4 sm:px-8 cursor-pointer select-none"
+            >
               <motion.div
                 initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
                 animate={{ opacity: 1, scale: 1, rotate: 0 }}
@@ -63,7 +90,7 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ staggerChildren: 0.12, delayChildren: 0.05 }}
-                className="flex flex-col items-center justify-center text-center py-2 relative shrink-0"
+                className="flex flex-col items-start justify-center py-2 relative shrink-0"
               >
                 <motion.h1
                   initial={{ opacity: 0, x: -20 }}
@@ -76,7 +103,25 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
                   KoreAPP
                 </motion.h1>
 
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  translate="no"
+                  className="notranslate text-xs md:text-sm font-black uppercase tracking-widest leading-[1.15] text-celeste-kore mt-2 pl-1"
+                >
+                  BMS
+                </motion.div>
 
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mt-2 pl-1 h-4 flex items-center gap-0.5"
+                >
+                  {displayedText}
+                  <span className="inline-block w-[1.5px] h-3 bg-celeste-kore animate-pulse" />
+                </motion.div>
               </motion.div>
             </div>
           </motion.div>

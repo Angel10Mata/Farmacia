@@ -1,18 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  motion,
-  AnimatePresence,
-  useScroll,
-  useTransform,
-  useSpring,
-} from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
-import LogoKore from "@/components/(Kore)/logo/LogoKore";
-import LogoKoreMobile from "@/components/(Kore)/logo/LogoKore-mobile";
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import PassKeysModal from "@/components/(base)/layout/modals/PassKeysModal";
 import {
@@ -28,7 +20,7 @@ const MODULES = [
     title: "Gestión de",
     subtitle: "Proyectos",
     desc: "Administración, control financiero y seguimiento del estado de los proyectos.",
-    icon: "gsqxdxog", // Back to the very first icon ID
+    icon: "qikuvfgb",
     href: "/kore/proyectos",
     allowedRoles: ["super", "admin", "proyectos"],
   },
@@ -78,16 +70,7 @@ export function Dashboard() {
   const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
 
-  const { scrollY } = useScroll();
-  const logoY = useTransform(scrollY, [0, 600], [0, -300]);
-  const logoOpacity = useTransform(scrollY, [0, 400], [1, 0]);
-  // Zoom sutil y suavizado
-  const bgScaleRaw = useTransform(scrollY, [0, 800], [1, 1.05]);
-  const bgScale = useSpring(bgScaleRaw, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001,
-  });
+
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -222,6 +205,9 @@ export function Dashboard() {
                         <div className="relative z-10 w-full flex justify-center mb-4">
                           <div className="size-[90px] flex items-center justify-center transition-transform duration-700 ease-out group-hover:-translate-y-4 relative">
                             <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div 
+                              className="absolute inset-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 -z-10"
+                            />
                             <AnimatedIcon
                               iconKey={mod.icon}
                               target={`#${mod.id}-card`}
@@ -277,7 +263,7 @@ export function Dashboard() {
                       className={[
                         "flex items-center gap-2 font-black uppercase text-xs tracking-[0.25em] transition-colors duration-500",
                         isActive
-                          ? "text-celeste-kore"
+                          ? "text-white"
                           : "text-celeste-kore dark:text-white",
                       ].join(" ")}
                     >
@@ -309,6 +295,13 @@ export function Dashboard() {
                           className="size-[90px] flex items-center justify-center transition-transform duration-700 relative"
                         >
                           <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                          <div 
+                            className={[
+                              "absolute inset-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 -z-10",
+                              "opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100",
+                              isActive ? "opacity-100 scale-100" : ""
+                            ].join(" ")}
+                          />
                           <AnimatedIcon
                             iconKey={mod.icon}
                             target={`#${mod.id}-card`}
@@ -384,26 +377,12 @@ export function Dashboard() {
       />
 
       <div className="flex flex-col md:hidden w-full bg-white dark:bg-black">
-        <div className="w-full pt-20 pb-4 relative z-[2]">
-          <LogoKoreMobile backgroundEffect="blur" />
-        </div>
-
-        <div className="w-full px-4 pt-8 pb-20">{renderCardsGrid()}</div>
+        <div className="w-full pt-16" />
+        <div className="w-full px-4 pt-4 pb-20">{renderCardsGrid()}</div>
       </div>
 
       <div className="hidden md:block relative w-full min-h-screen">
-        <div className="fixed top-0 left-0 w-full h-[22vh] z-0 bg-white dark:bg-black overflow-hidden" />
-
-        <motion.div
-          className="fixed top-0 left-0 w-full h-[22vh] flex justify-center items-center z-[5] pt-10"
-          style={{ y: logoY, opacity: logoOpacity }}
-        >
-          <div className="relative flex justify-center items-center px-8">
-            <LogoKore />
-          </div>
-        </motion.div>
-
-        <div className="relative z-10 w-full mt-[22vh]">
+        <div className="relative z-10 w-full pt-20">
           <div className="w-full min-h-screen bg-white dark:bg-black px-8 lg:px-12 pt-10 pb-20">
             <div className="w-full max-w-[1400px] mx-auto">
               {renderCardsGrid()}

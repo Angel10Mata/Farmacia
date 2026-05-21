@@ -15,7 +15,9 @@ import {
   RefreshCw,
   Clock,
   ChevronDown,
-  Calendar
+  Calendar,
+  ChevronLeft,
+  X
 } from "lucide-react";
 import {
   BarChart,
@@ -35,6 +37,20 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRProyecto from "./QRProyecto";
 import { QrCode } from "lucide-react";
+
+// TypeScript declaration for the Lordicon web component
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "lord-icon": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        src?: string;
+        trigger?: string;
+        colors?: string;
+        style?: React.CSSProperties;
+      };
+    }
+  }
+}
 
 interface DashboardProyectosProps {
   role: string;
@@ -56,6 +72,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   const [showList, setShowList] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [qrProyecto, setQrProyecto] = useState<any | null>(null);
+  const [detalleProyecto, setDetalleProyecto] = useState<any | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -75,6 +92,15 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  // Load Lordicon script
+  useEffect(() => {
+    if (!document.querySelector('script[src="https://cdn.lordicon.com/lordicon.js"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.lordicon.com/lordicon.js';
+      document.head.appendChild(script);
+    }
   }, []);
 
   const exportarPDF = () => {
@@ -152,7 +178,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
       const docPct = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
       const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
-      const restante = precio - comision - iva - docPct;
+      const restante = precio - comision - iva - docPct + mant;
       const code = p.id.replace(/-/g, "").slice(0, 6).toUpperCase();
       const shortCode = code.slice(0, 3) + "-" + code.slice(3, 6);
       return [
@@ -423,32 +449,29 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 text-foreground pt-12 sm:pt-20 relative">
+    <div className="w-full flex flex-col gap-4 sm:gap-6 text-foreground pt-2 sm:pt-4 relative">
       {/* Decorative Background Glows */}
       <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-celeste-kore/10 rounded-full blur-[120px] pointer-events-none -z-10 animate-pulse" />
       <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-azul-kore/5 rounded-full blur-[100px] pointer-events-none -z-10" />
 
       {/* HEADER SECTION */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-primary/80">
+          <h2 className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-primary/80">
             Módulo Activo
           </h2>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight mt-1 leading-none">
+          <h1 className="text-xl sm:text-4xl font-black tracking-tight mt-0.5 sm:mt-1 leading-none">
             GESTIÓN DE <br className="hidden sm:block" />
             <span className="text-celeste-kore">PROYECTOS</span>
           </h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button onClick={fetchData} className="p-4 rounded-xl border border-border/50 bg-card hover:bg-muted/50 transition-colors" title="Recargar">
-            <RefreshCw size={18} className={loading ? "animate-spin text-celeste-kore" : ""} />
-          </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button 
             onClick={() => { setSelectedProyecto(null); setIsModalOpen(true); }}
-            className="flex items-center gap-2 px-6 py-4 rounded-xl bg-celeste-kore text-black hover:bg-celeste-kore border border-transparent transition-colors font-black"
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:bg-celeste-kore border border-transparent transition-all font-black text-xs sm:text-sm w-full sm:w-auto"
           >
-            <Plus size={18} />
+            <Plus size={14} className="sm:w-[18px] sm:h-[18px]" />
             NUEVO PROYECTO
           </button>
         </div>
@@ -457,53 +480,28 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       {/* ========== ADMIN VIEW: Summary Cards + Charts + Full Table ========== */}
       {isAdmin && (
         <>
-          {/* SUMMARY CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20 flex flex-col justify-between relative overflow-hidden group">
-              <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center mb-4 border border-red-200 dark:border-red-900/30">
-                <Briefcase size={20} className="text-celeste-kore" />
-              </div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                Total Proyectos
-              </p>
-              <h3 className="text-3xl font-black">{summary.count}</h3>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20 flex flex-col justify-between relative overflow-hidden group">
-              <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center mb-4 border border-red-200 dark:border-red-900/30">
-                <CircleDollarSign size={20} className="text-celeste-kore" />
-              </div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                Ingresos Totales
-              </p>
-              <h3 className="text-3xl font-black">Q{summary.totalPrecio.toLocaleString('en-US', {minimumFractionDigits: 2})}</h3>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20 flex flex-col justify-between relative overflow-hidden group">
-              <div className="w-10 h-10 rounded-lg bg-celeste-kore/10 flex items-center justify-center mb-4 border border-celeste-kore/20">
-                <Clock size={20} className="text-celeste-kore" />
-              </div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-                Mant. Mensual
-              </p>
-              <h3 className="text-3xl font-black text-celeste-kore">Q{summary.totalMantenimiento.toLocaleString('en-US', {minimumFractionDigits: 2})}</h3>
-            </div>
-          </div>
 
           {/* CHARTS SECTION */}
           <div className="grid grid-cols-1 lg:grid-cols-[60%_1fr] gap-4">
             {/* Bar Chart */}
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                <h3 className="text-sm font-black uppercase tracking-widest">
-                  Ingresos por {chartTab === "MES" ? "Día" : "Mes"} ({chartTab === "MES" ? new Date().toLocaleDateString('es-GT', { month: 'long', year: 'numeric' }) : new Date().getFullYear()})
-                </h3>
-                <div className="flex items-center rounded-full bg-muted/30 border border-border/30 p-[2px]">
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
+                    <CircleDollarSign size={14} className="text-celeste-kore" />
+                  </div>
+                  <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest">
+                    Ingresos por {chartTab === "MES" ? "Día" : chartTab === "AÑO" ? "Mes" : "Período"}
+                    {chartTab === "MES" && <span className="text-muted-foreground ml-1.5 text-[9px] sm:text-[10px] font-bold normal-case tracking-normal">{new Date().toLocaleDateString('es-GT', { month: 'long', year: 'numeric' })}</span>}
+                    {chartTab === "AÑO" && <span className="text-muted-foreground ml-1.5 text-[9px] sm:text-[10px] font-bold normal-case tracking-normal">{new Date().getFullYear()}</span>}
+                  </h3>
+                </div>
+                <div className="flex items-center rounded-full bg-muted/30 border border-border/30 p-[2px] self-end sm:self-auto">
                   {["MES", "AÑO", "RANGO"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setChartTab(tab as any)}
-                      className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all ${
+                      className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold transition-all ${
                         chartTab === tab
                           ? "bg-celeste-kore text-white shadow-md"
                           : "text-muted-foreground hover:bg-muted/50"
@@ -516,44 +514,44 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
               </div>
 
               {chartTab === "RANGO" && (
-                <div className="flex flex-wrap items-center gap-4 mb-6 p-4 rounded-xl bg-card/40 border border-white/5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black uppercase text-muted-foreground">Desde:</span>
+                <div className="flex flex-wrap items-center gap-3 mb-4 p-3 rounded-xl bg-card/40 border border-white/5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground">Desde:</span>
                     <input 
                       type="date" 
                       value={dateRange.start}
                       onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                      className="bg-muted/50 border border-border/50 rounded-lg px-3 py-1.5 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
+                      className="bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
                     />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black uppercase text-muted-foreground">Hasta:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground">Hasta:</span>
                     <input 
                       type="date" 
                       value={dateRange.end}
                       onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                      className="bg-muted/50 border border-border/50 rounded-lg px-3 py-1.5 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
+                      className="bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
                     />
                   </div>
                 </div>
               )}
               
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-celeste-kore"></div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Precio total</span>
+                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-sm bg-celeste-kore"></div>
+                  <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase">Precio total</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-azul-kore"></div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Comisión</span>
+                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-sm bg-[#3D3C3C]"></div>
+                  <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase">Comisión</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-muted-foreground/40"></div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">IVA</span>
+                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-sm bg-muted-foreground/40"></div>
+                  <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase">IVA</span>
                 </div>
               </div>
 
-              <div className="h-[250px] w-full">
+              <div className="h-[200px] sm:h-[250px] w-full">
                 {barData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -571,9 +569,9 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         }}
                         itemStyle={{ color: "#fff" }}
                       />
-                      <Bar dataKey="precio" fill="#B7494E" radius={[4, 4, 0, 0]} barSize={12} />
-                      <Bar dataKey="comision" fill="#3D3C3C" radius={[4, 4, 0, 0]} barSize={12} />
-                      <Bar dataKey="iva" fill="#a1a1aa" radius={[4, 4, 0, 0]} barSize={12} />
+                      <Bar dataKey="precio" stackId="a" fill="#B7494E" radius={[4, 4, 0, 0]} barSize={20} />
+                      <Bar dataKey="comision" stackId="a" fill="#3D3C3C" radius={[0, 0, 0, 0]} barSize={20} />
+                      <Bar dataKey="iva" stackId="a" fill="#a1a1aa" radius={[4, 4, 0, 0]} barSize={20} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -585,11 +583,14 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
             </div>
 
             {/* Donut Chart */}
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20 flex flex-col">
-              <h3 className="text-sm font-black uppercase tracking-widest mb-6">
-                Estado de Proyectos
-              </h3>
-              <div className="flex-1 flex flex-col items-center justify-center relative min-h-[200px]">
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20 flex flex-col">
+              <div className="flex items-center gap-2 sm:gap-3 mb-4">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
+                  <Briefcase size={14} className="text-celeste-kore" />
+                </div>
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest">Estado de Proyectos</h3>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center relative min-h-[160px] sm:min-h-[200px]">
                 {pieData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%" className="absolute inset-0">
                     <PieChart>
@@ -619,25 +620,25 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <span className="text-muted-foreground text-sm">No hay proyectos</span>
+                  <span className="text-muted-foreground text-xs sm:text-sm">No hay proyectos</span>
                 )}
               </div>
               
-              <div className="w-full space-y-3 mt-6">
+              <div className="w-full space-y-2 sm:space-y-3 mt-4 sm:mt-6">
                 {pieData.map((item) => (
                   <div key={item.name} className="flex items-center justify-between group">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
-                      <span className="text-xs font-bold text-muted-foreground uppercase">{item.name}</span>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
+                      <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase">{item.name}</span>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                       {item.mant > 0 && (
-                        <span className="text-[10px] font-black text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
+                        <span className="text-[9px] sm:text-[10px] font-black text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
                           Q{item.mant.toLocaleString()}
                         </span>
                       )}
-                      <div className="text-xs font-black">
-                        {item.value} <span className="text-muted-foreground">— {Math.round((item.value / Math.max(1, summary.count)) * 100)}%</span>
+                      <div className="text-[10px] sm:text-xs font-black">
+                        {item.value} <span className="text-muted-foreground font-bold">— {Math.round((item.value / Math.max(1, summary.count)) * 100)}%</span>
                       </div>
                     </div>
                   </div>
@@ -647,45 +648,43 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           </div>
 
           {/* TABLE SECTION - Admin only */}
-          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-              <div className="flex items-center gap-3">
+          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button 
                   onClick={() => setShowList(!showList)}
-                  className="p-2 hover:bg-muted/50 rounded-lg transition-colors group"
+                  className="p-1.5 sm:p-2 hover:bg-muted/50 rounded-lg transition-colors group"
                 >
                   <motion.div
                     animate={{ rotate: showList ? 0 : -90 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Filter size={18} className="text-celeste-kore" />
+                    <Filter size={16} className="text-celeste-kore sm:w-[18px] sm:h-[18px]" />
                   </motion.div>
                 </button>
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground/90">
-                  Lista de Proyectos
-                </h3>
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-foreground/90">Lista de Proyectos</h3>
               </div>
               <motion.div 
                 initial={false}
                 animate={{ opacity: showList ? 1 : 0, scale: showList ? 1 : 0.95, x: showList ? 0 : 20 }}
-                className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto ${!showList ? 'pointer-events-none' : ''}`}
+                className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto ${!showList ? 'pointer-events-none' : ''}`}
               >
                 <div className="relative flex-1 sm:w-[240px]">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input 
                     type="text" 
                     placeholder="BUSCAR PROYECTO..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-muted/20 border border-border/60 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-celeste-kore/30 transition-all placeholder:text-muted-foreground/40 shadow-inner"
+                    className="w-full bg-muted/20 border border-border/60 rounded-lg py-2 pl-9 pr-3 text-[9px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-celeste-kore/30 transition-all placeholder:text-muted-foreground/40 shadow-inner"
                   />
                 </div>
                 <button 
                   onClick={exportarPDF}
-                  className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border border-border/50 bg-card hover:bg-muted/50 hover:border-celeste-kore/30 transition-all text-sm font-bold shadow-sm group whitespace-nowrap"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-celeste-kore/30 transition-all text-xs font-bold shadow-sm group whitespace-nowrap"
                 >
-                  <Download size={16} className="text-celeste-kore group-hover:scale-110 transition-transform" />
-                  <span className="uppercase tracking-widest text-[11px]">Exportar</span>
+                  <Download size={14} className="text-celeste-kore group-hover:scale-110 transition-transform" />
+                  <span className="uppercase tracking-widest text-[9px]">Exportar</span>
                 </button>
               </motion.div>
             </div>
@@ -733,7 +732,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
                             const doc = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
                             const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
-                            const restante = precio - comision - iva - doc;
+                            const restante = precio - comision - iva - doc + mant;
 
                             return (
                             <tr key={p.id} className="group border-y border-white/5 bg-card/20 hover:bg-card/40 transition-all duration-300">
@@ -812,114 +811,60 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   </div>
 
                   {/* MOBILE CARDS - hidden on desktop */}
-                  <div className="lg:hidden flex flex-col gap-3">
+                  <div className="lg:hidden flex flex-col gap-2">
                     {filteredProyectos.map((p) => {
-                      const precio = Number(p.precio) || 0;
-                      const comision = p.aplica_vendedor ? precio * (Number(p.porcentaje_vendedor) || 0) / 100 : 0;
-                      const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
-                      const doc = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
-                      const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
-                      const restante = precio - comision - iva - doc;
                       return (
-                        <div key={p.id} className="rounded-xl border border-white/10 bg-gradient-to-br from-card/80 to-card/30 backdrop-blur-lg p-0 space-y-0 shadow-lg shadow-black/10">
-                          {/* Card Header */}
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <code className="text-[10px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border ${
-                                  p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
-                                  p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
-                                  'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
-                                }`}>
-                                  {p.estado}
-                                </span>
-                              </div>
-                              <p className="font-black text-base text-foreground truncate tracking-tight">{p.nombre}</p>
-                              <p className="text-[11px] font-medium text-muted-foreground mt-0.5">{p.cliente_nombre || 'Sin cliente'} · {p.vendedor_nombre || 'Sin vendedor'}</p>
+                        <div 
+                          key={p.id} 
+                          className="rounded-lg border border-white/5 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-md hover:border-celeste-kore/20 transition-all duration-300 cursor-pointer"
+                          onClick={() => setDetalleProyecto(p)}
+                        >
+                          {/* Top row: Code & State + Actions */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <code className="text-[8px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1 py-0.5 rounded border border-celeste-kore/20 shrink-0">
+                                {getCode(p.id)}
+                              </code>
+                              <span className={`inline-flex items-center px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border shrink-0 ${
+                                p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
+                                p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
+                                'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
+                              }`}>
+                                {p.estado}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
+
+                            {/* Portada Mobile Actions */}
+                            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => setQrProyecto(p)}
-                                className="p-2.5 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-xl transition-all shadow-sm"
+                                className="p-1 bg-muted/40 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-md transition-all"
                                 title="Ver QR"
                               >
-                                <QrCode size={16} />
+                                <QrCode size={11} />
                               </button>
                               <button 
                                 onClick={() => { setSelectedProyecto(p); setIsModalOpen(true); }}
-                                className="p-2.5 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-xl transition-all shadow-sm"
+                                className="p-1 bg-muted/40 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-md transition-all"
                               >
-                                <Edit size={16} />
+                                <Edit size={11} />
                               </button>
                               <button 
                                 onClick={() => handleDelete(p.id)}
-                                className="p-2.5 bg-muted/50 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-xl transition-all shadow-sm"
+                                className="p-1 bg-muted/40 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-md transition-all"
                               >
-                                <Trash2 size={16} />
+                                <Trash2 size={11} />
                               </button>
                             </div>
                           </div>
 
-                          {/* Card Price Toggle */}
-                          <div 
-                            onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
-                            className="flex items-center justify-between pt-3 border-t border-border/20 cursor-pointer group"
-                          >
-                            <div>
-                              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-black">Precio Total</span>
-                              <p className="font-black text-lg text-foreground">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
-                            </div>
-                            <motion.div
-                              animate={{ rotate: expandedId === p.id ? 180 : 0 }}
-                              className="p-1.5 rounded-lg bg-muted/30 group-hover:bg-celeste-kore/20 transition-colors"
-                            >
-                              <ChevronDown size={18} className="text-celeste-kore" />
-                            </motion.div>
+                          {/* Info row */}
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-[11px] text-foreground truncate tracking-tight">{p.nombre}</h4>
+                            <p className="text-[8px] text-muted-foreground mt-0.5 truncate">
+                              Cliente: <span className="font-semibold text-foreground/80">{p.cliente_nombre || 'Sin cliente'}</span>
+                            </p>
                           </div>
-
-                          {/* Cost Breakdown Accordion */}
-                          <AnimatePresence>
-                            {expandedId === p.id && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="grid grid-cols-2 gap-2 pt-1">
-                                  <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
-                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Comisión</span>
-                                    <span className={`text-xs font-black ${comision > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
-                                      {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
-                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">IVA</span>
-                                    <span className={`text-xs font-black ${iva > 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
-                                      {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
-                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Doc</span>
-                                    <span className={`text-xs font-black ${doc > 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
-                                      {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-col gap-1 p-3 bg-card/40 border border-border/20 rounded-xl">
-                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Mant.</span>
-                                    <span className={`text-xs font-black ${mant > 0 ? 'text-celeste-kore' : 'text-muted-foreground'}`}>
-                                      {mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-col gap-1 p-3 bg-celeste-kore/5 border border-celeste-kore/20 rounded-xl shadow-inner shadow-celeste-kore/5 col-span-2">
-                                    <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Restante</span>
-                                    <span className="text-sm font-black text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
                         </div>
                       );
                     })}
@@ -934,17 +879,13 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       {/* ========== NORMAL USER VIEW: Only payment dates ========== */}
       {!isAdmin && (
         <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30">
-              <CalendarDays size={20} className="text-celeste-kore" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
+              <CalendarDays size={16} className="text-celeste-kore" />
             </div>
             <div>
-              <h3 className="text-sm font-black uppercase tracking-widest">
-                Fechas de Entrega
-              </h3>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                Próximas fechas de pago programadas
-              </p>
+              <h3 className="text-sm font-black uppercase tracking-widest">Fechas de Entrega</h3>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Próximas fechas de pago programadas</p>
             </div>
           </div>
 
@@ -1001,6 +942,178 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           )}
         </div>
       )}
+
+      <AnimatePresence>
+        {detalleProyecto && (
+          <motion.div
+            initial={{ opacity: 0, x: "100%" }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: "100%" }}
+            transition={{ type: "spring", damping: 26, stiffness: 220 }}
+            className="fixed inset-0 z-50 bg-background flex flex-col lg:hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-3 border-b border-border/40 bg-card/50 backdrop-blur-md sticky top-0 z-10">
+              <button 
+                onClick={() => setDetalleProyecto(null)}
+                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+              >
+                <ChevronLeft size={14} />
+                Volver
+              </button>
+              <span className="text-[10px] font-black uppercase tracking-widest text-celeste-kore">
+                Detalle del Proyecto
+              </span>
+              <button 
+                onClick={() => setDetalleProyecto(null)}
+                className="p-1 rounded-full hover:bg-muted/50 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-20">
+              {/* Info General */}
+              <div className="space-y-1.5 bg-card/30 border border-border/20 p-3 rounded-xl">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <code className="text-[8px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
+                    {getCode(detalleProyecto.id)}
+                  </code>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border ${
+                    detalleProyecto.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
+                    detalleProyecto.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
+                    'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
+                  }`}>
+                    {detalleProyecto.estado}
+                  </span>
+                </div>
+                <div>
+                  <h2 className="text-xs font-black tracking-tight text-foreground">{detalleProyecto.nombre}</h2>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">Vendedor: <span className="font-semibold text-foreground/80">{detalleProyecto.vendedor_nombre || 'N/A'}</span></p>
+                  {detalleProyecto.fecha_entrega && (
+                    <p className="text-[9px] text-muted-foreground mt-0.5">Entrega: <span className="font-semibold text-foreground/80">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
+                  )}
+                </div>
+              </div>
+
+              {/* Info Cliente */}
+              <div className="space-y-1 bg-card/30 border border-border/20 p-3 rounded-xl">
+                <h3 className="text-[8px] font-black text-celeste-kore uppercase tracking-widest border-b border-border/20 pb-0.5">Información del Cliente</h3>
+                <div className="grid grid-cols-1 gap-0.5 text-[9px] sm:text-[10px]">
+                  <p><span className="text-muted-foreground">Nombre:</span> <span className="font-bold">{detalleProyecto.cliente_nombre || 'N/A'}</span></p>
+                  {detalleProyecto.cliente_telefono && (
+                    <p><span className="text-muted-foreground">Teléfono:</span> <span className="font-bold">{detalleProyecto.cliente_telefono}</span></p>
+                  )}
+                  {detalleProyecto.cliente_correo && (
+                    <p><span className="text-muted-foreground">Correo:</span> <span className="font-bold break-all">{detalleProyecto.cliente_correo}</span></p>
+                  )}
+                </div>
+              </div>
+
+              {/* Finanzas & Dona */}
+              {(() => {
+                const precio = Number(detalleProyecto.precio) || 0;
+                const comision = detalleProyecto.aplica_vendedor ? precio * (Number(detalleProyecto.porcentaje_vendedor) || 0) / 100 : 0;
+                const iva = detalleProyecto.aplica_iva ? precio * (Number(detalleProyecto.porcentaje_iva) || 0) / 100 : 0;
+                const doc = detalleProyecto.aplica_doc ? precio * (Number(detalleProyecto.porcentaje_doc) || 0) / 100 : 0;
+                const mant = detalleProyecto.aplica_mantenimiento ? Number(detalleProyecto.monto_mantenimiento) || 0 : 0;
+                const restante = precio - comision - iva - doc;
+
+                const donutData = [
+                  { name: "Restante (Resta)", value: restante, color: "#B7494E" },
+                  { name: "Comisión", value: comision, color: "#3D3C3C" },
+                  { name: "IVA", value: iva, color: "#52525b" },
+                  { name: "Doc", value: doc, color: "#a1a1aa" },
+                  { name: "Mantenimiento", value: mant, color: "#14b8a6" },
+                ].filter(d => d.value > 0);
+
+                return (
+                  <div className="space-y-2 bg-card/30 border border-border/20 p-3 rounded-xl">
+                    <h3 className="text-[8px] font-black text-celeste-kore uppercase tracking-widest border-b border-border/20 pb-0.5">Distribución Financiera</h3>
+                    
+                    {/* Donut Chart */}
+                    {donutData.length > 0 ? (
+                      <div className="w-full h-[120px] flex items-center justify-center relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={donutData}
+                              innerRadius="65%"
+                              outerRadius="85%"
+                              paddingAngle={4}
+                              dataKey="value"
+                              stroke="none"
+                            >
+                              {donutData.map((entry, index) => (
+                                <Cell key={`donut-cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute flex flex-col items-center justify-center text-center">
+                          <span className="text-[7px] uppercase tracking-wider text-muted-foreground font-bold">Valor Total</span>
+                          <span className="text-[10px] font-black text-foreground">Q{precio.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-muted-foreground text-[9px]">No hay datos financieros.</div>
+                    )}
+
+                    {/* Donut Legend */}
+                    {donutData.length > 0 && (
+                      <div className="flex flex-wrap justify-center gap-x-2 gap-y-1 px-1 text-[8px] uppercase font-bold text-muted-foreground">
+                        {donutData.map((item, idx) => (
+                          <div key={`legend-${idx}`} className="flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+                            <span>{item.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Breakdown List */}
+                    <div className="space-y-1 pt-1.5 border-t border-border/10 text-[9px] sm:text-[10px]">
+                      <div className="flex justify-between items-center py-0.5">
+                        <span className="text-muted-foreground">Precio Total:</span>
+                        <span className="font-bold">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-0.5">
+                        <span className="text-muted-foreground">Comisión Vendedor:</span>
+                        <span className={`font-bold ${comision > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_vendedor}%)` : '—'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-0.5">
+                        <span className="text-muted-foreground">IVA:</span>
+                        <span className={`font-bold ${iva > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_iva}%)` : '—'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-0.5">
+                        <span className="text-muted-foreground">Fondo Documentación:</span>
+                        <span className={`font-bold ${doc > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_doc}%)` : '—'}
+                        </span>
+                      </div>
+                      {mant > 0 && (
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className="text-muted-foreground">Mantenimiento Mensual:</span>
+                          <span className="font-bold text-celeste-kore">Q{mant.toLocaleString('en-US', {minimumFractionDigits: 2})} / mes</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center py-1 border-t border-border/15 font-black text-[10px] text-celeste-kore">
+                        <span>Restante (Resta):</span>
+                        <span>Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ProyectoModal 
         isOpen={isModalOpen} 

@@ -11,7 +11,7 @@ import { DotPattern } from "@/components/ui/dot-pattern";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "next-themes";
 import Swal from "sweetalert2";
-import LogoKoreLogin from "@/components/(Kore)/logo/LogoKoreLogin";
+
 
 export default function LogIn() {
   const [mounted, setMounted] = useState(false);
@@ -125,9 +125,7 @@ useEffect(() => {
         <MagicCard className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-2xl overflow-visible!">
           <div className="flex flex-col items-center space-y-6 p-10 border-b border-border/50 text-center">
             
-            <div className="w-full -mt-2 pb-2">
-              <LogoKoreLogin backgroundEffect="none" />
-            </div>
+
 
             <div className="space-y-1">
               <h3 className="text-2xl font-black tracking-tight">

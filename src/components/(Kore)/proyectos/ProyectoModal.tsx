@@ -140,12 +140,17 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/60 backdrop-blur-sm overflow-y-auto">
+      {/* Overlay: solid on mobile, semi-transparent blur on desktop */}
+      <div className="fixed inset-0 z-50 bg-background md:bg-background/60 md:backdrop-blur-sm md:flex md:items-center md:justify-center md:p-4 md:overflow-y-auto">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="w-full max-w-2xl relative my-auto bg-card border border-border/50 rounded-3xl shadow-2xl overflow-hidden"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 40 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="
+            w-full h-full flex flex-col bg-card overflow-hidden
+            md:h-auto md:max-w-2xl md:rounded-3xl md:shadow-2xl md:border md:border-border/50 md:my-auto
+          "
         >
           <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/5 sticky top-0 z-10 backdrop-blur-md">
             <div className="flex items-center gap-4">
@@ -170,7 +175,8 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
             </button>
           </div>
 
-          <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          {/* Scrollable body: fills all space between header and footer on mobile */}
+          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar md:max-h-[70vh]">
             <form id="proyecto-form" onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
               {/* Información General */}
               <div className="space-y-4">
@@ -290,7 +296,8 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
             </form>
           </div>
 
-          <div className="p-6 border-t border-border/50 bg-muted/5 flex justify-end gap-3 sticky bottom-0">
+          {/* Footer: sticks to bottom on mobile, normal on desktop */}
+          <div className="p-4 md:p-6 border-t border-border/50 bg-card md:bg-muted/5 flex justify-end gap-3 shrink-0">
             <button
               type="button"
               onClick={onClose}
