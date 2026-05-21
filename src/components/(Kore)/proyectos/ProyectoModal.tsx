@@ -141,7 +141,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
   return (
     <AnimatePresence>
       {/* Overlay: solid on mobile, semi-transparent blur on desktop */}
-      <div className="fixed inset-0 z-50 bg-background md:bg-background/60 md:backdrop-blur-sm md:flex md:items-center md:justify-center md:p-4 md:overflow-y-auto">
+      <div className="fixed inset-0 z-[110] bg-background md:bg-background/60 md:backdrop-blur-sm md:flex md:items-center md:justify-center md:p-4 md:overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}

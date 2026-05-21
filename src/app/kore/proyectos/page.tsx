@@ -17,7 +17,7 @@ export default function ProyectosPage() {
   }, [effectiveRole, router]);
 
   return (
-    <div className="flex-1 overflow-auto bg-background p-4 pt-20 md:p-8 md:pt-24">
+    <div className="flex-1 overflow-auto bg-background p-4 pt-28 md:p-8 md:pt-24">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

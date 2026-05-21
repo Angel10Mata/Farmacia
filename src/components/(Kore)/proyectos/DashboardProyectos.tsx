@@ -950,7 +950,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: "100%" }}
             transition={{ type: "spring", damping: 26, stiffness: 220 }}
-            className="fixed inset-0 z-50 bg-background flex flex-col lg:hidden"
+            className="fixed inset-0 z-[110] bg-background flex flex-col lg:hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-border/40 bg-card/50 backdrop-blur-md sticky top-0 z-10">
