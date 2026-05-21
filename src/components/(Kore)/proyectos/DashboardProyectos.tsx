@@ -568,6 +568,16 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                           boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)"
                         }}
                         itemStyle={{ color: "#fff" }}
+                        separator=""
+                        formatter={(value: any, name: any) => {
+                          const formattedValue = typeof value === "number"
+                            ? value.toLocaleString()
+                            : value;
+                          if (name === "comision") return [formattedValue, "Comisión: Q "];
+                          if (name === "iva") return [formattedValue, "IVA: Q "];
+                          if (name === "precio") return [formattedValue, "Precio; Q "];
+                          return [formattedValue, name];
+                        }}
                       />
                       <Bar dataKey="precio" stackId="a" fill="#B7494E" radius={[4, 4, 0, 0]} barSize={20} />
                       <Bar dataKey="comision" stackId="a" fill="#3D3C3C" radius={[0, 0, 0, 0]} barSize={20} />
