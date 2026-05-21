@@ -673,11 +673,6 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                       <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase">{item.name}</span>
                     </div>
                     <div className="flex items-center gap-3 sm:gap-4">
-                      {item.mant > 0 && (
-                        <span className="text-[9px] sm:text-[10px] font-black text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
-                          Q{item.mant.toLocaleString()}
-                        </span>
-                      )}
                       <div className="text-[10px] sm:text-xs font-black">
                         {item.value} <span className="text-muted-foreground font-bold">— {Math.round((item.value / Math.max(1, summary.count)) * 100)}%</span>
                       </div>
