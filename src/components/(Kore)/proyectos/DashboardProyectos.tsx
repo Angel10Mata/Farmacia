@@ -448,6 +448,58 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     return diff;
   };
 
+  const ChartTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      
+      let dateLabel = "";
+      if (chartTab === "MES") {
+        const currentYear = new Date().getFullYear();
+        const currentMonthName = new Date().toLocaleDateString("es-GT", { month: "long" });
+        const capitalizedMonth = currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1);
+        dateLabel = `${label} de ${capitalizedMonth}, ${currentYear}`;
+      } else if (chartTab === "AÑO") {
+        const currentYear = new Date().getFullYear();
+        dateLabel = `${label} de ${currentYear}`;
+      } else if (chartTab === "RANGO") {
+        if (data.dateStr) {
+          const date = new Date(data.dateStr + "T00:00:00");
+          const formatted = date.toLocaleDateString("es-GT", { day: "2-digit", month: "long", year: "numeric" });
+          dateLabel = formatted;
+        } else {
+          dateLabel = label;
+        }
+      }
+
+      const precio = data.precio || 0;
+      const comision = data.comision || 0;
+      const iva = data.iva || 0;
+
+      return (
+        <div className="bg-zinc-950 border border-white/10 rounded-2xl p-4 shadow-2xl text-xs space-y-2 text-white min-w-[200px]">
+          <p className="font-bold text-muted-foreground border-b border-white/10 pb-1.5 mb-1.5 tracking-wider text-[11px]">
+            Dia : <span className="text-white font-black">{dateLabel}</span>
+          </p>
+          <div className="space-y-1">
+            <p className="flex justify-between items-center py-0.5">
+              <span className="text-muted-foreground font-bold text-[10px] tracking-wider">Precio :</span>
+              <span className="font-black text-white text-sm">Q{precio.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </p>
+            <p className="flex justify-between items-center py-0.5">
+              <span className="text-muted-foreground font-bold text-[10px] tracking-wider">IVA :</span>
+              <span className="font-bold text-zinc-400">Q{iva.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </p>
+            <p className="flex justify-between items-center py-0.5">
+              <span className="text-muted-foreground font-bold text-[10px] tracking-wider">Comisión :</span>
+              <span className="font-black text-celeste-kore">Q{comision.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="w-full flex flex-col gap-4 sm:gap-6 text-foreground pt-2 sm:pt-4 relative">
       {/* Decorative Background Glows */}
@@ -557,18 +609,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                     <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} dy={10} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} tickFormatter={(val) => `Q${val/1000}k`} />
-                      <RechartsTooltip 
-                        cursor={{ fill: "rgba(255,255,255,0.05)" }} 
-                        contentStyle={{ 
-                          backgroundColor: "#18181b", 
-                          borderColor: "rgba(255,255,255,0.1)", 
-                          borderRadius: "12px", 
-                          fontSize: "12px",
-                          color: "#fff",
-                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)"
-                        }}
-                        itemStyle={{ color: "#fff" }}
-                      />
+                      <RechartsTooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
                       <Bar dataKey="precio" stackId="a" fill="#B7494E" radius={[4, 4, 0, 0]} barSize={20} />
                       <Bar dataKey="comision" stackId="a" fill="#3D3C3C" radius={[0, 0, 0, 0]} barSize={20} />
                       <Bar dataKey="iva" stackId="a" fill="#a1a1aa" radius={[4, 4, 0, 0]} barSize={20} />
