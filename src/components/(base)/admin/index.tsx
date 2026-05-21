@@ -23,7 +23,7 @@ export async function AdminPanel() {
   const pendingDevices = (await getPendingDevicesCount()) ?? 0;
 
   return (
-    <div className="space-y-8 w-full p-4 md:p-6 pt-20 md:pt-24">
+    <div className="space-y-8 w-full p-4 md:p-6 pt-28 md:pt-24">
       {/* Header */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-3">

@@ -26,7 +26,7 @@ if (user) {
     if (pathname === "/esperando-acceso") {
       if (!requireAuth) {
         const url = request.nextUrl.clone();
-        url.pathname = "/kore ";
+        url.pathname = "/kore";
         return NextResponse.redirect(url);
       }
 

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { useRouter } from "next/navigation";
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
+import LogoKore from "@/components/(Kore)/logo/LogoKore";
+import LogoKoreMobile from "@/components/(Kore)/logo/LogoKore-mobile";
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import PassKeysModal from "@/components/(base)/layout/modals/PassKeysModal";
 import {
@@ -70,6 +72,10 @@ export function Dashboard() {
   const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
 
+  const { scrollY } = useScroll();
+  const logoY = useTransform(scrollY, [0, 600], [0, -300]);
+  const logoOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+
 
 
   useEffect(() => {
@@ -101,7 +107,7 @@ export function Dashboard() {
   };
 
   const renderCardsGrid = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6 w-full">
       {visibleModules.map((mod, index) => {
         const isActive = isMobile && activeId === mod.id;
         const isFirstMobile = isMobile && index === 0;
@@ -110,7 +116,7 @@ export function Dashboard() {
           <motion.div
             key={mod.id}
             className={[
-              "cursor-pointer w-full h-auto min-h-[400px] lg:h-[380px] relative",
+              "cursor-pointer w-full h-auto min-h-[180px] md:min-h-[400px] lg:h-[380px] relative",
             ]
               .join(" ")
               .trim()}
@@ -130,12 +136,12 @@ export function Dashboard() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.4, ease: "easeInOut" }}
-                      className="w-full h-full min-h-[300px] flex flex-col justify-center items-center p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
+                      className="w-full h-full min-h-[140px] md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
                     >
-                      <div className="absolute top-0 left-0 w-full h-[calc(100%-70px)] bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]" />
+                      <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]" />
                       <button
                         onClick={() => setExpandedPerfil(false)}
-                        className="absolute bottom-0 left-0 w-full h-[70px] flex justify-center items-center z-10 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                        className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
                       >
                         <span className="flex items-center gap-2 text-white font-black uppercase text-xs tracking-[0.25em]">
                           ← Volver
@@ -149,36 +155,36 @@ export function Dashboard() {
                           delay: 0.15,
                           ease: "easeOut",
                         }}
-                        className="relative z-10 w-full flex flex-col gap-3 pb-[40px]"
+                        className="relative z-10 w-full flex flex-col gap-1.5 md:gap-3 pb-8 md:pb-[40px]"
                       >
                         <button
                           onClick={() => setIsProfileOpen(true)}
-                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left"
+                          className="w-full flex items-center gap-2 md:gap-3 px-2.5 py-1 md:px-4 md:py-3 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left"
                         >
-                          <UserIcon className="size-5 shrink-0 text-white" />
+                          <UserIcon className="size-4 md:size-5 shrink-0 text-white" />
                           <div>
-                            <p className="text-sm font-bold text-white">
+                            <p className="text-xs md:text-sm font-bold text-white leading-none">
                               Mi Perfil
                             </p>
-                            <p className="text-[10px] text-white/70">
+                            <p className="text-[9px] md:text-[10px] text-white/70 mt-0.5 leading-none">
                               Ver y editar perfil
                             </p>
                           </div>
                         </button>
                         <button
                           onClick={() => setIsPasskeysOpen(true)}
-                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left"
+                          className="w-full flex items-center gap-2 md:gap-3 px-2.5 py-1 md:px-4 md:py-3 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left"
                         >
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Fingerprint className="size-4 text-white/80" />
-                            <ScanFace className="size-4 text-white/80" />
-                            <KeyRound className="size-4 text-white/80" />
+                          <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
+                            <Fingerprint className="size-3 md:size-4 text-white/80" />
+                            <ScanFace className="size-3 md:size-4 text-white/80" />
+                            <KeyRound className="size-3 md:size-4 text-white/80" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">
+                            <p className="text-xs md:text-sm font-bold text-white leading-none">
                               Ingreso Seguro
                             </p>
-                            <p className="text-[10px] text-white/70">
+                            <p className="text-[9px] md:text-[10px] text-white/70 mt-0.5 leading-none">
                               Administrar dispositivos
                             </p>
                           </div>
@@ -193,17 +199,17 @@ export function Dashboard() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.4, ease: "easeInOut" }}
                       onClick={() => setExpandedPerfil(true)}
-                      className="w-full h-full min-h-[300px] flex flex-col justify-center items-center p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
+                      className="w-full h-full min-h-[140px] md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
                     >
-                      <div className="absolute top-0 left-0 w-full h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 transition-transform duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
-                      <div className="absolute bottom-0 left-0 w-full h-[70px] flex justify-center items-center z-10 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
+                      <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 transition-transform duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
+                      <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
                         <span className="flex items-center gap-2 text-celeste-kore dark:text-white font-black uppercase text-xs tracking-[0.25em]">
                           Ver opciones
                         </span>
                       </div>
-                      <div className="w-full h-full flex flex-col justify-center items-center relative z-10 pb-[40px]">
-                        <div className="relative z-10 w-full flex justify-center mb-4">
-                          <div className="size-[90px] flex items-center justify-center transition-transform duration-700 ease-out group-hover:-translate-y-4 relative">
+                      <div className="w-full h-full flex flex-col justify-center items-center relative z-10 pb-4 md:pb-[40px]">
+                        <div className="relative z-10 w-full flex justify-center mb-1.5 md:mb-4">
+                          <div className="size-12 md:size-[90px] flex items-center justify-center transition-transform duration-700 ease-out group-hover:-translate-y-4 relative">
                             <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <div 
                               className="absolute inset-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 -z-10"
@@ -211,21 +217,21 @@ export function Dashboard() {
                             <AnimatedIcon
                               iconKey={mod.icon}
                               target={`#${mod.id}-card`}
-                              size={90}
+                              className="size-10 md:size-[90px]"
                               speed={1.5}
                               trigger="hover"
                             />
                           </div>
                         </div>
-                        <div className="relative z-10 w-full flex flex-col items-center text-center space-y-4 transition-transform duration-700 group-hover:-translate-y-2">
-                          <h3 className="text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words transition-colors duration-500">
+                        <div className="relative z-10 w-full flex flex-col items-center text-center space-y-1 md:space-y-4 transition-transform duration-700 group-hover:-translate-y-2">
+                          <h3 className="text-lg md:text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words transition-colors duration-500">
                             {mod.title}
                             <br />
                             <span className="text-celeste-kore group-hover:text-white/90 transition-colors duration-500">
                               {mod.subtitle}
                             </span>
                           </h3>
-                          <p className="text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 transition-colors duration-500">
+                          <p className="text-[11px] md:text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 transition-colors duration-500">
                             {mod.desc}
                           </p>
                         </div>
@@ -242,7 +248,7 @@ export function Dashboard() {
                   borderColor: isActive ? "#ef4444" : undefined,
                 }}
               >
-                <div className="w-full h-full min-h-[300px] flex flex-col justify-center items-center p-6 outline-none relative z-10 rounded-[inherit] overflow-hidden">
+                <div className="w-full h-full min-h-[140px] md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 outline-none relative z-10 rounded-[inherit] overflow-hidden">
                   <motion.div
                     variants={{
                       idle: { scaleY: 0 },
@@ -250,10 +256,10 @@ export function Dashboard() {
                       active: { scaleY: 1 },
                     }}
                     transition={{ duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
-                    className="absolute top-0 left-0 w-full h-[calc(100%-70px)] origin-bottom bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]"
+                    className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]"
                   />
                   <div className="absolute inset-0 rounded-[inherit] border border-slate-200 dark:border-slate-700 pointer-events-none z-20" />
-                  <div className="absolute bottom-0 left-0 w-full h-[70px] flex justify-center items-center z-10">
+                  <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10">
                     <motion.span
                       variants={{
                         idle: { opacity: 0, y: 16 },
@@ -273,7 +279,7 @@ export function Dashboard() {
                     </motion.span>
                   </div>
                   <motion.div
-                    className="w-full h-full flex flex-col justify-center items-center relative z-10 pb-[40px]"
+                    className="w-full h-full flex flex-col justify-center items-center relative z-10 pb-4 md:pb-[40px]"
                     variants={{
                       idle: { opacity: 1 },
                       hover: { opacity: 1 },
@@ -285,14 +291,14 @@ export function Dashboard() {
                       ease: "easeInOut",
                     }}
                   >
-                    <div className="relative z-10 w-full flex justify-center mb-4">
+                    <div className="relative z-10 w-full flex justify-center mb-1.5 md:mb-4">
                         <motion.div
                           variants={{
                             idle: { y: 0 },
                             hover: { y: -16 },
                             active: { y: -16 },
                           }}
-                          className="size-[90px] flex items-center justify-center transition-transform duration-700 relative"
+                          className="size-12 md:size-[90px] flex items-center justify-center transition-transform duration-700 relative"
                         >
                           <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                           <div 
@@ -305,20 +311,20 @@ export function Dashboard() {
                           <AnimatedIcon
                             iconKey={mod.icon}
                             target={`#${mod.id}-card`}
-                            size={90}
+                            className="size-10 md:size-[90px]"
                             speed={1.5}
                             trigger="hover"
                           />
                         </motion.div>
                     </div>
-                    <div className="relative z-10 w-full flex flex-col items-center text-center space-y-4">
+                    <div className="relative z-10 w-full flex flex-col items-center text-center space-y-1 md:space-y-4">
                       <motion.h3
                         variants={{
                           idle: { y: 0 },
                           hover: { y: -8 },
                           active: { y: -8 },
                         }}
-                        className="text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter uppercase leading-none w-full break-words transition-colors duration-500"
+                        className="text-lg md:text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter uppercase leading-none w-full break-words transition-colors duration-500"
                       >
                         <span
                           className="text-slate-900 dark:text-white group-hover:text-white transition-colors duration-500"
@@ -344,7 +350,7 @@ export function Dashboard() {
                           hover: { y: -8 },
                           active: { y: -8 },
                         }}
-                        className="text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 transition-colors duration-500"
+                        className="text-[11px] md:text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 transition-colors duration-500"
                         style={{
                           color: isActive ? "rgba(255,255,255,0.8)" : undefined,
                         }}
@@ -376,14 +382,25 @@ export function Dashboard() {
         user={user}
       />
 
-      <div className="flex flex-col md:hidden w-full bg-white dark:bg-black">
-        <div className="w-full pt-16" />
+      <div className="flex flex-col md:hidden w-full bg-transparent">
+        <div className="w-full pt-20 pb-4 relative z-[2]">
+          <LogoKoreMobile backgroundEffect="blur" />
+        </div>
         <div className="w-full px-4 pt-4 pb-20">{renderCardsGrid()}</div>
       </div>
 
       <div className="hidden md:block relative w-full min-h-screen">
-        <div className="relative z-10 w-full pt-20">
-          <div className="w-full min-h-screen bg-white dark:bg-black px-8 lg:px-12 pt-10 pb-20">
+        <motion.div
+          className="fixed top-0 left-0 w-full h-[22vh] flex justify-center items-center z-[5] pt-10"
+          style={{ y: logoY, opacity: logoOpacity }}
+        >
+          <div className="relative flex justify-center items-center px-8">
+            <LogoKore />
+          </div>
+        </motion.div>
+
+        <div className="relative z-10 w-full mt-[22vh]">
+          <div className="w-full min-h-screen bg-transparent px-8 lg:px-12 pt-10 pb-20">
             <div className="w-full max-w-[1400px] mx-auto">
               {renderCardsGrid()}
             </div>

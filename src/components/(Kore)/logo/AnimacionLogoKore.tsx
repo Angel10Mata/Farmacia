@@ -21,7 +21,8 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
     let index = 0;
     setDisplayedText("");
     const interval = setInterval(() => {
-      setDisplayedText((prev) => prev + targetText.charAt(index));
+      const char = targetText.charAt(index);
+      setDisplayedText((prev) => prev + char);
       index++;
       if (index >= targetText.length) {
         clearInterval(interval);
