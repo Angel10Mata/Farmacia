@@ -12,7 +12,7 @@ export default function SignupPage() {
 
   return (
     <Suspense>
-      <main className="min-h-screen flex items-center justify-center bg-background">
+      <main className="min-h-screen flex items-center justify-center">
         <SignupForm isOpen={isOpen} onClose={handleClose} />
 
         {!isOpen && (

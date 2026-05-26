@@ -116,7 +116,7 @@ useEffect(() => {
   if (!mounted) return null;
 
   return (
-    <div className="relative flex-1 flex flex-col items-center justify-center w-full bg-background z-0 overflow-hidden">
+    <div className="relative flex-1 flex flex-col items-center justify-center w-full bg-transparent z-0 overflow-hidden">
       <div className="absolute inset-0 z-0 pointer-events-none">
         <DotPattern className="mask-[radial-gradient(1000px_circle_at_center,white,transparent)] opacity-80" />
       </div>

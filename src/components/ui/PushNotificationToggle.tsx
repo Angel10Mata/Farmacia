@@ -120,15 +120,19 @@ export function PushNotificationToggle() {
 
         const subscriptionJson = JSON.parse(JSON.stringify(sub))
 
-        const { error } = await supabase.from('push_subscriptions').upsert(
-          {
-            user_id: userId,
-            endpoint: subscriptionJson.endpoint,
-            p256dh: subscriptionJson.keys.p256dh,
-            auth: subscriptionJson.keys.auth,
-          },
-          { onConflict: 'endpoint' }
-        )
+        // Borrar suscripción anterior con el mismo endpoint (si existe)
+        await supabase
+          .from('push_subscriptions')
+          .delete()
+          .eq('endpoint', subscriptionJson.endpoint)
+
+        // Insertar la nueva suscripción
+        const { error } = await supabase.from('push_subscriptions').insert({
+          user_id: userId,
+          endpoint: subscriptionJson.endpoint,
+          p256dh: subscriptionJson.keys.p256dh,
+          auth: subscriptionJson.keys.auth,
+        })
 
         if (error) throw error
 

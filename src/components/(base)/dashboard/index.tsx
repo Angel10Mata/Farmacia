@@ -25,6 +25,7 @@ const MODULES = [
     icon: "qikuvfgb",
     href: "/kore/proyectos",
     allowedRoles: ["super", "admin", "proyectos"],
+    isWide: true,
   },
   {
     id: "perfil",
@@ -33,6 +34,7 @@ const MODULES = [
     desc: "Actualización de credenciales y datos personales del usuario.",
     icon: "btgcyfug",
     href: "/kore/perfil",
+    isWide: false,
   },
   {
     id: "dispositivos",
@@ -42,6 +44,7 @@ const MODULES = [
     icon: "gzqipvbr",
     href: "/kore/admin/dispositivos",
     requiresAdmin: true,
+    isWide: false,
   },
   {
     id: "usuarios",
@@ -51,6 +54,7 @@ const MODULES = [
     icon: "vxfekxur",
     href: "/kore/admin/usuarios",
     requiresAdmin: true,
+    isWide: true,
   },
   {
     id: "configuracion",
@@ -60,6 +64,7 @@ const MODULES = [
     icon: "plusmrxr",
     href: "/kore/admin/configuraciones",
     requiresAdmin: true,
+    isWide: true,
   },
 ];
 
@@ -107,16 +112,20 @@ export function Dashboard() {
   };
 
   const renderCardsGrid = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6 w-full">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 w-full">
       {visibleModules.map((mod, index) => {
         const isActive = isMobile && activeId === mod.id;
         const isFirstMobile = isMobile && index === 0;
+        const isWide = !!mod.isWide;
 
         return (
           <motion.div
             key={mod.id}
             className={[
-              "cursor-pointer w-full h-auto min-h-[180px] md:min-h-[400px] lg:h-[380px] relative",
+              "cursor-pointer w-full h-auto relative",
+              isWide
+                ? "col-span-1 md:col-span-2 min-h-[180px] md:min-h-[300px] lg:h-[380px]"
+                : "col-span-1 min-h-[180px] md:min-h-[400px] lg:h-[380px]"
             ]
               .join(" ")
               .trim()}
@@ -279,7 +288,12 @@ export function Dashboard() {
                     </motion.span>
                   </div>
                   <motion.div
-                    className="w-full h-full flex flex-col justify-center items-center relative z-10 pb-4 md:pb-[40px]"
+                    className={[
+                      "w-full h-full flex relative z-10",
+                      isWide
+                        ? "flex-col md:flex-row justify-center md:justify-start items-center md:px-10 lg:px-14 gap-4 md:gap-8 pb-4 md:pb-[40px]"
+                        : "flex-col justify-center items-center pb-4 md:pb-[40px]"
+                    ].join(" ")}
                     variants={{
                       idle: { opacity: 1 },
                       hover: { opacity: 1 },
@@ -291,7 +305,7 @@ export function Dashboard() {
                       ease: "easeInOut",
                     }}
                   >
-                    <div className="relative z-10 w-full flex justify-center mb-1.5 md:mb-4">
+                    <div className={["relative z-10 flex justify-center", isWide ? "w-full md:w-auto mb-1.5 md:mb-0 shrink-0" : "w-full mb-1.5 md:mb-4"].join(" ")}>
                         <motion.div
                           variants={{
                             idle: { y: 0 },
@@ -317,7 +331,7 @@ export function Dashboard() {
                           />
                         </motion.div>
                     </div>
-                    <div className="relative z-10 w-full flex flex-col items-center text-center space-y-1 md:space-y-4">
+                    <div className={["relative z-10 w-full flex flex-col items-center space-y-1 md:space-y-4", isWide ? "text-center md:text-left md:items-start" : "text-center items-center"].join(" ")}>
                       <motion.h3
                         variants={{
                           idle: { y: 0 },

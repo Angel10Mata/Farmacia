@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,8 @@ import Swal from "sweetalert2";
 import { proyectoSchema, ProyectoFormValues } from "./lib/schemas";
 import { createProyecto, updateProyecto } from "@/app/kore/proyectos/actions";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
+import { createClient } from "@/utils/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface ProyectoModalProps {
   isOpen: boolean;
@@ -41,11 +43,27 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
   const { effectiveRole } = useUserContext();
   const isOperator = effectiveRole === "proyectos";
 
+  const supabase = createClient();
+  const { data: users } = useQuery({
+    queryKey: ["vendedores-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nombre")
+        .eq("activo", true)
+        .order("nombre", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const {
     register,
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProyectoFormValues>({
     resolver: zodResolver(proyectoSchema) as any,
@@ -70,6 +88,49 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
       monto_mantenimiento: 0,
     },
   });
+
+  // --- Autocomplete de clientes ---
+  const clienteNombreValue = watch("cliente_nombre") || "";
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [justSelected, setJustSelected] = useState(false);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+
+  const { data: clientesSuggestions } = useQuery({
+    queryKey: ["clientes-search", clienteNombreValue],
+    queryFn: async () => {
+      if (!clienteNombreValue || clienteNombreValue.length < 2) return [];
+      const { data, error } = await supabase
+        .from("clientes")
+        .select("id, nombre, telefono, correo")
+        .ilike("nombre", `%${clienteNombreValue}%`)
+        .limit(6);
+      if (error) return [];
+      return data || [];
+    },
+    enabled: clienteNombreValue.length >= 2 && !justSelected,
+    staleTime: 10 * 1000,
+  });
+
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectCliente = (cliente: { nombre: string; telefono: string | null; correo: string | null }) => {
+    setJustSelected(true);
+    setValue("cliente_nombre", cliente.nombre, { shouldValidate: true });
+    setValue("cliente_telefono", cliente.telefono || "");
+    setValue("cliente_correo", cliente.correo || "");
+    setShowSuggestions(false);
+    // Resetear el flag después de un momento para permitir nueva búsqueda
+    setTimeout(() => setJustSelected(false), 500);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -106,6 +167,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
 
 
   const onSubmit = async (data: ProyectoFormValues) => {
+    console.log("✅ onSubmit disparado con data:", data);
     let res;
     if (isEditing) {
       res = await updateProyecto(proyecto.id, data);
@@ -134,6 +196,10 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
       });
       onClose();
     }
+  };
+
+  const onInvalid = (errors: any) => {
+    console.error("❌ Validación fallida - errores:", errors);
   };
 
   if (!isOpen) return null;
@@ -176,8 +242,8 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
           </div>
 
           {/* Scrollable body: fills all space between header and footer on mobile */}
-          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar md:max-h-[70vh]">
-            <form id="proyecto-form" onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 custom-scrollbar md:max-h-[70vh]">
+            <form id="proyecto-form" onSubmit={handleSubmit(onSubmit as any, onInvalid)} className="space-y-6">
               {/* Información General */}
               <div className="space-y-4">
                 <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">Información General</h4>
@@ -202,9 +268,46 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
               <div className="space-y-4">
                 <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">Información del Cliente</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="grid gap-2">
+                  {/* Campo con autocomplete */}
+                  <div className="grid gap-2 relative" ref={autocompleteRef}>
                     <Label htmlFor="cliente_nombre">Nombre Cliente</Label>
-                    <Input id="cliente_nombre" {...register("cliente_nombre")} placeholder="Juan Pérez" />
+                    <Input
+                      id="cliente_nombre"
+                      {...register("cliente_nombre")}
+                      placeholder="Juan Pérez"
+                      autoComplete="off"
+                      onFocus={() => { if (clienteNombreValue.length >= 2) setShowSuggestions(true); }}
+                      onChange={(e) => {
+                        register("cliente_nombre").onChange(e);
+                        setJustSelected(false);
+                        setShowSuggestions(e.target.value.length >= 2);
+                      }}
+                    />
+                    {/* Dropdown de sugerencias */}
+                    <AnimatePresence>
+                      {showSuggestions && clientesSuggestions && clientesSuggestions.length > 0 && (
+                        <motion.ul
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-zinc-900 shadow-2xl shadow-black/60 overflow-hidden"
+                        >
+                          {clientesSuggestions.map((c: any) => (
+                            <li
+                              key={c.id}
+                              onMouseDown={() => handleSelectCliente(c)}
+                              className="flex flex-col px-3 py-2.5 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
+                            >
+                              <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">{c.nombre}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {[c.telefono, c.correo].filter(Boolean).join(" · ") || "Sin datos de contacto"}
+                              </span>
+                            </li>
+                          ))}
+                        </motion.ul>
+                      )}
+                    </AnimatePresence>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="cliente_telefono">Teléfono</Label>
@@ -229,7 +332,17 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="vendedor_nombre">Vendedor</Label>
-                      <Input id="vendedor_nombre" {...register("vendedor_nombre")} placeholder="Nombre Vendedor" disabled={isOperator} />
+                      <Select id="vendedor_nombre" {...register("vendedor_nombre")} disabled={isOperator}>
+                        <option value="">Seleccionar Vendedor</option>
+                        {proyecto?.vendedor_nombre && !users?.some(u => u.nombre === proyecto.vendedor_nombre) && (
+                          <option value={proyecto.vendedor_nombre}>{proyecto.vendedor_nombre}</option>
+                        )}
+                        {users?.map((user) => (
+                          <option key={user.id} value={user.nombre || ""}>
+                            {user.nombre || "Sin nombre"}
+                          </option>
+                        ))}
+                      </Select>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="fecha_entrega">Fecha de Entrega</Label>

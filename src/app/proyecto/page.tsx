@@ -62,13 +62,13 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
   const isExternal = formattedLoginUrl.startsWith("http://") || formattedLoginUrl.startsWith("https://");
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white flex flex-col justify-between relative overflow-hidden select-none translate-y-0">
+    <div className="min-h-screen bg-transparent text-white flex flex-col justify-between relative overflow-hidden select-none translate-y-0">
       {/* Luces de Fondo */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#B7494E]/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-900/10 blur-[120px] pointer-events-none" />
 
       {/* Header / Logo */}
-      <header className="w-full flex justify-center pt-10 pb-4 z-10">
+      <header className="w-full flex justify-center pt-32 md:pt-24 pb-4 z-10">
         <div className="flex flex-col items-center gap-2">
           <LogoKore scale={0.7} backgroundEffect="glow" />
           <p className="text-[9px] font-black tracking-[0.4em] text-zinc-500 uppercase">

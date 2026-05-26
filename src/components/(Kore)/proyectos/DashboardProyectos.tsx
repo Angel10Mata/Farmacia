@@ -32,11 +32,12 @@ import {
 } from "recharts";
 import { getProyectos, deleteProyecto } from "@/app/kore/proyectos/actions";
 import ProyectoModal from "./ProyectoModal";
+import ClientesModal from "./ClientesModal";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRProyecto from "./QRProyecto";
-import { QrCode } from "lucide-react";
+import { QrCode, Users } from "lucide-react";
 
 // TypeScript declaration for the Lordicon web component
 declare global {
@@ -73,6 +74,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [qrProyecto, setQrProyecto] = useState<any | null>(null);
   const [detalleProyecto, setDetalleProyecto] = useState<any | null>(null);
+  const [isClientesModalOpen, setIsClientesModalOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -468,8 +470,15 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button 
+            onClick={() => setIsClientesModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white hover:text-white transition-all font-black text-xs sm:text-sm w-full sm:w-auto cursor-pointer"
+          >
+            <Users size={14} className="sm:w-[18px] sm:h-[18px] text-celeste-kore" />
+            CLIENTES
+          </button>
+          <button 
             onClick={() => { setSelectedProyecto(null); setIsModalOpen(true); }}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:bg-celeste-kore border border-transparent transition-all font-black text-xs sm:text-sm w-full sm:w-auto"
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:bg-celeste-kore border border-transparent transition-all font-black text-xs sm:text-sm w-full sm:w-auto cursor-pointer"
           >
             <Plus size={14} className="sm:w-[18px] sm:h-[18px]" />
             NUEVO PROYECTO
@@ -1139,6 +1148,12 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
         proyecto={qrProyecto}
         onClose={() => setQrProyecto(null)}
         onSuccess={fetchData}
+      />
+
+      <ClientesModal
+        isOpen={isClientesModalOpen}
+        onClose={() => setIsClientesModalOpen(false)}
+        proyectos={proyectos}
       />
     </div>
   );

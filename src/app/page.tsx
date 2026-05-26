@@ -9,7 +9,7 @@ import LoginForm from "@/components/(base)/(auth)/login/LogIn";
 
 export default function Home() {
   return (
-    <div className="bg-background text-foreground flex-1 flex flex-col">
+    <div className="text-foreground flex-1 flex flex-col">
       <LoginForm />
     </div>
   );

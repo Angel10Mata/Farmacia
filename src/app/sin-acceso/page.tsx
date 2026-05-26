@@ -15,7 +15,7 @@ export default function SinAccesoPage() {
   if (!mounted) return null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground text-center">
+    <div className="flex min-h-screen items-center justify-center p-4 text-foreground text-center">
       <div className="max-w-md w-full bg-card border border-border rounded-2xl p-10 shadow-2xl">
         <div className="mb-8 flex justify-center">
           <div className="p-6 bg-red-500/10 rounded-full animate-pulse">

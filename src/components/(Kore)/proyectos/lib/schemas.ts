@@ -15,8 +15,8 @@ export const proyectoSchema = z.object({
   aplica_doc: z.coerce.boolean().default(true),
   porcentaje_doc: z.coerce.number().min(0).max(100).default(10),
   estado: z.string().default("En Progreso"),
-  mantenimiento_fecha: z.string().optional().or(z.literal("")),
-  mantenimiento_categoria: z.string().optional(),
+  mantenimiento_fecha: z.string().nullish().or(z.literal("")),
+  mantenimiento_categoria: z.string().nullish(),
   aplica_mantenimiento: z.coerce.boolean().default(false),
   monto_mantenimiento: z.coerce.number().min(0).default(0),
 });
