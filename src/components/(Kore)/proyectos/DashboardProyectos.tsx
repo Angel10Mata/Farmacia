@@ -65,6 +65,8 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
   });
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [proyectos, setProyectos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -321,8 +323,6 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
   const barData = useMemo(() => {
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
 
     if (chartTab === "RANGO") {
       const start = new Date(dateRange.start + "T00:00:00");
@@ -373,7 +373,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     }
 
     if (chartTab === "MES") {
-      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
       const dataByDay = Array.from({ length: daysInMonth }, (_, i) => ({
         name: (i + 1).toString(),
         precio: 0,
@@ -383,7 +383,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
       proyectos.forEach(p => {
         const date = new Date(p.created_at);
-        if (date.getFullYear() === currentYear && date.getMonth() === currentMonth) {
+        if (date.getFullYear() === selectedYear && date.getMonth() === selectedMonth) {
           const d = date.getDate() - 1;
           const precio = Number(p.precio) || 0;
           dataByDay[d].precio += precio;
@@ -392,16 +392,15 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
         }
       });
 
-      // Si es el mes actual, podemos limitar hasta hoy para no mostrar días vacíos futuros
-      // Pero usualmente se prefiere ver el mes completo. Dejaremos el mes completo.
-      return dataByDay.filter(d => d.precio > 0 || Number(d.name) <= now.getDate());
+      const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+      return dataByDay.filter(d => d.precio > 0 || !isCurrentMonth || Number(d.name) <= now.getDate());
     } else {
       const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
       const dataByMonth = Array.from({ length: 12 }, (_, i) => ({ name: months[i], precio: 0, comision: 0, iva: 0 }));
 
       proyectos.forEach(p => {
         const date = new Date(p.created_at);
-        if (date.getFullYear() === currentYear) {
+        if (date.getFullYear() === selectedYear) {
           const m = date.getMonth();
           const precio = Number(p.precio) || 0;
           dataByMonth[m].precio += precio;
@@ -410,9 +409,14 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
         }
       });
 
-      return dataByMonth.slice(0, Math.min(12, currentMonth + 2)).filter(d => d.precio > 0 || d.name === months[currentMonth]);
+      const isCurrentYear = selectedYear === now.getFullYear();
+      if (isCurrentYear) {
+        return dataByMonth.slice(0, Math.min(12, now.getMonth() + 2)).filter(d => d.precio > 0 || d.name === months[now.getMonth()]);
+      } else {
+        return dataByMonth;
+      }
     }
-  }, [proyectos, chartTab, dateRange]);
+  }, [proyectos, chartTab, dateRange, selectedMonth, selectedYear]);
 
   const filteredProyectos = useMemo(() => {
     if (!searchTerm) return proyectos;
@@ -499,10 +503,49 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
                     <CircleDollarSign size={14} className="text-celeste-kore" />
                   </div>
-                  <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest">
-                    Ingresos por {chartTab === "MES" ? "Día" : chartTab === "AÑO" ? "Mes" : "Período"}
-                    {chartTab === "MES" && <span className="text-muted-foreground ml-1.5 text-[9px] sm:text-[10px] font-bold normal-case tracking-normal">{new Date().toLocaleDateString('es-GT', { month: 'long', year: 'numeric' })}</span>}
-                    {chartTab === "AÑO" && <span className="text-muted-foreground ml-1.5 text-[9px] sm:text-[10px] font-bold normal-case tracking-normal">{new Date().getFullYear()}</span>}
+                  <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest flex flex-wrap items-center gap-2">
+                    <span>Ingresos por {chartTab === "MES" ? "Día" : chartTab === "AÑO" ? "Mes" : "Período"}</span>
+                    {chartTab === "MES" && (
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                          className="bg-white/5 border border-white/10 rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-white"
+                        >
+                          {["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"].map((m, idx) => (
+                            <option key={m} value={idx} className="bg-zinc-950 text-white font-bold">
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={selectedYear}
+                          onChange={(e) => setSelectedYear(Number(e.target.value))}
+                          className="bg-white/5 border border-white/10 rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-white"
+                        >
+                          {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                            <option key={y} value={y} className="bg-zinc-950 text-white font-bold">
+                              {y}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {chartTab === "AÑO" && (
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <select
+                          value={selectedYear}
+                          onChange={(e) => setSelectedYear(Number(e.target.value))}
+                          className="bg-white/5 border border-white/10 rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-white"
+                        >
+                          {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                            <option key={y} value={y} className="bg-zinc-950 text-white font-bold">
+                              {y}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </h3>
                 </div>
                 <div className="flex items-center rounded-full bg-muted/30 border border-border/30 p-[2px] self-end sm:self-auto">
