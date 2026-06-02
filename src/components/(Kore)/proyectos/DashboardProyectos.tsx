@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Briefcase,
   CircleDollarSign,
@@ -31,8 +32,6 @@ import {
   Cell,
 } from "recharts";
 import { getProyectos, deleteProyecto } from "@/app/kore/proyectos/actions";
-import ProyectoModal from "./ProyectoModal";
-import ClientesModal from "./ClientesModal";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -58,6 +57,7 @@ interface DashboardProyectosProps {
 }
 
 export default function DashboardProyectos({ role }: DashboardProyectosProps) {
+  const router = useRouter();
   const isAdmin = ["super", "admin"].includes(role);
 
   const [chartTab, setChartTab] = useState<"MES" | "AÑO" | "RANGO">("MES");
@@ -69,29 +69,30 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [proyectos, setProyectos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProyecto, setSelectedProyecto] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showList, setShowList] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [qrProyecto, setQrProyecto] = useState<any | null>(null);
   const [detalleProyecto, setDetalleProyecto] = useState<any | null>(null);
-  const [isClientesModalOpen, setIsClientesModalOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
-    const data = await getProyectos();
-    setProyectos(data || []);
-    
-    // Si el modal de QR está abierto, actualizar sus datos con la información más reciente de la DB
-    if (qrProyecto) {
-      const updated = data?.find((p: any) => p.id === qrProyecto.id);
-      if (updated) {
-        setQrProyecto(updated);
+    try {
+      const data = await getProyectos();
+      setProyectos(data || []);
+      
+      // Si el modal de QR está abierto, actualizar sus datos con la información más reciente de la DB
+      if (qrProyecto) {
+        const updated = data?.find((p: any) => p.id === qrProyecto.id);
+        if (updated) {
+          setQrProyecto(updated);
+        }
       }
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -474,14 +475,14 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button 
-            onClick={() => setIsClientesModalOpen(true)}
+            onClick={() => router.push("/kore/clientes")}
             className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white hover:text-white transition-all font-black text-xs sm:text-sm w-full sm:w-auto cursor-pointer"
           >
             <Users size={14} className="sm:w-[18px] sm:h-[18px] text-celeste-kore" />
             CLIENTES
           </button>
           <button 
-            onClick={() => { setSelectedProyecto(null); setIsModalOpen(true); }}
+            onClick={() => router.push("/kore/proyectos/nuevo")}
             className="flex items-center justify-center gap-1.5 px-4 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:bg-celeste-kore border border-transparent transition-all font-black text-xs sm:text-sm w-full sm:w-auto cursor-pointer"
           >
             <Plus size={14} className="sm:w-[18px] sm:h-[18px]" />
@@ -852,7 +853,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                                   <QrCode size={16} />
                                 </button>
                                 <button 
-                                  onClick={() => { setSelectedProyecto(p); setIsModalOpen(true); }}
+                                  onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
                                   className="p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors"
                                 >
                                   <Edit size={16} />
@@ -897,25 +898,25 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             </div>
 
                             {/* Portada Mobile Actions */}
-                            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => setQrProyecto(p)}
-                                className="p-1 bg-muted/40 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-md transition-all"
+                                className="p-1.5 bg-muted/40 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-md transition-all"
                                 title="Ver QR"
                               >
-                                <QrCode size={11} />
+                                <QrCode size={14} />
                               </button>
                               <button 
-                                onClick={() => { setSelectedProyecto(p); setIsModalOpen(true); }}
-                                className="p-1 bg-muted/40 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-md transition-all"
+                                onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
+                                className="p-1.5 bg-muted/40 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-md transition-all"
                               >
-                                <Edit size={11} />
+                                <Edit size={14} />
                               </button>
                               <button 
                                 onClick={() => handleDelete(p.id)}
-                                className="p-1 bg-muted/40 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-md transition-all"
+                                className="p-1.5 bg-muted/40 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-md transition-all"
                               >
-                                <Trash2 size={11} />
+                                <Trash2 size={14} />
                               </button>
                             </div>
                           </div>
@@ -1177,26 +1178,11 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
         )}
       </AnimatePresence>
 
-      <ProyectoModal 
-        isOpen={isModalOpen} 
-        onClose={() => {
-          setIsModalOpen(false);
-          fetchData();
-        }} 
-        proyecto={selectedProyecto} 
-      />
-
       <QRProyecto
         isOpen={!!qrProyecto}
         proyecto={qrProyecto}
         onClose={() => setQrProyecto(null)}
         onSuccess={fetchData}
-      />
-
-      <ClientesModal
-        isOpen={isClientesModalOpen}
-        onClose={() => setIsClientesModalOpen(false)}
-        proyectos={proyectos}
       />
     </div>
   );

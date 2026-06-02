@@ -42,29 +42,9 @@ const MODULES = [
     subtitle: "Dispositivos",
     desc: "Administración de dispositivos autorizados y configuración de llaves de acceso.",
     icon: "gzqipvbr",
-    href: "/kore/admin/dispositivos",
+    href: "/kore/admin",
     requiresAdmin: true,
     isWide: false,
-  },
-  {
-    id: "usuarios",
-    title: "Gestión de",
-    subtitle: "Usuarios",
-    desc: "Control absoluto de perfiles, permisos y acceso al sistema.",
-    icon: "vxfekxur",
-    href: "/kore/admin/usuarios",
-    requiresAdmin: true,
-    isWide: true,
-  },
-  {
-    id: "configuracion",
-    title: "Ajustes",
-    subtitle: "Avanzados",
-    desc: "Configuración y auditoría de variables del entorno Kore.",
-    icon: "plusmrxr",
-    href: "/kore/admin/configuraciones",
-    requiresAdmin: true,
-    isWide: true,
   },
 ];
 
@@ -115,28 +95,33 @@ export function Dashboard() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 w-full">
       {visibleModules.map((mod, index) => {
         const isActive = isMobile && activeId === mod.id;
-        const isFirstMobile = isMobile && index === 0;
         const isWide = !!mod.isWide;
+        const isModuleActive = isActive || (mod.id === 'perfil' && expandedPerfil);
 
         return (
           <motion.div
             key={mod.id}
             className={[
-              "cursor-pointer w-full h-auto relative",
+              "cursor-pointer w-full relative",
               isWide
-                ? "col-span-1 md:col-span-2 min-h-[180px] md:min-h-[300px] lg:h-[380px]"
-                : "col-span-1 min-h-[180px] md:min-h-[400px] lg:h-[380px]"
+                ? "col-span-1 md:col-span-2 min-h-[120px] md:min-h-[300px] lg:h-[380px]"
+                : "col-span-1 min-h-[120px] md:min-h-[400px] lg:h-[380px]"
             ]
               .join(" ")
               .trim()}
             id={`${mod.id}-card`}
             initial="idle"
             whileHover="hover"
-            animate={isActive ? "active" : "idle"}
+            animate={isModuleActive ? "active" : "idle"}
             transition={{ duration: 0.4, ease: "easeOut" }}
+            variants={{
+              idle: { zIndex: 1, height: isMobile ? 120 : undefined },
+              hover: { zIndex: 10, height: isMobile ? 120 : undefined },
+              active: { zIndex: 20, height: isMobile ? 190 : undefined },
+            }}
           >
             {mod.id === "perfil" ? (
-              <div className="group flex flex-col border border-red-500 dark:border-white/40 overflow-hidden h-full w-full rounded-2xl bg-white dark:bg-[#111] transition-all duration-500 hover:border-red-600 dark:hover:border-white hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-white/10">
+              <div className="group flex flex-col border border-red-500 dark:border-white/40 overflow-hidden h-full w-full rounded-2xl bg-white dark:bg-[#111] transition-colors duration-500 hover:border-red-600 dark:hover:border-white hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-white/10">
                 <AnimatePresence mode="wait">
                   {expandedPerfil ? (
                     <motion.div
@@ -145,7 +130,7 @@ export function Dashboard() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.4, ease: "easeInOut" }}
-                      className="w-full h-full min-h-[140px] md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
+                      className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
                     >
                       <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]" />
                       <button
@@ -208,7 +193,7 @@ export function Dashboard() {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.4, ease: "easeInOut" }}
                       onClick={() => setExpandedPerfil(true)}
-                      className="w-full h-full min-h-[140px] md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
+                      className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
                     >
                       <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 transition-transform duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
                       <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
@@ -216,23 +201,23 @@ export function Dashboard() {
                           Ver opciones
                         </span>
                       </div>
-                      <div className="w-full h-full flex flex-col justify-center items-center relative z-10 pb-4 md:pb-[40px]">
-                        <div className="relative z-10 w-full flex justify-center mb-1.5 md:mb-4">
-                          <div className="size-12 md:size-[90px] flex items-center justify-center transition-transform duration-700 ease-out group-hover:-translate-y-4 relative">
+                      <div className="w-full h-full flex flex-row md:flex-col justify-start md:justify-center items-center px-4 md:px-0 gap-4 md:gap-0 relative z-10 pb-4 md:pb-[40px]">
+                        <div className="relative z-10 flex justify-center shrink-0 mb-0 md:mb-4">
+                          <div className="size-16 md:size-[90px] flex items-center justify-center transition-transform duration-700 ease-out group-hover:-translate-y-4 relative">
                             <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <div 
-                              className="absolute inset-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 -z-10"
+                              className="absolute top-2 inset-x-[-6px] bottom-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 -z-10"
                             />
                             <AnimatedIcon
                               iconKey={mod.icon}
                               target={`#${mod.id}-card`}
-                              className="size-10 md:size-[90px]"
+                              className="size-12 md:size-[90px]"
                               speed={1.5}
                               trigger="hover"
                             />
                           </div>
                         </div>
-                        <div className="relative z-10 w-full flex flex-col items-center text-center space-y-1 md:space-y-4 transition-transform duration-700 group-hover:-translate-y-2">
+                        <div className="relative z-10 w-full flex flex-col items-start md:items-center text-left md:text-center space-y-1 md:space-y-4 transition-transform duration-700 group-hover:-translate-y-2">
                           <h3 className="text-lg md:text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words transition-colors duration-500">
                             {mod.title}
                             <br />
@@ -252,12 +237,12 @@ export function Dashboard() {
             ) : (
               <div
                 onClick={() => handleCardClick(mod.id, mod.href)}
-                className="group flex flex-col border border-red-500 dark:border-white/40 overflow-hidden h-full w-full rounded-2xl transition-all duration-500 cursor-pointer bg-white dark:bg-[#111] hover:border-red-600 dark:hover:border-white hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-white/10"
+                className="group flex flex-col border border-red-500 dark:border-white/40 overflow-hidden h-full w-full rounded-2xl transition-colors duration-500 cursor-pointer bg-white dark:bg-[#111] hover:border-red-600 dark:hover:border-white hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-white/10"
                 style={{
                   borderColor: isActive ? "#ef4444" : undefined,
                 }}
               >
-                <div className="w-full h-full min-h-[140px] md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 outline-none relative z-10 rounded-[inherit] overflow-hidden">
+                <div className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 outline-none relative z-10 rounded-[inherit] overflow-hidden">
                   <motion.div
                     variants={{
                       idle: { scaleY: 0 },
@@ -290,9 +275,10 @@ export function Dashboard() {
                   <motion.div
                     className={[
                       "w-full h-full flex relative z-10",
-                      isWide
-                        ? "flex-col md:flex-row justify-center md:justify-start items-center md:px-10 lg:px-14 gap-4 md:gap-8 pb-4 md:pb-[40px]"
-                        : "flex-col justify-center items-center pb-4 md:pb-[40px]"
+                      "flex-row items-center justify-start px-4 gap-4 pb-4 md:pb-[40px]",
+                      isWide 
+                        ? "md:flex-row md:px-10 lg:px-14 md:gap-8" 
+                        : "md:flex-col md:justify-center md:px-0 md:gap-0"
                     ].join(" ")}
                     variants={{
                       idle: { opacity: 1 },
@@ -305,33 +291,33 @@ export function Dashboard() {
                       ease: "easeInOut",
                     }}
                   >
-                    <div className={["relative z-10 flex justify-center", isWide ? "w-full md:w-auto mb-1.5 md:mb-0 shrink-0" : "w-full mb-1.5 md:mb-4"].join(" ")}>
+                    <div className={["relative z-10 flex justify-center shrink-0", isWide ? "md:w-auto mb-0" : "md:mb-4"].join(" ")}>
                         <motion.div
                           variants={{
                             idle: { y: 0 },
                             hover: { y: -16 },
                             active: { y: -16 },
                           }}
-                          className="size-12 md:size-[90px] flex items-center justify-center transition-transform duration-700 relative"
+                          className="size-16 md:size-[90px] flex items-center justify-center transition-transform duration-700 relative"
                         >
                           <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                          <div 
-                            className={[
-                              "absolute inset-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 -z-10",
-                              "opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100",
-                              isActive ? "opacity-100 scale-100" : ""
-                            ].join(" ")}
-                          />
+                           <div 
+                             className={[
+                               "absolute top-2 inset-x-[-6px] bottom-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 -z-10",
+                               "opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100",
+                               isActive ? "opacity-100 scale-100" : ""
+                             ].join(" ")}
+                           />
                           <AnimatedIcon
                             iconKey={mod.icon}
                             target={`#${mod.id}-card`}
-                            className="size-10 md:size-[90px]"
+                            className="size-12 md:size-[90px]"
                             speed={1.5}
                             trigger="hover"
                           />
                         </motion.div>
                     </div>
-                    <div className={["relative z-10 w-full flex flex-col items-center space-y-1 md:space-y-4", isWide ? "text-center md:text-left md:items-start" : "text-center items-center"].join(" ")}>
+                    <div className={["relative z-10 w-full flex flex-col items-start space-y-1 md:space-y-4 text-left", isWide ? "" : "md:text-center md:items-center"].join(" ")}>
                       <motion.h3
                         variants={{
                           idle: { y: 0 },

@@ -1,0 +1,445 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Briefcase, Save, ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
+import Swal from "sweetalert2";
+import { proyectoSchema, ProyectoFormValues } from "./lib/schemas";
+import { createProyecto, updateProyecto } from "@/app/kore/proyectos/actions";
+import { useUserContext } from "@/components/(base)/providers/UserProvider";
+import { createClient } from "@/utils/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+
+interface ProyectoFormProps {
+  proyecto?: any | null;
+}
+
+const Label = ({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) => (
+  <label {...props} className={cn("text-xs font-semibold leading-none text-foreground/70 uppercase tracking-wider", className)} />
+);
+
+const Input = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <input {...props} className={cn("flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all outline-none disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed", className)} />
+);
+
+const Select = ({ className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) => (
+  <div className="relative">
+    <select {...props} className={cn("flex h-10 w-full appearance-none rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed", className)} />
+    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  </div>
+);
+
+export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
+  const isEditing = !!proyecto;
+  const { effectiveRole } = useUserContext();
+  const isOperator = effectiveRole === "proyectos";
+  const router = useRouter();
+
+  const supabase = createClient();
+  const { data: users } = useQuery({
+    queryKey: ["vendedores-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nombre")
+        .eq("activo", true)
+        .order("nombre", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<ProyectoFormValues>({
+    resolver: zodResolver(proyectoSchema) as any,
+    defaultValues: {
+      nombre: "",
+      cliente_nombre: "",
+      cliente_telefono: "",
+      cliente_correo: "",
+      vendedor_nombre: "",
+      fecha_entrega: "",
+      precio: 0,
+      aplica_vendedor: true,
+      porcentaje_vendedor: 10,
+      aplica_iva: true,
+      porcentaje_iva: 12,
+      aplica_doc: true,
+      porcentaje_doc: 10,
+      estado: "En Progreso",
+      mantenimiento_fecha: "",
+      mantenimiento_categoria: "",
+      aplica_mantenimiento: false,
+      monto_mantenimiento: 0,
+    },
+  });
+
+  // --- Autocomplete de clientes ---
+  const clienteNombreValue = watch("cliente_nombre") || "";
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [justSelected, setJustSelected] = useState(false);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+
+  const { data: clientesSuggestions } = useQuery({
+    queryKey: ["clientes-search", clienteNombreValue],
+    queryFn: async () => {
+      if (!clienteNombreValue || clienteNombreValue.length < 2) return [];
+      const { data, error } = await supabase
+        .from("clientes")
+        .select("id, nombre, telefono, correo")
+        .ilike("nombre", `%${clienteNombreValue}%`)
+        .limit(6);
+      if (error) return [];
+      return data || [];
+    },
+    enabled: clienteNombreValue.length >= 2 && !justSelected,
+    staleTime: 10 * 1000,
+  });
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectCliente = (cliente: { nombre: string; telefono: string | null; correo: string | null }) => {
+    setJustSelected(true);
+    setValue("cliente_nombre", cliente.nombre, { shouldValidate: true });
+    setValue("cliente_telefono", cliente.telefono || "");
+    setValue("cliente_correo", cliente.correo || "");
+    setShowSuggestions(false);
+    setTimeout(() => setJustSelected(false), 500);
+  };
+
+  // Cargar datos del proyecto si estamos editando
+  useEffect(() => {
+    if (proyecto) {
+      reset({
+        ...proyecto,
+        fecha_entrega: proyecto.fecha_entrega || "",
+        mantenimiento_fecha: proyecto.mantenimiento_fecha || "",
+      });
+    }
+  }, [proyecto, reset]);
+
+  const onSubmit = async (data: ProyectoFormValues) => {
+    let res;
+    if (isEditing) {
+      res = await updateProyecto(proyecto.id, data);
+    } else {
+      res = await createProyecto(data);
+    }
+
+    if (res.error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: res.error,
+        background: "#18181b",
+        color: "#fff",
+      });
+    } else {
+      Swal.fire({
+        icon: "success",
+        title: isEditing ? "Proyecto Actualizado" : "Proyecto Creado",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+        background: "#18181b",
+        color: "#fff",
+      });
+      router.push("/kore/proyectos");
+    }
+  };
+
+  const onInvalid = (errors: any) => {
+    console.error("❌ Validación fallida - errores:", errors);
+  };
+
+  const handleCancel = () => {
+    router.push("/kore/proyectos");
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="w-full max-w-3xl mx-auto"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+          Volver a Proyectos
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-2xl shadow-black/20 overflow-hidden">
+        {/* Title Bar */}
+        <div className="flex items-center gap-4 p-6 border-b border-border/50 bg-muted/5">
+          <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
+            <Briefcase size={20} className="text-celeste-kore" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black tracking-tight text-foreground uppercase">
+              {isEditing ? "Editar Proyecto" : "Nuevo Proyecto"}
+            </h1>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+              {isEditing ? "Modificando información" : "Registro de datos"}
+            </p>
+          </div>
+        </div>
+
+        {/* Form Body */}
+        <div className="p-6">
+          <form id="proyecto-form" onSubmit={handleSubmit(onSubmit as any, onInvalid)} className="space-y-8">
+
+            {/* Información General */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
+                Información General
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="nombre">Nombre del Proyecto *</Label>
+                  <Input
+                    id="nombre"
+                    {...register("nombre")}
+                    placeholder="Ej. Sistema de Inventario"
+                    className={errors.nombre ? "border-destructive ring-1 ring-destructive" : ""}
+                  />
+                  {errors.nombre && <p className="text-[10px] text-destructive">{errors.nombre.message}</p>}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="estado">Estado</Label>
+                  <Select id="estado" {...register("estado")}>
+                    <option value="En Progreso">En Progreso</option>
+                    <option value="En pausa">En Pausa</option>
+                    <option value="Finalizados">Finalizado</option>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Información del Cliente */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
+                Información del Cliente
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Autocomplete de cliente */}
+                <div className="grid gap-2 relative" ref={autocompleteRef}>
+                  <Label htmlFor="cliente_nombre">Nombre Cliente</Label>
+                  <Input
+                    id="cliente_nombre"
+                    {...register("cliente_nombre")}
+                    placeholder="Juan Pérez"
+                    autoComplete="off"
+                    onFocus={() => { if (clienteNombreValue.length >= 2) setShowSuggestions(true); }}
+                    onChange={(e) => {
+                      register("cliente_nombre").onChange(e);
+                      setJustSelected(false);
+                      setShowSuggestions(e.target.value.length >= 2);
+                    }}
+                  />
+                  <AnimatePresence>
+                    {showSuggestions && clientesSuggestions && clientesSuggestions.length > 0 && (
+                      <motion.ul
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-zinc-900 shadow-2xl shadow-black/60 overflow-hidden"
+                      >
+                        {clientesSuggestions.map((c: any) => (
+                          <li
+                            key={c.id}
+                            onMouseDown={() => handleSelectCliente(c)}
+                            className="flex flex-col px-3 py-2.5 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
+                          >
+                            <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">{c.nombre}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {[c.telefono, c.correo].filter(Boolean).join(" · ") || "Sin datos de contacto"}
+                            </span>
+                          </li>
+                        ))}
+                      </motion.ul>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="cliente_telefono">Teléfono</Label>
+                  <Input id="cliente_telefono" {...register("cliente_telefono")} placeholder="12345678" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="cliente_correo">Correo</Label>
+                  <Input id="cliente_correo" type="email" {...register("cliente_correo")} placeholder="juan@correo.com" />
+                  {errors.cliente_correo && <p className="text-[10px] text-destructive">{errors.cliente_correo.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* Finanzas y Ventas */}
+            {!isOperator && (
+              <div className="space-y-4">
+                <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
+                  Finanzas y Ventas
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="precio">Precio Total (Q)</Label>
+                    <Input
+                      id="precio"
+                      type="number"
+                      step="0.01"
+                      {...register("precio", { valueAsNumber: true })}
+                      className={errors.precio ? "border-destructive" : ""}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="vendedor_nombre">Vendedor</Label>
+                    <Select id="vendedor_nombre" {...register("vendedor_nombre")}>
+                      <option value="">Seleccionar Vendedor</option>
+                      {proyecto?.vendedor_nombre && !users?.some((u: any) => u.nombre === proyecto.vendedor_nombre) && (
+                        <option value={proyecto.vendedor_nombre}>{proyecto.vendedor_nombre}</option>
+                      )}
+                      {users?.map((user: any) => (
+                        <option key={user.id} value={user.nombre || ""}>
+                          {user.nombre || "Sin nombre"}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="fecha_entrega">Fecha de Entrega</Label>
+                    <Input id="fecha_entrega" type="date" {...register("fecha_entrega")} />
+                  </div>
+                </div>
+
+                {/* Porcentajes */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-muted/20 p-4 rounded-xl border border-border/30">
+                  <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_vendedor') ? 'opacity-40' : ''}`}>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="aplica_vendedor" className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="aplica_vendedor" {...register("aplica_vendedor")} className="rounded bg-background border-border text-celeste-kore focus:ring-red-600" />
+                        <span className={!watch('aplica_vendedor') ? 'line-through' : ''}>Comisión Vendedor</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        {...register("porcentaje_vendedor", { valueAsNumber: true })}
+                        className={`w-20 text-center ${!watch('aplica_vendedor') ? 'pointer-events-none opacity-50' : ''}`}
+                      />
+                      <span className="text-xs font-bold text-muted-foreground">%</span>
+                    </div>
+                  </div>
+
+                  <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_iva') ? 'opacity-40' : ''}`}>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="aplica_iva" className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="aplica_iva" {...register("aplica_iva")} className="rounded bg-background border-border text-celeste-kore focus:ring-red-600" />
+                        <span className={!watch('aplica_iva') ? 'line-through' : ''}>Aplica IVA</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        {...register("porcentaje_iva", { valueAsNumber: true })}
+                        className={`w-20 text-center ${!watch('aplica_iva') ? 'pointer-events-none opacity-50' : ''}`}
+                      />
+                      <span className="text-xs font-bold text-muted-foreground">%</span>
+                    </div>
+                  </div>
+
+                  <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_doc') ? 'opacity-40' : ''}`}>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="aplica_doc" className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="aplica_doc" {...register("aplica_doc")} className="rounded bg-background border-border text-celeste-kore focus:ring-red-600" />
+                        <span className={!watch('aplica_doc') ? 'line-through' : ''}>Fondo Documentación</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        {...register("porcentaje_doc", { valueAsNumber: true })}
+                        className={`w-20 text-center ${!watch('aplica_doc') ? 'pointer-events-none opacity-50' : ''}`}
+                      />
+                      <span className="text-xs font-bold text-muted-foreground">%</span>
+                    </div>
+                  </div>
+
+                  <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_mantenimiento') ? 'opacity-40' : ''}`}>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="aplica_mantenimiento" className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="aplica_mantenimiento" {...register("aplica_mantenimiento")} className="rounded bg-background border-border text-celeste-kore focus:ring-red-600" />
+                        <span className={!watch('aplica_mantenimiento') ? 'line-through' : ''}>Cuota Mantenimiento</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...register("monto_mantenimiento", { valueAsNumber: true })}
+                        className={`w-24 text-center ${!watch('aplica_mantenimiento') ? 'pointer-events-none opacity-50' : ''}`}
+                      />
+                      <span className="text-xs font-bold text-muted-foreground">Q (Mes)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-border/50 bg-muted/5 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="px-6 py-2.5 rounded-xl border border-border/50 bg-background hover:bg-muted/50 transition-colors text-xs font-bold uppercase tracking-widest cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            form="proyecto-form"
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-opacity text-xs font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
+          >
+            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {isEditing ? "Guardar" : "Crear"}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
