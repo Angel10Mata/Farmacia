@@ -904,19 +904,19 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                                 className="p-2.5 bg-muted/40 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-all"
                                 title="Ver QR"
                               >
-                                <QrCode size={18} />
+                                <QrCode size={22} />
                               </button>
                               <button 
                                 onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
                                 className="p-2.5 bg-muted/40 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-all"
                               >
-                                <Edit size={18} />
+                                <Edit size={22} />
                               </button>
                               <button 
                                 onClick={() => handleDelete(p.id)}
                                 className="p-2.5 bg-muted/40 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-lg transition-all"
                               >
-                                <Trash2 size={18} />
+                                <Trash2 size={22} />
                               </button>
                             </div>
                           </div>

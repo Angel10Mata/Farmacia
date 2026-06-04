@@ -11,7 +11,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 const SEGMENT_LABELS: Record<string, string> = {
   proyectos: "Dashboard",
   proyecto: "Dashboard",
-  resumen: "Resumen",
+  resumen: "Dashboard",
   nuevo: "Nuevo Proyecto",
   editar: "Editar Proyecto",
   clientes: "Clientes",
