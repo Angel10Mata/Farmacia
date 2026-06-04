@@ -260,7 +260,7 @@ export default function ClientesDashboard() {
           {/* Back Button Link */}
           <button
             onClick={() => router.push("/kore/proyectos")}
-            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-celeste-kore hover:text-white transition-colors cursor-pointer w-fit"
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-celeste-kore hover:text-black dark:hover:text-white transition-colors cursor-pointer w-fit mt-4"
           >
             <ArrowLeft size={14} />
             Volver a Proyectos
@@ -295,7 +295,7 @@ export default function ClientesDashboard() {
       {/* MAIN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
         {/* LEFT COLUMN: Sticky Form Card */}
-        <div className="lg:sticky lg:top-24 bg-zinc-950/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl transition-all duration-300">
+        <div className="lg:sticky lg:top-24 bg-white dark:bg-zinc-950/40 backdrop-blur-xl border border-border/50 dark:border-white/10 rounded-2xl p-6 shadow-xl shadow-black/5 dark:shadow-2xl transition-all duration-300">
           <div
             onClick={() => {
               if (editingId) {
@@ -307,7 +307,7 @@ export default function ClientesDashboard() {
             className="flex items-center justify-between cursor-pointer select-none group/hdr"
           >
             <div>
-              <h3 className="text-base font-black tracking-tight text-white uppercase leading-none group-hover/hdr:text-celeste-kore transition-colors">
+              <h3 className="text-base font-black tracking-tight text-black dark:text-white uppercase leading-none group-hover/hdr:text-celeste-kore transition-colors">
                 {editingId ? "Editar Cliente" : "Registrar Cliente"}
               </h3>
               <p className="text-[10px] text-muted-foreground mt-1.5 font-bold uppercase tracking-widest">
@@ -316,7 +316,7 @@ export default function ClientesDashboard() {
             </div>
             <button
               type="button"
-              className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-white transition-colors cursor-pointer shrink-0 ml-4 animate-fade-in"
+              className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-border/50 dark:border-white/10 text-muted-foreground hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0 ml-4 animate-fade-in"
             >
               {isFormExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
@@ -343,10 +343,10 @@ export default function ClientesDashboard() {
                       placeholder="Ej. Oscar Jimenez"
                       value={formData.nombre}
                       onChange={handleInputChange}
-                      className={`flex h-10 w-full rounded-lg border bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 transition-all outline-none ${
+                      className={`flex h-10 w-full rounded-lg border bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 transition-all outline-none ${
                         formErrors.nombre
                           ? "border-destructive focus:ring-destructive/50"
-                          : "border-white/10 focus:ring-red-600/50"
+                          : "border-border/50 dark:border-white/10 focus:ring-red-600/50"
                       }`}
                     />
                     {formErrors.nombre && (
@@ -365,7 +365,7 @@ export default function ClientesDashboard() {
                       placeholder="Ej. 42140797"
                       value={formData.telefono}
                       onChange={handleInputChange}
-                      className="flex h-10 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
+                      className="flex h-10 w-full rounded-lg border border-border/50 dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
                     />
                   </div>
 
@@ -380,10 +380,10 @@ export default function ClientesDashboard() {
                       placeholder="Ej. oscar@gmail.com"
                       value={formData.correo}
                       onChange={handleInputChange}
-                      className={`flex h-10 w-full rounded-lg border bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 transition-all outline-none ${
+                      className={`flex h-10 w-full rounded-lg border bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 transition-all outline-none ${
                         formErrors.correo
                           ? "border-destructive focus:ring-destructive/50"
-                          : "border-white/10 focus:ring-red-600/50"
+                          : "border-border/50 dark:border-white/10 focus:ring-red-600/50"
                       }`}
                     />
                     {formErrors.correo && (
@@ -396,7 +396,7 @@ export default function ClientesDashboard() {
                       <button
                         type="button"
                         onClick={cancelEdit}
-                        className="flex-1 flex justify-center items-center h-10 rounded-lg border border-white/10 bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                        className="flex-1 flex justify-center items-center h-10 rounded-lg border border-border/50 dark:border-white/10 bg-black/5 hover:bg-black/10 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-black dark:text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
                       >
                         Cancelar
                       </button>
@@ -430,7 +430,7 @@ export default function ClientesDashboard() {
               placeholder="Buscar por cliente, teléfono o correo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-10 pr-20 rounded-xl border border-white/10 bg-zinc-950/40 backdrop-blur-xl text-sm focus:outline-none focus:ring-2 focus:ring-celeste-kore/50 transition-all text-white outline-none"
+              className="w-full h-12 pl-10 pr-20 rounded-xl border border-border/50 dark:border-white/10 bg-white dark:bg-zinc-950/40 backdrop-blur-xl text-sm focus:outline-none focus:ring-2 focus:ring-celeste-kore/50 transition-all text-black dark:text-white outline-none shadow-sm dark:shadow-none"
             />
             {searchTerm && (
               <button
@@ -449,7 +449,7 @@ export default function ClientesDashboard() {
                 <Loader2 className="animate-spin text-celeste-kore size-8" />
               </div>
             ) : filteredClients.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground border border-dashed border-white/10 rounded-2xl bg-zinc-950/20 backdrop-blur-sm">
+              <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground border border-dashed border-border/50 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-zinc-950/20 backdrop-blur-sm shadow-sm dark:shadow-none">
                 <Users className="size-14 text-muted-foreground/30 mb-3 animate-pulse" />
                 <p className="font-black text-sm uppercase tracking-wide">No se encontraron clientes</p>
                 <p className="text-xs text-muted-foreground/70 mt-1.5">
@@ -463,7 +463,7 @@ export default function ClientesDashboard() {
                 return (
                   <div
                     key={client.id}
-                    className="border border-white/10 rounded-2xl bg-zinc-900/10 backdrop-blur-md hover:border-white/20 transition-all duration-300 overflow-hidden shadow-md"
+                    className="border border-border/50 dark:border-white/10 rounded-2xl bg-white dark:bg-zinc-900/10 backdrop-blur-md hover:border-border dark:hover:border-white/20 transition-all duration-300 overflow-hidden shadow-sm dark:shadow-md"
                   >
                     {/* Header Summary */}
                     <div
@@ -471,11 +471,11 @@ export default function ClientesDashboard() {
                       className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer select-none"
                     >
                       <div className="flex items-start gap-3.5">
-                        <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10 text-white font-black text-sm">
+                        <div className="w-9 h-9 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center shrink-0 border border-border/50 dark:border-white/10 text-black dark:text-white font-black text-sm">
                           {client.nombre.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <h3 className="text-sm font-black text-white hover:text-celeste-kore transition-colors">
+                          <h3 className="text-sm font-black text-black dark:text-white hover:text-celeste-kore transition-colors">
                             {client.nombre}
                           </h3>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
@@ -495,11 +495,11 @@ export default function ClientesDashboard() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-6 border-t border-white/5 pt-2.5 sm:pt-0 sm:border-0 shrink-0">
+                      <div className="flex items-center justify-between sm:justify-end gap-6 border-t border-border/50 dark:border-white/5 pt-2.5 sm:pt-0 sm:border-0 shrink-0">
                         {/* Projects Count */}
                         <div className="text-left sm:text-right">
                           <span className="text-[8px] uppercase tracking-wider text-muted-foreground block font-bold">Proyectos</span>
-                          <span className="text-[10px] font-black text-white bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                          <span className="text-[10px] font-black text-black dark:text-white bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded border border-border/50 dark:border-white/5">
                             {client.proyectosCount} {client.proyectosCount === 1 ? "proyecto" : "proyectos"}
                           </span>
                         </div>
@@ -518,21 +518,21 @@ export default function ClientesDashboard() {
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => startEdit(client)}
-                            className="p-2.5 bg-white/5 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg border border-white/5 transition-colors cursor-pointer"
+                            className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg border border-border/50 dark:border-white/5 transition-colors cursor-pointer"
                             title="Editar cliente"
                           >
                             <Edit size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(client)}
-                            className="p-2.5 bg-white/5 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg border border-white/5 transition-colors cursor-pointer"
+                            className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg border border-border/50 dark:border-white/5 transition-colors cursor-pointer"
                             title="Eliminar cliente"
                           >
                             <Trash2 size={16} />
                           </button>
                           <button
                             onClick={() => toggleExpand(client.id)}
-                            className="p-2.5 bg-white/5 hover:bg-white/15 text-muted-foreground hover:text-white rounded-lg border border-white/5 transition-colors cursor-pointer ml-1"
+                            className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/15 text-muted-foreground hover:text-black dark:hover:text-white rounded-lg border border-border/50 dark:border-white/5 transition-colors cursor-pointer ml-1"
                           >
                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
@@ -548,7 +548,7 @@ export default function ClientesDashboard() {
                           animate={{ height: "auto" }}
                           exit={{ height: 0 }}
                           transition={{ duration: 0.25, ease: "easeInOut" }}
-                          className="border-t border-white/10 bg-white/5 overflow-hidden"
+                          className="border-t border-border/50 dark:border-white/10 bg-black/5 dark:bg-white/5 overflow-hidden"
                         >
                           <div className="p-4 space-y-3">
                             <h4 className="text-[9px] font-black uppercase text-celeste-kore tracking-widest">
@@ -563,7 +563,7 @@ export default function ClientesDashboard() {
                               <div className="overflow-x-auto">
                                 <table className="w-full text-left text-xs border-collapse">
                                   <thead>
-                                    <tr className="text-[9px] text-muted-foreground uppercase border-b border-white/10 pb-1">
+                                    <tr className="text-[9px] text-muted-foreground uppercase border-b border-border/50 dark:border-white/10 pb-1">
                                       <th className="pb-2 font-black">Código</th>
                                       <th className="pb-2 font-black">Nombre Proyecto</th>
                                       <th className="pb-2 font-black">Estado</th>
@@ -574,16 +574,16 @@ export default function ClientesDashboard() {
                                     {client.proyectosList.map((proj: ClienteProyecto) => (
                                       <tr
                                         key={proj.id}
-                                        className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors"
+                                        className="border-b border-border/50 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                                       >
-                                        <td className="py-2.5 font-mono text-[10px] text-white">
+                                        <td className="py-2.5 font-mono text-[10px] text-black dark:text-white">
                                           <div className="flex items-center gap-1.5">
                                             <span className="font-bold text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
                                               {getCode(proj.id)}
                                             </span>
                                             <button
                                               onClick={() => handleCopy(getCode(proj.id), proj.id)}
-                                              className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                                              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                                               title="Copiar código"
                                             >
                                               {copiedId === proj.id ? (
@@ -594,7 +594,7 @@ export default function ClientesDashboard() {
                                             </button>
                                           </div>
                                         </td>
-                                        <td className="py-2.5 font-semibold text-white">
+                                        <td className="py-2.5 font-semibold text-black dark:text-white">
                                           {proj.nombre}
                                         </td>
                                         <td className="py-2.5">
@@ -607,7 +607,7 @@ export default function ClientesDashboard() {
                                           </span>
                                         </td>
                                         {showInvestment && (
-                                          <td className="py-2.5 text-right font-black text-white">
+                                          <td className="py-2.5 text-right font-black text-black dark:text-white">
                                             Q{proj.precio.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                                           </td>
                                         )}

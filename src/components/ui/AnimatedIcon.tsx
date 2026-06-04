@@ -17,7 +17,7 @@ interface AnimatedIconProps {
 export default function AnimatedIcon({
   iconKey,
   className,
-  size = "100%",
+  size,
   target,
   delay = 0,
   speed = 2,
@@ -39,7 +39,10 @@ export default function AnimatedIcon({
   if (secondaryColor) colors.push(`secondary:${secondaryColor}`);
 
   return (
-    <div className={className} style={{ width: size, height: size }}>
+    <div
+      className={className}
+      style={size !== undefined ? { width: size, height: size } : undefined}
+    >
       {/* @ts-expect-error -- lord-icon is a custom web component */}
       <lord-icon
         src={`https://cdn.lordicon.com/${iconKey}.json`}

@@ -116,8 +116,8 @@ export function Dashboard() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             variants={{
               idle: { zIndex: 1, height: isMobile ? 120 : undefined },
-              hover: { zIndex: 10, height: isMobile ? 120 : undefined },
-              active: { zIndex: 20, height: isMobile ? 190 : undefined },
+              hover: { zIndex: 10, height: isMobile ? 220 : undefined },
+              active: { zIndex: 20, height: isMobile ? 220 : undefined },
             }}
           >
             {mod.id === "perfil" ? (
@@ -137,7 +137,7 @@ export function Dashboard() {
                         onClick={() => setExpandedPerfil(false)}
                         className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
                       >
-                        <span className="flex items-center gap-2 text-white font-black uppercase text-xs tracking-[0.25em]">
+                        <span className="flex items-center gap-2 text-slate-900 dark:text-white font-black uppercase text-xs tracking-[0.25em]">
                           ← Volver
                         </span>
                       </button>
@@ -197,27 +197,34 @@ export function Dashboard() {
                     >
                       <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 transition-transform duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
                       <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
-                        <span className="flex items-center gap-2 text-celeste-kore dark:text-white font-black uppercase text-xs tracking-[0.25em]">
+                        <span className="flex items-center gap-2 text-slate-900 dark:text-white font-black uppercase text-xs tracking-[0.25em]">
                           Ver opciones
                         </span>
                       </div>
-                      <div className="w-full h-full flex flex-row md:flex-col justify-start md:justify-center items-center px-4 md:px-0 gap-4 md:gap-0 relative z-10 pb-4 md:pb-[40px]">
+                      <motion.div
+                        className="w-full h-full flex flex-row md:flex-col justify-start md:justify-center items-center px-4 md:px-0 gap-4 md:gap-0 relative z-10"
+                        variants={{
+                          idle: { paddingBottom: isMobile ? 0 : 40 },
+                          hover: { paddingBottom: isMobile ? 32 : 40 },
+                          active: { paddingBottom: isMobile ? 32 : 40 },
+                        }}
+                      >
                         <div className="relative z-10 flex justify-center shrink-0 mb-0 md:mb-4">
-                          <div className="size-16 md:size-[90px] flex items-center justify-center transition-transform duration-700 ease-out group-hover:-translate-y-4 relative">
+                          <div className="size-16 md:size-[90px] flex items-center justify-center transition-transform duration-700 ease-out md:group-hover:-translate-y-4 relative">
                             <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <div 
-                              className="absolute top-2 inset-x-[-6px] bottom-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 -z-10"
+                              className="absolute inset-[-6px] md:inset-[-10px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 opacity-100 scale-100 -z-10"
                             />
                             <AnimatedIcon
                               iconKey={mod.icon}
                               target={`#${mod.id}-card`}
-                              className="size-12 md:size-[90px]"
+                              className="size-10 md:size-[64px]"
                               speed={1.5}
                               trigger="hover"
                             />
                           </div>
                         </div>
-                        <div className="relative z-10 w-full flex flex-col items-start md:items-center text-left md:text-center space-y-1 md:space-y-4 transition-transform duration-700 group-hover:-translate-y-2">
+                        <div className="relative z-10 w-full flex flex-col items-start md:items-center text-left md:text-center space-y-1 md:space-y-4 transition-transform duration-700 md:group-hover:-translate-y-2">
                           <h3 className="text-lg md:text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words transition-colors duration-500">
                             {mod.title}
                             <br />
@@ -229,7 +236,7 @@ export function Dashboard() {
                             {mod.desc}
                           </p>
                         </div>
-                      </div>
+                      </motion.div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -260,12 +267,7 @@ export function Dashboard() {
                         hover: { opacity: 1, y: 0 },
                         active: { opacity: 1, y: 0 },
                       }}
-                      className={[
-                        "flex items-center gap-2 font-black uppercase text-xs tracking-[0.25em] transition-colors duration-500",
-                        isActive
-                          ? "text-white"
-                          : "text-celeste-kore dark:text-white",
-                      ].join(" ")}
+                      className="flex items-center gap-2 font-black uppercase text-xs tracking-[0.25em] transition-colors duration-500 text-slate-900 dark:text-white"
                     >
                       {isActive
                         ? "Toca de nuevo para entrar"
@@ -275,15 +277,15 @@ export function Dashboard() {
                   <motion.div
                     className={[
                       "w-full h-full flex relative z-10",
-                      "flex-row items-center justify-start px-4 gap-4 pb-4 md:pb-[40px]",
+                      "flex-row items-center justify-start px-4 gap-4",
                       isWide 
                         ? "md:flex-row md:px-10 lg:px-14 md:gap-8" 
                         : "md:flex-col md:justify-center md:px-0 md:gap-0"
                     ].join(" ")}
                     variants={{
-                      idle: { opacity: 1 },
-                      hover: { opacity: 1 },
-                      active: { opacity: [1, 0.4, 1] },
+                      idle: { opacity: 1, paddingBottom: isMobile ? 0 : 40 },
+                      hover: { opacity: 1, paddingBottom: isMobile ? 32 : 40 },
+                      active: { opacity: [1, 0.4, 1], paddingBottom: isMobile ? 32 : 40 },
                     }}
                     transition={{
                       duration: 1.4,
@@ -295,23 +297,22 @@ export function Dashboard() {
                         <motion.div
                           variants={{
                             idle: { y: 0 },
-                            hover: { y: -16 },
-                            active: { y: -16 },
+                            hover: { y: isMobile ? 0 : -16 },
+                            active: { y: isMobile ? 0 : -16 },
                           }}
                           className="size-16 md:size-[90px] flex items-center justify-center transition-transform duration-700 relative"
                         >
                           <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                            <div 
                              className={[
-                               "absolute top-2 inset-x-[-6px] bottom-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 -z-10",
-                               "opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100",
-                               isActive ? "opacity-100 scale-100" : ""
+                               "absolute inset-[-6px] md:inset-[-10px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 -z-10",
+                               "opacity-100 scale-100"
                              ].join(" ")}
                            />
                           <AnimatedIcon
                             iconKey={mod.icon}
                             target={`#${mod.id}-card`}
-                            className="size-12 md:size-[90px]"
+                            className="size-10 md:size-[64px]"
                             speed={1.5}
                             trigger="hover"
                           />
@@ -321,8 +322,8 @@ export function Dashboard() {
                       <motion.h3
                         variants={{
                           idle: { y: 0 },
-                          hover: { y: -8 },
-                          active: { y: -8 },
+                          hover: { y: isMobile ? 0 : -8 },
+                          active: { y: isMobile ? 0 : -8 },
                         }}
                         className="text-lg md:text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter uppercase leading-none w-full break-words transition-colors duration-500"
                       >
@@ -347,8 +348,8 @@ export function Dashboard() {
                       <motion.p
                         variants={{
                           idle: { y: 0 },
-                          hover: { y: -8 },
-                          active: { y: -8 },
+                          hover: { y: isMobile ? 0 : -8 },
+                          active: { y: isMobile ? 0 : -8 },
                         }}
                         className="text-[11px] md:text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 transition-colors duration-500"
                         style={{

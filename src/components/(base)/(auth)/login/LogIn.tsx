@@ -117,10 +117,6 @@ useEffect(() => {
 
   return (
     <div className="relative flex-1 flex flex-col items-center justify-center w-full bg-transparent z-0 overflow-hidden">
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <DotPattern className="mask-[radial-gradient(1000px_circle_at_center,white,transparent)] opacity-80" />
-      </div>
-
       <div className="relative w-full max-w-md px-6 md:px-12 pb-12 z-10">
         <MagicCard className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-2xl overflow-visible!">
           <div className="flex flex-col items-center space-y-6 p-10 border-b border-border/50 text-center">

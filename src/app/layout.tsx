@@ -9,6 +9,7 @@ import { createClient } from "@/utils/supabase/server";
 import Providers from "@/components/(base)/providers/QueryProviders";
 import { UserProvider } from "@/components/(base)/providers/UserProvider";
 import { AuroraText } from "@/components/ui/aurora-text";
+import { DotPattern } from "@/components/ui/dot-pattern";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,13 +60,13 @@ export default async function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background flex flex-col relative`}
       >
         <Providers>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="dark"
+            forcedTheme="dark"
             disableTransitionOnChange
           >
             <UserProvider user={user}>
