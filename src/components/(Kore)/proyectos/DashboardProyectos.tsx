@@ -898,25 +898,25 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             </div>
 
                             {/* Portada Mobile Actions */}
-                            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-2.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={() => setQrProyecto(p)}
-                                className="p-1.5 bg-muted/40 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-md transition-all"
+                                className="p-2.5 bg-muted/40 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-all"
                                 title="Ver QR"
                               >
-                                <QrCode size={14} />
+                                <QrCode size={18} />
                               </button>
                               <button 
                                 onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
-                                className="p-1.5 bg-muted/40 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-md transition-all"
+                                className="p-2.5 bg-muted/40 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-all"
                               >
-                                <Edit size={14} />
+                                <Edit size={18} />
                               </button>
                               <button 
                                 onClick={() => handleDelete(p.id)}
-                                className="p-1.5 bg-muted/40 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-md transition-all"
+                                className="p-2.5 bg-muted/40 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-lg transition-all"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={18} />
                               </button>
                             </div>
                           </div>
