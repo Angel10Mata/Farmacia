@@ -2,15 +2,15 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, ArrowLeft } from "lucide-react";
+import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 // Regex para detectar UUIDs o IDs largos (más de 10 chars sin guion de separador de palabra)
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SEGMENT_LABELS: Record<string, string> = {
-  proyectos: "Proyectos",
-  proyecto: "Proyectos",
+  proyectos: "Dashboard",
+  proyecto: "Dashboard",
   resumen: "Resumen",
   nuevo: "Nuevo Proyecto",
   editar: "Editar Proyecto",
@@ -65,9 +65,9 @@ export function BreadcrumbNav() {
         <motion.div layout="position" className="flex items-center">
           <Link
             href="/kore"
-            className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center font-bold text-xs md:text-base"
+            className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
           >
-            Dashboard
+            <Home className="size-4 md:size-5" />
           </Link>
         </motion.div>
 
