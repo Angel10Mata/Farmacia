@@ -6,6 +6,7 @@ import { X, Download, QrCode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
 import { updateProyectoOtrosCampos } from "@/app/kore/proyectos/actions";
+import { useTheme } from "next-themes";
 
 interface QRProyectoProps {
   proyecto: {
@@ -13,6 +14,7 @@ interface QRProyectoProps {
     nombre: string;
     cliente_nombre?: string;
     vendedor_nombre?: string;
+    desarrollador_nombre?: string;
     estado?: string;
     otros_campos?: any;
   } | null;
@@ -23,6 +25,7 @@ interface QRProyectoProps {
 
 export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRProyectoProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
   
   // Estados para credenciales y URL de acceso manuales
   const [usuarioAcceso, setUsuarioAcceso] = useState("");
@@ -53,13 +56,14 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
         url_acceso: urlAcceso.trim(),
       });
 
+      const isDark = theme === "dark";
       if (res.error) {
         Swal.fire({
           icon: "error",
           title: "Error al guardar",
           text: res.error,
-          background: "#18181b",
-          color: "#fff",
+          background: isDark ? "#18181b" : "#ffffff",
+          color: isDark ? "#ffffff" : "#000000",
         });
       } else {
         Swal.fire({
@@ -69,20 +73,21 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
           position: "top-end",
           showConfirmButton: false,
           timer: 3000,
-          background: "#18181b",
-          color: "#fff",
+          background: isDark ? "#18181b" : "#ffffff",
+          color: isDark ? "#ffffff" : "#000000",
         });
         if (onSuccess) {
           onSuccess();
         }
       }
     } catch (err: any) {
+      const isDark = theme === "dark";
       Swal.fire({
         icon: "error",
         title: "Error",
         text: err.message || "Error al intentar guardar",
-        background: "#18181b",
-        color: "#fff",
+        background: isDark ? "#18181b" : "#ffffff",
+        color: isDark ? "#ffffff" : "#000000",
       });
     } finally {
       setSaving(false);
@@ -186,10 +191,10 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
             exit={{ scale: 0.85, opacity: 0, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm bg-zinc-950 border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-sm bg-card text-card-foreground border border-border dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/10">
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border dark:border-white/10 bg-muted/5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-[#B7494E]/10 border border-[#B7494E]/20 flex items-center justify-center">
                   <QrCode size={18} className="text-[#B7494E]" />
@@ -198,14 +203,14 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
                   <p className="text-[10px] font-black uppercase tracking-widest text-[#B7494E]">
                     QR del Proyecto
                   </p>
-                  <p className="text-xs font-bold text-white truncate max-w-[180px]">
+                  <p className="text-xs font-bold text-foreground dark:text-white truncate max-w-[180px]">
                     {proyecto.nombre}
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-xl hover:bg-white/5 transition-colors text-zinc-400 hover:text-white"
+                className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -216,7 +221,7 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
               {/* QR Code */}
               <div
                 ref={canvasRef}
-                className="p-4 bg-white rounded-2xl shadow-xl shadow-black/50"
+                className="p-4 bg-white rounded-2xl shadow-xl shadow-black/30"
               >
                 <QRCodeCanvas
                   value={qrValue}
@@ -236,46 +241,46 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
               </div>
 
               {/* Formulario de Configuración de Acceso manual */}
-              <div className="w-full flex flex-col gap-2.5 bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className="w-full flex flex-col gap-2.5 bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 rounded-2xl p-4">
                 <p className="text-[10px] font-black uppercase tracking-widest text-[#B7494E]">
                   Configurar Acceso Cliente
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1 text-left">
-                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Usuario</label>
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Usuario</label>
                     <input
                       type="text"
                       placeholder="Ej: cliente12"
                       value={usuarioAcceso}
                       onChange={(e) => setUsuarioAcceso(e.target.value)}
-                      className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-zinc-600"
+                      className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
                     />
                   </div>
                   <div className="flex flex-col gap-1 text-left">
-                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Contraseña</label>
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Contraseña</label>
                     <input
                       type="text"
                       placeholder="Ej: 123456"
                       value={passAcceso}
                       onChange={(e) => setPassAcceso(e.target.value)}
-                      className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-zinc-600"
+                      className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
                     />
                   </div>
                 </div>
                 <div className="flex flex-col gap-1 text-left">
-                  <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">URL de Acceso</label>
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">URL de Acceso</label>
                   <input
                     type="text"
                     placeholder="URL de entrada"
                     value={urlAcceso}
                     onChange={(e) => setUrlAcceso(e.target.value)}
-                    className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-zinc-600"
+                    className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
                   />
                 </div>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="mt-1.5 w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-[#B7494E]/10 hover:bg-[#B7494E]/20 text-[#B7494E] font-black text-[10px] tracking-widest uppercase border border-[#B7494E]/20 hover:border-[#B7494E]/30 transition-all active:scale-[0.98] disabled:opacity-50"
+                  className="mt-1.5 w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-[#B7494E]/10 hover:bg-[#B7494E]/20 text-[#B7494E] font-black text-[10px] tracking-widest uppercase border border-[#B7494E]/20 hover:border-[#B7494E]/30 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                 >
                   {saving ? "Guardando..." : "Guardar Credenciales"}
                 </button>
@@ -283,26 +288,30 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
 
               {/* Info Cards */}
               <div className="w-full grid grid-cols-1 gap-2">
-                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Código</span>
+                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Código</span>
                   <code className="text-xs font-mono font-bold text-[#B7494E] bg-[#B7494E]/10 px-2 py-0.5 rounded border border-[#B7494E]/20">
                     {shortCode}
                   </code>
                 </div>
-                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Cliente</span>
-                  <span className="text-xs font-bold text-white">{proyecto.cliente_nombre || "N/A"}</span>
+                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cliente</span>
+                  <span className="text-xs font-bold text-foreground dark:text-white">{proyecto.cliente_nombre || "N/A"}</span>
                 </div>
-                 <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Vendedor</span>
-                  <span className="text-xs font-bold text-white">{proyecto.vendedor_nombre || "N/A"}</span>
+                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Vendedor</span>
+                  <span className="text-xs font-bold text-foreground dark:text-white">{proyecto.vendedor_nombre || "N/A"}</span>
+                </div>
+                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Desarrollador</span>
+                  <span className="text-xs font-bold text-foreground dark:text-white">{proyecto.desarrollador_nombre || "N/A"}</span>
                 </div>
               </div>
 
               {/* Download Button */}
               <button
                 onClick={handleDownload}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-sm tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-[#B7494E]/20"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-sm tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-[#B7494E]/20 cursor-pointer"
               >
                 <Download size={16} />
                 DESCARGAR QR

@@ -7,13 +7,14 @@ interface DBProyecto {
   id: string;
   nombre: string;
   estado: string;
-  precio: number;
+  valor: number;
   fecha_entrega?: string | null;
 }
 
 interface DBCliente {
   id: string;
   nombre: string;
+  nit?: string | null;
   telefono?: string | null;
   correo?: string | null;
   created_at: string;
@@ -31,6 +32,7 @@ interface ClienteProyecto {
 interface Cliente {
   id: string;
   nombre: string;
+  nit: string;
   telefono: string;
   correo: string;
   created_at: string;
@@ -40,15 +42,15 @@ interface Cliente {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// READ - Fetches all clients and their associated projects
+// READ — Fetches all clients from pro_clientes with their associated projects
 // ─────────────────────────────────────────────────────────────────────────────
 export async function getClientes(): Promise<Cliente[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("clientes")
+    .from("pro_clientes")
     .select(`
       *,
-      proyectos(*)
+      proyectos(id, nombre, estado, valor, fecha_entrega)
     `)
     .order("nombre", { ascending: true });
 
@@ -57,43 +59,54 @@ export async function getClientes(): Promise<Cliente[]> {
     return [];
   }
 
-  // Calculate stats in JS to keep it simple and reactive
   return ((data as unknown as DBCliente[]) || []).map((c: DBCliente) => {
     const proyectosList = c.proyectos || [];
-    const totalPagado = proyectosList.reduce((acc: number, p: DBProyecto) => acc + (Number(p.precio) || 0), 0);
+    const totalPagado = proyectosList.reduce(
+      (acc: number, p: DBProyecto) => acc + (Number(p.valor) || 0),
+      0
+    );
     return {
       id: c.id,
       nombre: c.nombre,
+      nit: c.nit || "",
       telefono: c.telefono || "",
       correo: c.correo || "",
       created_at: c.created_at,
       proyectosCount: proyectosList.length,
       totalPagado,
-      proyectosList: proyectosList.map((p: DBProyecto) => ({
-        id: p.id,
-        nombre: p.nombre,
-        estado: p.estado,
-        precio: Number(p.precio) || 0,
-        fecha: p.fecha_entrega,
-      })).sort((a: ClienteProyecto, b: ClienteProyecto) => b.precio - a.precio)
+      proyectosList: proyectosList
+        .map((p: DBProyecto) => ({
+          id: p.id,
+          nombre: p.nombre,
+          estado: p.estado,
+          precio: Number(p.valor) || 0,
+          fecha: p.fecha_entrega,
+        }))
+        .sort((a: ClienteProyecto, b: ClienteProyecto) => b.precio - a.precio),
     };
   }).sort((a: Cliente, b: Cliente) => b.totalPagado - a.totalPagado);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CREATE - Register a new client
+// CREATE — Register a new client in pro_clientes
 // ─────────────────────────────────────────────────────────────────────────────
-export async function createCliente(data: { nombre: string; telefono?: string; correo?: string }) {
+export async function createCliente(data: {
+  nombre: string;
+  nit?: string;
+  telefono?: string;
+  correo?: string;
+}) {
   const supabase = await createClient();
 
   const { data: newCliente, error } = await supabase
-    .from("clientes")
+    .from("pro_clientes")
     .insert([
       {
         nombre: data.nombre.trim(),
+        nit: data.nit?.trim() || null,
         telefono: data.telefono?.trim() || null,
         correo: data.correo?.trim() || null,
-      }
+      },
     ])
     .select()
     .single();
@@ -109,15 +122,19 @@ export async function createCliente(data: { nombre: string; telefono?: string; c
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UPDATE - Modify existing client details
+// UPDATE — Modify existing client details in pro_clientes
 // ─────────────────────────────────────────────────────────────────────────────
-export async function updateCliente(id: string, data: { nombre: string; telefono?: string; correo?: string }) {
+export async function updateCliente(
+  id: string,
+  data: { nombre: string; nit?: string; telefono?: string; correo?: string }
+) {
   const supabase = await createClient();
 
   const { data: updatedCliente, error } = await supabase
-    .from("clientes")
+    .from("pro_clientes")
     .update({
       nombre: data.nombre.trim(),
+      nit: data.nit?.trim() || null,
       telefono: data.telefono?.trim() || null,
       correo: data.correo?.trim() || null,
     })
@@ -136,13 +153,13 @@ export async function updateCliente(id: string, data: { nombre: string; telefono
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DELETE - Remove a client record
+// DELETE — Remove a client record from pro_clientes
 // ─────────────────────────────────────────────────────────────────────────────
 export async function deleteCliente(id: string) {
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from("clientes")
+    .from("pro_clientes")
     .delete()
     .eq("id", id);
 

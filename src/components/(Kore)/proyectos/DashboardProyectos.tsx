@@ -37,6 +37,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRProyecto from "./QRProyecto";
 import { QrCode, Users } from "lucide-react";
+import { useTheme } from "next-themes";
 
 // TypeScript declaration for the Lordicon web component
 declare global {
@@ -58,6 +59,7 @@ interface DashboardProyectosProps {
 
 export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   const router = useRouter();
+  const { theme } = useTheme();
   const isAdmin = ["super", "admin"].includes(role);
 
   const [chartTab, setChartTab] = useState<"MES" | "AÑO" | "RANGO">("MES");
@@ -180,10 +182,11 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     const tableRows = filteredProyectos.map((p) => {
       const precio = Number(p.precio) || 0;
       const comision = p.aplica_vendedor ? precio * (Number(p.porcentaje_vendedor) || 0) / 100 : 0;
+      const desarrollo = p.aplica_desarrollo ? precio * (Number(p.porcentaje_desarrollo) || 0) / 100 : 0;
       const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
       const docPct = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
       const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
-      const restante = precio - comision - iva - docPct + mant;
+      const restante = precio - comision - desarrollo - iva - docPct + mant;
       const code = p.id.replace(/-/g, "").slice(0, 6).toUpperCase();
       const shortCode = code.slice(0, 3) + "-" + code.slice(3, 6);
       return [
@@ -191,9 +194,11 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
         p.nombre || "",
         p.cliente_nombre || "N/A",
         p.vendedor_nombre || "N/A",
+        p.desarrollador_nombre || "N/A",
         p.estado || "",
         `Q${precio.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
         comision > 0 ? `Q${comision.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
+        desarrollo > 0 ? `Q${desarrollo.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
         iva > 0 ? `Q${iva.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
         mant > 0 ? `Q${mant.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
         `Q${restante.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
@@ -202,7 +207,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
     autoTable(doc, {
       startY: 72,
-      head: [["Código", "Proyecto", "Cliente", "Vendedor", "Estado", "Precio", "Comisión", "IVA", "Mant.", "Restante"]],
+      head: [["Código", "Proyecto", "Cliente", "Vendedor", "Dev", "Estado", "Precio", "Comisión", "Desarrollo", "IVA", "Mant.", "Restante"]],
       body: tableRows,
       theme: "grid",
       styles: {
@@ -223,12 +228,13 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       alternateRowStyles: { fillColor: [30, 30, 32] },
       columnStyles: {
         0: { halign: "center", fontStyle: "bold", textColor: [183, 73, 78] },
-        4: { halign: "center" },
-        5: { halign: "right" },
+        5: { halign: "center" },
         6: { halign: "right" },
         7: { halign: "right" },
         8: { halign: "right" },
-        9: { halign: "right", fontStyle: "bold", textColor: [183, 73, 78] },
+        9: { halign: "right" },
+        10: { halign: "right" },
+        11: { halign: "right", fontStyle: "bold", textColor: [183, 73, 78] },
       },
       didDrawPage: (data) => {
         const pageH = doc.internal.pageSize.getHeight();
@@ -244,18 +250,19 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     doc.save(`kore-proyectos-${now.toISOString().split("T")[0]}.pdf`);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string): Promise<boolean> => {
+    const isDark = theme === 'dark';
     const result = await Swal.fire({
       title: '¿Eliminar proyecto?',
       text: "Esta acción no se puede deshacer.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#27272a',
+      cancelButtonColor: isDark ? '#27272a' : '#e4e4e7',
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      background: '#18181b',
-      color: '#fff',
+      background: isDark ? '#18181b' : '#ffffff',
+      color: isDark ? '#ffffff' : '#000000',
     });
 
     if (result.isConfirmed) {
@@ -265,9 +272,10 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           icon: 'error',
           title: 'Error',
           text: res.error,
-          background: '#18181b',
-          color: '#fff',
+          background: isDark ? '#18181b' : '#ffffff',
+          color: isDark ? '#ffffff' : '#000000',
         });
+        return false;
       } else {
         Swal.fire({
           icon: 'success',
@@ -276,12 +284,14 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           position: 'top-end',
           showConfirmButton: false,
           timer: 3000,
-          background: '#18181b',
-          color: '#fff',
+          background: isDark ? '#18181b' : '#ffffff',
+          color: isDark ? '#ffffff' : '#000000',
         });
         fetchData();
+        return true;
       }
     }
+    return false;
   };
 
   // --- DERIVED DATA ---
@@ -498,7 +508,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           {/* CHARTS SECTION */}
           <div className="grid grid-cols-1 lg:grid-cols-[60%_1fr] gap-4">
             {/* Bar Chart */}
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20">
+            <div className="rounded-2xl border border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
@@ -511,10 +521,10 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         <select
                           value={selectedMonth}
                           onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                          className="bg-white/5 border border-white/10 rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-white"
+                          className="bg-muted border border-border rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
                         >
                           {["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"].map((m, idx) => (
-                            <option key={m} value={idx} className="bg-zinc-950 text-white font-bold">
+                            <option key={m} value={idx} className="bg-card text-foreground font-bold">
                               {m}
                             </option>
                           ))}
@@ -522,10 +532,10 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         <select
                           value={selectedYear}
                           onChange={(e) => setSelectedYear(Number(e.target.value))}
-                          className="bg-white/5 border border-white/10 rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-white"
+                          className="bg-muted border border-border rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
                         >
                           {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                            <option key={y} value={y} className="bg-zinc-950 text-white font-bold">
+                            <option key={y} value={y} className="bg-card text-foreground font-bold">
                               {y}
                             </option>
                           ))}
@@ -537,10 +547,10 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         <select
                           value={selectedYear}
                           onChange={(e) => setSelectedYear(Number(e.target.value))}
-                          className="bg-white/5 border border-white/10 rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-white"
+                          className="bg-muted border border-border rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
                         >
                           {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                            <option key={y} value={y} className="bg-zinc-950 text-white font-bold">
+                            <option key={y} value={y} className="bg-card text-foreground font-bold">
                               {y}
                             </option>
                           ))}
@@ -646,7 +656,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
             </div>
 
             {/* Donut Chart */}
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20 flex flex-col">
+            <div className="rounded-2xl border border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20 flex flex-col">
               <div className="flex items-center gap-2 sm:gap-3 mb-4">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
                   <Briefcase size={14} className="text-celeste-kore" />
@@ -655,33 +665,39 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
               </div>
               <div className="flex-1 flex flex-col items-center justify-center relative min-h-[160px] sm:min-h-[200px]">
                 {pieData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" className="absolute inset-0">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        innerRadius="65%"
-                        outerRadius="85%"
-                        paddingAngle={5}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip 
-                        contentStyle={{ 
-                          backgroundColor: "#18181b", 
-                          borderColor: "rgba(255,255,255,0.1)", 
-                          borderRadius: "12px", 
-                          fontSize: "12px",
-                          color: "#fff",
-                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)"
-                        }}
-                        itemStyle={{ color: "#fff" }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <>
+                    <ResponsiveContainer width="100%" height="100%" className="absolute inset-0">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          innerRadius="65%"
+                          outerRadius="85%"
+                          paddingAngle={5}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip 
+                          contentStyle={{ 
+                            backgroundColor: "#18181b", 
+                            borderColor: "rgba(255,255,255,0.1)", 
+                            borderRadius: "12px", 
+                            fontSize: "12px",
+                            color: "#fff",
+                            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)"
+                          }}
+                          itemStyle={{ color: "#fff" }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none">
+                      <span className="text-[8px] sm:text-[9px] uppercase tracking-widest text-muted-foreground font-black">Total</span>
+                      <span className="text-sm sm:text-xl font-black text-foreground">{summary.count}</span>
+                    </div>
+                  </>
                 ) : (
                   <span className="text-muted-foreground text-xs sm:text-sm">No hay proyectos</span>
                 )}
@@ -711,7 +727,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           </div>
 
           {/* TABLE SECTION - Admin only */}
-          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20">
+          <div className="rounded-2xl border border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
               <div className="flex items-center gap-2 sm:gap-3">
                 <button 
@@ -781,36 +797,43 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             <th className="pb-2 px-2 font-black">Estado</th>
                             <th className="pb-2 px-2 font-black text-right">Precio</th>
                             <th className="pb-2 px-2 font-black text-right">Comisión</th>
+                            <th className="pb-2 px-2 font-black text-right">Desarrollo</th>
                             <th className="pb-2 px-2 font-black text-right">IVA</th>
                             <th className="pb-2 px-2 font-black text-right">Doc</th>
                             <th className="pb-2 px-2 font-black text-right">Mant.</th>
                             <th className="pb-2 px-2 font-black text-right">Restante</th>
-                            <th className="pb-2 px-4 font-black text-right">Acciones</th>
                           </tr>
                         </thead>
                         <tbody className="before:block before:h-2">
                           {filteredProyectos.map((p) => {
                             const precio = Number(p.precio) || 0;
                             const comision = p.aplica_vendedor ? precio * (Number(p.porcentaje_vendedor) || 0) / 100 : 0;
+                            const desarrollo = p.aplica_desarrollo ? precio * (Number(p.porcentaje_desarrollo) || 0) / 100 : 0;
                             const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
                             const doc = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
                             const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
-                            const restante = precio - comision - iva - doc + mant;
+                            const restante = precio - comision - desarrollo - iva - doc + mant;
 
                             return (
-                            <tr key={p.id} className="group border-y border-white/5 bg-card/20 hover:bg-card/40 transition-all duration-300">
-                              <td className="py-3 px-4 rounded-l-xl border-y border-l border-border/30 group-hover:border-celeste-kore/20">
+                            <tr
+                              key={p.id}
+                              onClick={() => setDetalleProyecto(p)}
+                              className="group border-y border-white/5 bg-card/20 hover:bg-card/40 cursor-pointer transition-all duration-300"
+                            >
+                              <td className="py-3 px-4 rounded-l-xl border-y border-l border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <code className="text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-1 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
                             </td>
-                            <td className="py-4">
+                            <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className="font-bold text-sm text-foreground">{p.nombre}</p>
-                              <p className="text-[10px] text-muted-foreground">Vendedor: {p.vendedor_nombre || 'N/A'}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                Vendedor: {p.vendedor_nombre || 'N/A'}{p.desarrollador_nombre ? ` · Dev: ${p.desarrollador_nombre}` : ''}
+                              </p>
                             </td>
-                            <td className="py-4">
+                            <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className="text-sm text-foreground">{p.cliente_nombre || 'N/A'}</p>
                               <p className="text-[10px] text-muted-foreground">{p.cliente_telefono || ''}</p>
                             </td>
-                            <td className="py-4">
+                            <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
                                 p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
                                 p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
@@ -819,52 +842,39 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                                 {p.estado}
                               </span>
                             </td>
-                            <td className="py-4 text-right">
+                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className="font-bold text-sm">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
                             </td>
-                            <td className="py-4 text-right">
+                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className={`text-sm ${comision > 0 ? 'text-red-400 font-bold' : 'text-muted-foreground'}`}>
                                 {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
                               </p>
                               {comision > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_vendedor}%</p>}
                             </td>
-                            <td className="py-4 text-right">
+                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                              <p className={`text-sm ${desarrollo > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>
+                                {desarrollo > 0 ? `Q${desarrollo.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
+                              </p>
+                              {desarrollo > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_desarrollo}%</p>}
+                            </td>
+                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className={`text-sm ${iva > 0 ? 'text-azul-kore font-bold' : 'text-muted-foreground'}`}>
                                 {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
                               </p>
                               {iva > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_iva}%</p>}
                             </td>
-                            <td className="py-4 text-right">
+                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className={`text-sm ${doc > 0 ? 'text-azul-kore font-bold' : 'text-muted-foreground'}`}>
                                 {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
                               </p>
                               {doc > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_doc}%</p>}
                             </td>
-                            <td className="py-4 text-right"><p className={`text-sm ${mant > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>{mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}</p>{mant > 0 && <p className="text-[10px] text-muted-foreground">Mes</p>}</td><td className="py-4 text-right">
-                              <p className="font-black text-sm text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                              <p className={`text-sm ${mant > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>{mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}</p>
+                              {mant > 0 && <p className="text-[10px] text-muted-foreground">Mes</p>}
                             </td>
-                            <td className="py-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => setQrProyecto(p)}
-                                  className="p-2 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors"
-                                  title="Ver QR"
-                                >
-                                  <QrCode size={16} />
-                                </button>
-                                <button 
-                                  onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
-                                  className="p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                                <button 
-                                  onClick={() => handleDelete(p.id)}
-                                  className="p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
+                            <td className="py-4 text-right rounded-r-xl border-y border-r border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                              <p className="font-black text-sm text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
                             </td>
                           </tr>
                           );
@@ -882,7 +892,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                           className="rounded-lg border border-white/5 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-md hover:border-celeste-kore/20 transition-all duration-300 cursor-pointer"
                           onClick={() => setDetalleProyecto(p)}
                         >
-                          {/* Top row: Code & State + Actions */}
+                          {/* Top row: Code & State */}
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1 min-w-0">
                               <code className="text-[8px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1 py-0.5 rounded border border-celeste-kore/20 shrink-0">
@@ -896,29 +906,6 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                                 {p.estado}
                               </span>
                             </div>
-
-                            {/* Portada Mobile Actions */}
-                            <div className="flex items-center gap-2.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => setQrProyecto(p)}
-                                className="p-2.5 bg-muted/40 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-all"
-                                title="Ver QR"
-                              >
-                                <QrCode size={22} />
-                              </button>
-                              <button 
-                                onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
-                                className="p-2.5 bg-muted/40 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-all"
-                              >
-                                <Edit size={22} />
-                              </button>
-                              <button 
-                                onClick={() => handleDelete(p.id)}
-                                className="p-2.5 bg-muted/40 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-lg transition-all"
-                              >
-                                <Trash2 size={22} />
-                              </button>
-                            </div>
                           </div>
 
                           {/* Info row */}
@@ -926,6 +913,9 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             <h4 className="font-bold text-[11px] text-foreground truncate tracking-tight">{p.nombre}</h4>
                             <p className="text-[8px] text-muted-foreground mt-0.5 truncate">
                               Cliente: <span className="font-semibold text-foreground/80">{p.cliente_nombre || 'Sin cliente'}</span>
+                            </p>
+                            <p className="text-[8px] text-muted-foreground mt-0.5 truncate">
+                              Vendedor: <span className="font-semibold text-foreground/80">{p.vendedor_nombre || 'N/A'}</span>{p.desarrollador_nombre ? ` · Dev: ${p.desarrollador_nombre}` : ''}
                             </p>
                           </div>
                         </div>
@@ -941,7 +931,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
       {/* ========== NORMAL USER VIEW: Only payment dates ========== */}
       {!isAdmin && (
-        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20">
+        <div className="rounded-2xl border border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
               <CalendarDays size={16} className="text-celeste-kore" />
@@ -1009,171 +999,228 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       <AnimatePresence>
         {detalleProyecto && (
           <motion.div
-            initial={{ opacity: 0, x: "100%" }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: "100%" }}
-            transition={{ type: "spring", damping: 26, stiffness: 220 }}
-            className="fixed inset-0 z-[110] bg-background flex flex-col lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+            onClick={() => setDetalleProyecto(null)}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-3 border-b border-border/40 bg-card/50 backdrop-blur-md sticky top-0 z-10">
-              <button 
-                onClick={() => setDetalleProyecto(null)}
-                className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-              >
-                <ChevronLeft size={14} />
-                Volver
-              </button>
-              <span className="text-[10px] font-black uppercase tracking-widest text-celeste-kore">
-                Detalle del Proyecto
-              </span>
-              <button 
-                onClick={() => setDetalleProyecto(null)}
-                className="p-1 rounded-full hover:bg-muted/50 transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-20">
-              {/* Info General */}
-              <div className="space-y-1.5 bg-card/30 border border-border/20 p-3 rounded-xl">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <code className="text-[8px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
-                    {getCode(detalleProyecto.id)}
-                  </code>
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border ${
-                    detalleProyecto.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
-                    detalleProyecto.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
-                    'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
-                  }`}>
-                    {detalleProyecto.estado}
-                  </span>
-                </div>
-                <div>
-                  <h2 className="text-xs font-black tracking-tight text-foreground">{detalleProyecto.nombre}</h2>
-                  <p className="text-[9px] text-muted-foreground mt-0.5">Vendedor: <span className="font-semibold text-foreground/80">{detalleProyecto.vendedor_nombre || 'N/A'}</span></p>
-                  {detalleProyecto.fecha_entrega && (
-                    <p className="text-[9px] text-muted-foreground mt-0.5">Entrega: <span className="font-semibold text-foreground/80">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="relative w-full max-w-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/85 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-zinc-900 dark:text-zinc-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 backdrop-blur-md sticky top-0 z-10">
+                <button 
+                  onClick={() => setDetalleProyecto(null)}
+                  className="flex items-center gap-1.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 cursor-pointer"
+                >
+                  <ChevronLeft size={16} />
+                  Volver
+                </button>
+                
+                <span className="hidden md:inline text-xs sm:text-sm font-black uppercase tracking-widest text-celeste-kore">
+                  Detalle del Proyecto
+                </span>
+                
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setQrProyecto(detalleProyecto);
+                        }}
+                        className="p-2 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors cursor-pointer"
+                        title="Ver QR"
+                      >
+                        <QrCode size={16} />
+                      </button>
+                      <button 
+                        onClick={() => router.push(`/kore/proyectos/editar/${detalleProyecto.id}`)}
+                        className="p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
+                        title="Editar Proyecto"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          const success = await handleDelete(detalleProyecto.id);
+                          if (success) {
+                            setDetalleProyecto(null);
+                          }
+                        }}
+                        className="p-2 bg-muted/50 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                        title="Eliminar Proyecto"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      
+                      <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-800 mx-1" />
+                    </>
                   )}
+                  
+                  <button 
+                    onClick={() => setDetalleProyecto(null)}
+                    className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
               </div>
 
-              {/* Info Cliente */}
-              <div className="space-y-1 bg-card/30 border border-border/20 p-3 rounded-xl">
-                <h3 className="text-[8px] font-black text-celeste-kore uppercase tracking-widest border-b border-border/20 pb-0.5">Información del Cliente</h3>
-                <div className="grid grid-cols-1 gap-0.5 text-[9px] sm:text-[10px]">
-                  <p><span className="text-muted-foreground">Nombre:</span> <span className="font-bold">{detalleProyecto.cliente_nombre || 'N/A'}</span></p>
-                  {detalleProyecto.cliente_telefono && (
-                    <p><span className="text-muted-foreground">Teléfono:</span> <span className="font-bold">{detalleProyecto.cliente_telefono}</span></p>
-                  )}
-                  {detalleProyecto.cliente_correo && (
-                    <p><span className="text-muted-foreground">Correo:</span> <span className="font-bold break-all">{detalleProyecto.cliente_correo}</span></p>
-                  )}
-                </div>
-              </div>
-
-              {/* Finanzas & Dona */}
-              {(() => {
-                const precio = Number(detalleProyecto.precio) || 0;
-                const comision = detalleProyecto.aplica_vendedor ? precio * (Number(detalleProyecto.porcentaje_vendedor) || 0) / 100 : 0;
-                const iva = detalleProyecto.aplica_iva ? precio * (Number(detalleProyecto.porcentaje_iva) || 0) / 100 : 0;
-                const doc = detalleProyecto.aplica_doc ? precio * (Number(detalleProyecto.porcentaje_doc) || 0) / 100 : 0;
-                const mant = detalleProyecto.aplica_mantenimiento ? Number(detalleProyecto.monto_mantenimiento) || 0 : 0;
-                const restante = precio - comision - iva - doc;
-
-                const donutData = [
-                  { name: "Restante (Resta)", value: restante, color: "#B7494E" },
-                  { name: "Comisión", value: comision, color: "#3D3C3C" },
-                  { name: "IVA", value: iva, color: "#52525b" },
-                  { name: "Doc", value: doc, color: "#a1a1aa" },
-                  { name: "Mantenimiento", value: mant, color: "#14b8a6" },
-                ].filter(d => d.value > 0);
-
-                return (
-                  <div className="space-y-2 bg-card/30 border border-border/20 p-3 rounded-xl">
-                    <h3 className="text-[8px] font-black text-celeste-kore uppercase tracking-widest border-b border-border/20 pb-0.5">Distribución Financiera</h3>
-                    
-                    {/* Donut Chart */}
-                    {donutData.length > 0 ? (
-                      <div className="w-full h-[120px] flex items-center justify-center relative">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={donutData}
-                              innerRadius="65%"
-                              outerRadius="85%"
-                              paddingAngle={4}
-                              dataKey="value"
-                              stroke="none"
-                            >
-                              {donutData.map((entry, index) => (
-                                <Cell key={`donut-cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <div className="absolute flex flex-col items-center justify-center text-center">
-                          <span className="text-[7px] uppercase tracking-wider text-muted-foreground font-bold">Valor Total</span>
-                          <span className="text-[10px] font-black text-foreground">Q{precio.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 text-muted-foreground text-[9px]">No hay datos financieros.</div>
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-4 sm:space-y-5 custom-scrollbar">
+                {/* Info General */}
+                <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <code className="text-[10px] sm:text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2.5 py-1 rounded-lg border border-celeste-kore/20">
+                      {getCode(detalleProyecto.id)}
+                    </code>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black uppercase tracking-wider border ${
+                      detalleProyecto.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
+                      detalleProyecto.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
+                      'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
+                    }`}>
+                      {detalleProyecto.estado}
+                    </span>
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{detalleProyecto.nombre}</h2>
+                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Vendedor: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{detalleProyecto.vendedor_nombre || 'N/A'}</span></p>
+                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">Desarrollador: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{detalleProyecto.desarrollador_nombre || 'N/A'}</span></p>
+                    {detalleProyecto.fecha_entrega && (
+                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
                     )}
+                  </div>
+                </div>
 
-                    {/* Donut Legend */}
-                    {donutData.length > 0 && (
-                      <div className="flex flex-wrap justify-center gap-x-2 gap-y-1 px-1 text-[8px] uppercase font-bold text-muted-foreground">
-                        {donutData.map((item, idx) => (
-                          <div key={`legend-${idx}`} className="flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-                            <span>{item.name}</span>
+                {/* Info Cliente */}
+                <div className="space-y-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm">
+                  <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Información del Cliente</h3>
+                  <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
+                    <p><span className="text-zinc-500 dark:text-zinc-400">Nombre:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{detalleProyecto.cliente_nombre || 'N/A'}</span></p>
+                    {detalleProyecto.cliente_telefono && (
+                      <p><span className="text-zinc-500 dark:text-zinc-400">Teléfono:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{detalleProyecto.cliente_telefono}</span></p>
+                    )}
+                    {detalleProyecto.cliente_correo && (
+                      <p><span className="text-zinc-500 dark:text-zinc-400">Correo:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50 break-all">{detalleProyecto.cliente_correo}</span></p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Finanzas & Dona */}
+                {(() => {
+                  const precio = Number(detalleProyecto.precio) || 0;
+                  const comision = detalleProyecto.aplica_vendedor ? precio * (Number(detalleProyecto.porcentaje_vendedor) || 0) / 100 : 0;
+                  const desarrollo = detalleProyecto.aplica_desarrollo ? precio * (Number(detalleProyecto.porcentaje_desarrollo) || 0) / 100 : 0;
+                  const iva = detalleProyecto.aplica_iva ? precio * (Number(detalleProyecto.porcentaje_iva) || 0) / 100 : 0;
+                  const doc = detalleProyecto.aplica_doc ? precio * (Number(detalleProyecto.porcentaje_doc) || 0) / 100 : 0;
+                  const mant = detalleProyecto.aplica_mantenimiento ? Number(detalleProyecto.monto_mantenimiento) || 0 : 0;
+                  const restante = precio - comision - desarrollo - iva - doc;
+
+                  const donutData = [
+                    { name: "Restante (Resta)", value: restante, color: "#B7494E" },
+                    { name: "Comisión", value: comision, color: "#3D3C3C" },
+                    { name: "Desarrollo", value: desarrollo, color: "#0ea5e9" },
+                    { name: "IVA", value: iva, color: "#52525b" },
+                    { name: "Doc", value: doc, color: "#a1a1aa" },
+                    { name: "Mantenimiento", value: mant, color: "#14b8a6" },
+                  ].filter(d => d.value > 0);
+
+                  return (
+                    <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm">
+                      <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Distribución Financiera</h3>
+                      
+                      {/* Donut Chart */}
+                      {donutData.length > 0 ? (
+                        <div className="w-full h-[180px] sm:h-[220px] flex items-center justify-center relative">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={donutData}
+                                innerRadius="65%"
+                                outerRadius="85%"
+                                paddingAngle={4}
+                                dataKey="value"
+                                stroke="none"
+                              >
+                                {donutData.map((entry, index) => (
+                                  <Cell key={`donut-cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <div className="absolute flex flex-col items-center justify-center text-center">
+                            <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-black">Valor Total</span>
+                            <span className="text-sm sm:text-lg font-black text-zinc-950 dark:text-zinc-50">Q{precio.toLocaleString()}</span>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-zinc-500 dark:text-zinc-400 text-xs">No hay datos financieros.</div>
+                      )}
 
-                    {/* Breakdown List */}
-                    <div className="space-y-1 pt-1.5 border-t border-border/10 text-[9px] sm:text-[10px]">
-                      <div className="flex justify-between items-center py-0.5">
-                        <span className="text-muted-foreground">Precio Total:</span>
-                        <span className="font-bold">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-0.5">
-                        <span className="text-muted-foreground">Comisión Vendedor:</span>
-                        <span className={`font-bold ${comision > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_vendedor}%)` : '—'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-0.5">
-                        <span className="text-muted-foreground">IVA:</span>
-                        <span className={`font-bold ${iva > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_iva}%)` : '—'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-0.5">
-                        <span className="text-muted-foreground">Fondo Documentación:</span>
-                        <span className={`font-bold ${doc > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_doc}%)` : '—'}
-                        </span>
-                      </div>
-                      {mant > 0 && (
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className="text-muted-foreground">Mantenimiento Mensual:</span>
-                          <span className="font-bold text-celeste-kore">Q{mant.toLocaleString('en-US', {minimumFractionDigits: 2})} / mes</span>
+                      {/* Donut Legend */}
+                      {donutData.length > 0 && (
+                        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 px-1 text-[9px] sm:text-[10px] uppercase font-black text-zinc-500 dark:text-zinc-400">
+                          {donutData.map((item, idx) => (
+                            <div key={`legend-${idx}`} className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                              <span>{item.name}</span>
+                            </div>
+                          ))}
                         </div>
                       )}
-                      <div className="flex justify-between items-center py-1 border-t border-border/15 font-black text-[10px] text-celeste-kore">
-                        <span>Restante (Resta):</span>
-                        <span>Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+
+                      {/* Breakdown List */}
+                      <div className="space-y-2.5 pt-3.5 border-t border-zinc-200 dark:border-zinc-800/80 text-xs sm:text-sm">
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className="text-zinc-500 dark:text-zinc-400">Precio Total:</span>
+                          <span className="font-bold text-zinc-950 dark:text-zinc-50">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className="text-zinc-500 dark:text-zinc-400">Comisión Vendedor:</span>
+                          <span className={`font-bold ${comision > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
+                            {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_vendedor}%)` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className="text-zinc-500 dark:text-zinc-400">Pago Desarrollador:</span>
+                          <span className={`font-bold ${desarrollo > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
+                            {desarrollo > 0 ? `Q${desarrollo.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_desarrollo}%)` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className="text-zinc-500 dark:text-zinc-400">IVA:</span>
+                          <span className={`font-bold ${iva > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
+                            {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_iva}%)` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center py-0.5">
+                          <span className="text-zinc-500 dark:text-zinc-400">Fondo Documentación:</span>
+                          <span className={`font-bold ${doc > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
+                            {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_doc}%)` : '—'}
+                          </span>
+                        </div>
+                        {mant > 0 && (
+                          <div className="flex justify-between items-center py-0.5">
+                            <span className="text-zinc-500 dark:text-zinc-400">Mantenimiento Mensual:</span>
+                            <span className="font-bold text-celeste-kore">Q{mant.toLocaleString('en-US', {minimumFractionDigits: 2})} / mes</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center py-1.5 border-t border-zinc-200 dark:border-zinc-800/80 pt-2.5 font-black text-sm sm:text-base text-celeste-kore">
+                          <span>Restante (Resta):</span>
+                          <span>Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })()}
-            </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -2,12 +2,17 @@
 
 import { useEffect, useState, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Briefcase, Save, ArrowLeft } from "lucide-react";
+import { Loader2, Briefcase, Save, ArrowLeft, Plus, Trash2, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Swal from "sweetalert2";
-import { proyectoSchema, ProyectoFormValues } from "./lib/schemas";
+import {
+  proyectoSchema,
+  ProyectoFormValues,
+  TIPOS_DEDUCCION,
+  TipoDeduccion,
+} from "./lib/schemas";
 import { createProyecto, updateProyecto } from "@/app/kore/proyectos/actions";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { createClient } from "@/utils/supabase/client";
@@ -18,17 +23,39 @@ interface ProyectoFormProps {
   proyecto?: any | null;
 }
 
+// ── Small shared components ──────────────────────────────────────────────────
+
 const Label = ({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) => (
-  <label {...props} className={cn("text-xs font-semibold leading-none text-foreground/70 uppercase tracking-wider", className)} />
+  <label
+    {...props}
+    className={cn(
+      "text-xs font-semibold leading-none text-foreground/70 uppercase tracking-wider",
+      className
+    )}
+  />
 );
 
 const Input = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
-  <input {...props} className={cn("flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all outline-none disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed", className)} />
+  <input
+    {...props}
+    className={cn(
+      "flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all outline-none disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
+      className
+    )}
+  />
 );
 
-const Select = ({ className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) => (
+const SelectWrap = ({ className, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) => (
   <div className="relative">
-    <select {...props} className={cn("flex h-10 w-full appearance-none rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed", className)} />
+    <select
+      {...props}
+      className={cn(
+        "flex h-10 w-full appearance-none rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
+        className
+      )}
+    >
+      {children}
+    </select>
     <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
       <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -37,71 +64,151 @@ const Select = ({ className, ...props }: React.SelectHTMLAttributes<HTMLSelectEl
   </div>
 );
 
+// ── Color palette por tipo de deducción ──────────────────────────────────────
+
+const TIPO_STYLE: Record<string, { pill: string; dot: string }> = {
+  "Comisión":      { pill: "bg-blue-500/10 text-blue-400 border-blue-500/25",       dot: "bg-blue-400" },
+  "Documentación": { pill: "bg-purple-500/10 text-purple-400 border-purple-500/25", dot: "bg-purple-400" },
+  "IVA":           { pill: "bg-amber-500/10 text-amber-400 border-amber-500/25",    dot: "bg-amber-400" },
+  "Mantenimiento": { pill: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25", dot: "bg-emerald-400" },
+  "Desarrollo":    { pill: "bg-celeste-kore/10 text-celeste-kore border-celeste-kore/25", dot: "bg-celeste-kore" },
+};
+
+const DEFAULT_PCT: Record<string, number> = {
+  "Comisión": 10,
+  "Documentación": 10,
+  "IVA": 12,
+  "Mantenimiento": 0,
+  "Desarrollo": 0,
+};
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
 export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
   const isEditing = !!proyecto;
   const { effectiveRole } = useUserContext();
   const isOperator = effectiveRole === "proyectos";
   const router = useRouter();
-
   const supabase = createClient();
-  const { data: users } = useQuery({
-    queryKey: ["vendedores-list"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, nombre")
-        .eq("activo", true)
-        .order("nombre", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
 
+  // ── React Hook Form ──
   const {
     register,
     handleSubmit,
     reset,
     watch,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ProyectoFormValues>({
     resolver: zodResolver(proyectoSchema) as any,
     defaultValues: {
       nombre: "",
       cliente_nombre: "",
+      cliente_nit: "",
       cliente_telefono: "",
       cliente_correo: "",
-      vendedor_nombre: "",
       fecha_entrega: "",
       precio: 0,
-      aplica_vendedor: true,
-      porcentaje_vendedor: 10,
-      aplica_iva: true,
-      porcentaje_iva: 12,
-      aplica_doc: true,
-      porcentaje_doc: 10,
       estado: "En Progreso",
-      mantenimiento_fecha: "",
-      mantenimiento_categoria: "",
-      aplica_mantenimiento: false,
-      monto_mantenimiento: 0,
+      vendedor_id: "",
+      desarrollador_id: "",
+      deducciones: [],
     },
   });
 
-  // --- Autocomplete de clientes ---
+  // Field array para la lista de deducciones
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "deducciones",
+  });
+
+  // Estado del formulario de "agregar deducción"
+  const [newDed, setNewDed] = useState({
+    tipo: "Comisión" as TipoDeduccion,
+    porcentaje: 10,
+    descripcion: "",
+    usuario_id: "",
+  });
+
+  const handleTipoChange = (tipo: string) => {
+    setNewDed((p) => ({
+      ...p,
+      tipo: tipo as TipoDeduccion,
+      porcentaje: DEFAULT_PCT[tipo] ?? 0,
+    }));
+  };
+
+  const handleAddDed = () => {
+    append({
+      tipo: newDed.tipo,
+      porcentaje: Number(newDed.porcentaje) || 0,
+      descripcion: newDed.descripcion || "",
+      usuario_id: newDed.usuario_id || "",
+    });
+    setNewDed({
+      tipo: "Comisión",
+      porcentaje: DEFAULT_PCT["Comisión"],
+      descripcion: "",
+      usuario_id: "",
+    });
+  };
+
+  // ── Usuarios (para asignación en deducciones y vendedor) ──
+  const { data: users } = useQuery({
+    queryKey: ["profiles-list"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, nombre")
+        .eq("activo", true)
+        .order("nombre", { ascending: true });
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const getUserName = (userId: string): string | null => {
+    if (!userId) return null;
+    const user = users?.find((u: any) => u.id === userId);
+    if (!user) return users ? null : null; // still loading
+    return user.nombre || "Usuario";
+  };
+
+  // ── Sincronización de Vendedor con Deducción de Comisión ──
+  const currentDeducciones = watch("deducciones") || [];
+  const vendedorId = watch("vendedor_id");
+  const firstComisionUsuarioId = currentDeducciones.find((d: any) => d.tipo === "Comisión")?.usuario_id || "";
+
+  useEffect(() => {
+    if (firstComisionUsuarioId !== vendedorId) {
+      setValue("vendedor_id", firstComisionUsuarioId);
+    }
+  }, [firstComisionUsuarioId, vendedorId, setValue]);
+
+  // ── Sincronización de Desarrollador con Deducción de Desarrollo ──
+  const desarrolladorId = watch("desarrollador_id");
+  const firstDesarrolloUsuarioId = currentDeducciones.find((d: any) => d.tipo === "Desarrollo")?.usuario_id || "";
+
+  useEffect(() => {
+    if (firstDesarrolloUsuarioId !== desarrolladorId) {
+      setValue("desarrollador_id", firstDesarrolloUsuarioId);
+    }
+  }, [firstDesarrolloUsuarioId, desarrolladorId, setValue]);
+
+  // ── Autocomplete de clientes ──
   const clienteNombreValue = watch("cliente_nombre") || "";
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
   const autocompleteRef = useRef<HTMLDivElement>(null);
 
   const { data: clientesSuggestions } = useQuery({
-    queryKey: ["clientes-search", clienteNombreValue],
+    queryKey: ["pro-clientes-search", clienteNombreValue],
     queryFn: async () => {
       if (!clienteNombreValue || clienteNombreValue.length < 2) return [];
       const { data, error } = await supabase
-        .from("clientes")
-        .select("id, nombre, telefono, correo")
+        .from("pro_clientes")
+        .select("id, nombre, nit, telefono, correo")
         .ilike("nombre", `%${clienteNombreValue}%`)
         .limit(6);
       if (error) return [];
@@ -121,33 +228,45 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSelectCliente = (cliente: { nombre: string; telefono: string | null; correo: string | null }) => {
+  const handleSelectCliente = (cliente: {
+    nombre: string;
+    nit?: string | null;
+    telefono: string | null;
+    correo: string | null;
+  }) => {
     setJustSelected(true);
     setValue("cliente_nombre", cliente.nombre, { shouldValidate: true });
+    setValue("cliente_nit", cliente.nit || "");
     setValue("cliente_telefono", cliente.telefono || "");
     setValue("cliente_correo", cliente.correo || "");
     setShowSuggestions(false);
     setTimeout(() => setJustSelected(false), 500);
   };
 
-  // Cargar datos del proyecto si estamos editando
+  // ── Cargar datos al editar ──
   useEffect(() => {
     if (proyecto) {
       reset({
-        ...proyecto,
-        fecha_entrega: proyecto.fecha_entrega || "",
-        mantenimiento_fecha: proyecto.mantenimiento_fecha || "",
+        nombre:           proyecto.nombre       || "",
+        cliente_nombre:   proyecto.cliente_nombre  || "",
+        cliente_nit:      proyecto.cliente_nit     || "",
+        cliente_telefono: proyecto.cliente_telefono || "",
+        cliente_correo:   proyecto.cliente_correo   || "",
+        fecha_entrega:    proyecto.fecha_entrega    || "",
+        precio:           proyecto.precio           || 0,
+        estado:           proyecto.estado           || "En Progreso",
+        vendedor_id:      proyecto.vendedor_id      || "",
+        desarrollador_id: proyecto.desarrollador_id || "",
+        deducciones:      proyecto.deducciones      || [],
       });
     }
   }, [proyecto, reset]);
 
+  // ── Submit ──
   const onSubmit = async (data: ProyectoFormValues) => {
-    let res;
-    if (isEditing) {
-      res = await updateProyecto(proyecto.id, data);
-    } else {
-      res = await createProyecto(data);
-    }
+    const res = isEditing
+      ? await updateProyecto(proyecto.id, data)
+      : await createProyecto(data);
 
     if (res.error) {
       Swal.fire({
@@ -172,14 +291,11 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
     }
   };
 
-  const onInvalid = (errors: any) => {
-    console.error("❌ Validación fallida - errores:", errors);
-  };
+  const onInvalid = (errs: any) => console.error("❌ Validación fallida:", errs);
 
-  const handleCancel = () => {
-    router.push("/kore/proyectos");
-  };
+  const handleCancel = () => router.push("/kore/proyectos");
 
+  // ── Render ──
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -187,7 +303,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="w-full max-w-3xl mx-auto"
     >
-      {/* Header */}
+      {/* Back button */}
       <div className="flex items-center justify-between mb-6">
         <button
           type="button"
@@ -200,7 +316,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-2xl shadow-black/20 overflow-hidden">
-        {/* Title Bar */}
+        {/* Title bar */}
         <div className="flex items-center gap-4 p-6 border-b border-border/50 bg-muted/5">
           <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
             <Briefcase size={20} className="text-celeste-kore" />
@@ -215,11 +331,14 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
           </div>
         </div>
 
-        {/* Form Body */}
+        {/* Form body */}
         <div className="p-6">
-          <form id="proyecto-form" onSubmit={handleSubmit(onSubmit as any, onInvalid)} className="space-y-8">
-
-            {/* Información General */}
+          <form
+            id="proyecto-form"
+            onSubmit={handleSubmit(onSubmit as any, onInvalid)}
+            className="space-y-8"
+          >
+            {/* ── Información General ── */}
             <div className="space-y-4">
               <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
                 Información General
@@ -233,26 +352,28 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                     placeholder="Ej. Sistema de Inventario"
                     className={errors.nombre ? "border-destructive ring-1 ring-destructive" : ""}
                   />
-                  {errors.nombre && <p className="text-[10px] text-destructive">{errors.nombre.message}</p>}
+                  {errors.nombre && (
+                    <p className="text-[10px] text-destructive">{errors.nombre.message}</p>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="estado">Estado</Label>
-                  <Select id="estado" {...register("estado")}>
+                  <SelectWrap id="estado" {...register("estado")}>
                     <option value="En Progreso">En Progreso</option>
                     <option value="En pausa">En Pausa</option>
                     <option value="Finalizados">Finalizado</option>
-                  </Select>
+                  </SelectWrap>
                 </div>
               </div>
             </div>
 
-            {/* Información del Cliente */}
+            {/* ── Información del Cliente ── */}
             <div className="space-y-4">
               <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
                 Información del Cliente
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Autocomplete de cliente */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Autocomplete */}
                 <div className="grid gap-2 relative" ref={autocompleteRef}>
                   <Label htmlFor="cliente_nombre">Nombre Cliente</Label>
                   <Input
@@ -260,7 +381,9 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                     {...register("cliente_nombre")}
                     placeholder="Juan Pérez"
                     autoComplete="off"
-                    onFocus={() => { if (clienteNombreValue.length >= 2) setShowSuggestions(true); }}
+                    onFocus={() => {
+                      if (clienteNombreValue.length >= 2) setShowSuggestions(true);
+                    }}
                     onChange={(e) => {
                       register("cliente_nombre").onChange(e);
                       setJustSelected(false);
@@ -268,49 +391,85 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                     }}
                   />
                   <AnimatePresence>
-                    {showSuggestions && clientesSuggestions && clientesSuggestions.length > 0 && (
-                      <motion.ul
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-zinc-900 shadow-2xl shadow-black/60 overflow-hidden"
-                      >
-                        {clientesSuggestions.map((c: any) => (
-                          <li
-                            key={c.id}
-                            onMouseDown={() => handleSelectCliente(c)}
-                            className="flex flex-col px-3 py-2.5 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
-                          >
-                            <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">{c.nombre}</span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {[c.telefono, c.correo].filter(Boolean).join(" · ") || "Sin datos de contacto"}
-                            </span>
-                          </li>
-                        ))}
-                      </motion.ul>
-                    )}
+                    {showSuggestions &&
+                      clientesSuggestions &&
+                      clientesSuggestions.length > 0 && (
+                        <motion.ul
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden"
+                        >
+                          {clientesSuggestions.map((c: any) => (
+                            <li
+                              key={c.id}
+                              onMouseDown={() => handleSelectCliente(c)}
+                              className="flex flex-col px-3 py-2.5 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">
+                                  {c.nombre}
+                                </span>
+                                {c.nit && (
+                                  <span className="text-[9px] font-black text-celeste-kore/70 bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
+                                    NIT: {c.nit}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">
+                                {[c.telefono, c.correo].filter(Boolean).join(" · ") ||
+                                  "Sin datos de contacto"}
+                              </span>
+                            </li>
+                          ))}
+                        </motion.ul>
+                      )}
                   </AnimatePresence>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="cliente_nit">NIT</Label>
+                  <Input
+                    id="cliente_nit"
+                    {...register("cliente_nit")}
+                    placeholder="CF"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="cliente_telefono">Teléfono</Label>
-                  <Input id="cliente_telefono" {...register("cliente_telefono")} placeholder="12345678" />
+                  <Input
+                    id="cliente_telefono"
+                    {...register("cliente_telefono")}
+                    placeholder="12345678"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="cliente_correo">Correo</Label>
-                  <Input id="cliente_correo" type="email" {...register("cliente_correo")} placeholder="juan@correo.com" />
-                  {errors.cliente_correo && <p className="text-[10px] text-destructive">{errors.cliente_correo.message}</p>}
+                  <Input
+                    id="cliente_correo"
+                    type="email"
+                    {...register("cliente_correo")}
+                    placeholder="juan@correo.com"
+                  />
+                  {errors.cliente_correo && (
+                    <p className="text-[10px] text-destructive">
+                      {errors.cliente_correo.message}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Finanzas y Ventas */}
+            {/* ── Finanzas y Ventas (solo no-operadores) ── */}
             {!isOperator && (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
                   Finanzas y Ventas
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                {/* Precio + Fecha + Vendedor + Desarrollador */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="precio">Precio Total (Q)</Label>
                     <Input
@@ -320,99 +479,284 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                       {...register("precio", { valueAsNumber: true })}
                       className={errors.precio ? "border-destructive" : ""}
                     />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="vendedor_nombre">Vendedor</Label>
-                    <Select id="vendedor_nombre" {...register("vendedor_nombre")}>
-                      <option value="">Seleccionar Vendedor</option>
-                      {proyecto?.vendedor_nombre && !users?.some((u: any) => u.nombre === proyecto.vendedor_nombre) && (
-                        <option value={proyecto.vendedor_nombre}>{proyecto.vendedor_nombre}</option>
-                      )}
-                      {users?.map((user: any) => (
-                        <option key={user.id} value={user.nombre || ""}>
-                          {user.nombre || "Sin nombre"}
-                        </option>
-                      ))}
-                    </Select>
+                    {errors.precio && (
+                      <p className="text-[10px] text-destructive">{errors.precio.message}</p>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="fecha_entrega">Fecha de Entrega</Label>
-                    <Input id="fecha_entrega" type="date" {...register("fecha_entrega")} />
+                    <Input
+                      id="fecha_entrega"
+                      type="date"
+                      {...register("fecha_entrega")}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="vendedor_id">Vendedor</Label>
+                    <SelectWrap
+                      id="vendedor_id"
+                      value={vendedorId || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setValue("vendedor_id", val);
+                        
+                        const comisionIdx = currentDeducciones.findIndex((d: any) => d.tipo === "Comisión");
+                        if (val) {
+                          if (comisionIdx >= 0) {
+                            setValue(`deducciones.${comisionIdx}.usuario_id`, val);
+                          } else {
+                            append({
+                              tipo: "Comisión",
+                              porcentaje: 10,
+                              descripcion: "Comisión Vendedor",
+                              usuario_id: val,
+                            });
+                          }
+                        } else {
+                          if (comisionIdx >= 0) {
+                            setValue(`deducciones.${comisionIdx}.usuario_id`, "");
+                          }
+                        }
+                      }}
+                    >
+                      <option value="">Seleccione un vendedor...</option>
+                      {users?.map((u: any) => (
+                        <option key={u.id} value={u.id}>
+                          {u.nombre || "Sin nombre"}
+                        </option>
+                      ))}
+                    </SelectWrap>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="desarrollador_id">Desarrollador</Label>
+                    <SelectWrap
+                      id="desarrollador_id"
+                      value={desarrolladorId || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setValue("desarrollador_id", val);
+                        
+                        const desIdx = currentDeducciones.findIndex((d: any) => d.tipo === "Desarrollo");
+                        if (val) {
+                          if (desIdx >= 0) {
+                            setValue(`deducciones.${desIdx}.usuario_id`, val);
+                          } else {
+                            append({
+                              tipo: "Desarrollo",
+                              porcentaje: 0,
+                              descripcion: "Desarrollo Proyecto",
+                              usuario_id: val,
+                            });
+                          }
+                        } else {
+                          if (desIdx >= 0) {
+                            setValue(`deducciones.${desIdx}.usuario_id`, "");
+                          }
+                        }
+                      }}
+                    >
+                      <option value="">Seleccione un desarrollador...</option>
+                      {users?.map((u: any) => (
+                        <option key={u.id} value={u.id}>
+                          {u.nombre || "Sin nombre"}
+                        </option>
+                      ))}
+                    </SelectWrap>
                   </div>
                 </div>
 
-                {/* Porcentajes */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-muted/20 p-4 rounded-xl border border-border/30">
-                  <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_vendedor') ? 'opacity-40' : ''}`}>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="aplica_vendedor" className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" id="aplica_vendedor" {...register("aplica_vendedor")} className="rounded bg-background border-border text-celeste-kore focus:ring-red-600" />
-                        <span className={!watch('aplica_vendedor') ? 'line-through' : ''}>Comisión Vendedor</span>
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        {...register("porcentaje_vendedor", { valueAsNumber: true })}
-                        className={`w-20 text-center ${!watch('aplica_vendedor') ? 'pointer-events-none opacity-50' : ''}`}
-                      />
-                      <span className="text-xs font-bold text-muted-foreground">%</span>
-                    </div>
+                {/* ── Sección Deducciones ── */}
+                <div className="space-y-3">
+                  {/* Header */}
+                  <div className="flex items-center gap-3">
+                    <Receipt size={14} className="text-celeste-kore shrink-0" />
+                    <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground/70">
+                      Deducciones
+                    </h5>
+                    {fields.length > 0 && (
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-celeste-kore/10 text-celeste-kore border border-celeste-kore/20">
+                        {fields.length}
+                      </span>
+                    )}
                   </div>
 
-                  <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_iva') ? 'opacity-40' : ''}`}>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="aplica_iva" className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" id="aplica_iva" {...register("aplica_iva")} className="rounded bg-background border-border text-celeste-kore focus:ring-red-600" />
-                        <span className={!watch('aplica_iva') ? 'line-through' : ''}>Aplica IVA</span>
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        {...register("porcentaje_iva", { valueAsNumber: true })}
-                        className={`w-20 text-center ${!watch('aplica_iva') ? 'pointer-events-none opacity-50' : ''}`}
-                      />
-                      <span className="text-xs font-bold text-muted-foreground">%</span>
-                    </div>
-                  </div>
+                  {/* Lista de deducciones agregadas */}
+                  <AnimatePresence mode="popLayout">
+                    {fields.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-2"
+                      >
+                        {/* Table header */}
+                        <div className="hidden sm:grid grid-cols-[auto_70px_1fr_130px_36px] gap-2 px-3 py-1">
+                          {["Tipo", "%/Monto", "Descripción", "Asignado a", ""].map((h) => (
+                            <span
+                              key={h}
+                              className="text-[9px] font-black uppercase tracking-widest text-muted-foreground"
+                            >
+                              {h}
+                            </span>
+                          ))}
+                        </div>
 
-                  <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_doc') ? 'opacity-40' : ''}`}>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="aplica_doc" className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" id="aplica_doc" {...register("aplica_doc")} className="rounded bg-background border-border text-celeste-kore focus:ring-red-600" />
-                        <span className={!watch('aplica_doc') ? 'line-through' : ''}>Fondo Documentación</span>
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        step="0.1"
-                        {...register("porcentaje_doc", { valueAsNumber: true })}
-                        className={`w-20 text-center ${!watch('aplica_doc') ? 'pointer-events-none opacity-50' : ''}`}
-                      />
-                      <span className="text-xs font-bold text-muted-foreground">%</span>
-                    </div>
-                  </div>
+                        {fields.map((field, idx) => {
+                          const style =
+                            TIPO_STYLE[field.tipo] || TIPO_STYLE["Comisión"];
+                          const userName = getUserName(field.usuario_id || "");
 
-                  <div className={`flex flex-col gap-2 transition-opacity ${!watch('aplica_mantenimiento') ? 'opacity-40' : ''}`}>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="aplica_mantenimiento" className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" id="aplica_mantenimiento" {...register("aplica_mantenimiento")} className="rounded bg-background border-border text-celeste-kore focus:ring-red-600" />
-                        <span className={!watch('aplica_mantenimiento') ? 'line-through' : ''}>Cuota Mantenimiento</span>
-                      </Label>
+                          return (
+                            <motion.div
+                              key={field.id}
+                              initial={{ opacity: 0, x: -12 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 12 }}
+                              layout
+                              className="grid grid-cols-[auto_auto_1fr_36px] sm:grid-cols-[auto_70px_1fr_130px_36px] gap-2 items-center px-3 py-2.5 rounded-xl bg-muted/10 border border-border/30 group hover:border-border/60 transition-all"
+                            >
+                              {/* Tipo pill */}
+                              <span
+                                className={cn(
+                                  "text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border shrink-0",
+                                  style.pill
+                                )}
+                              >
+                                {field.tipo}
+                              </span>
+
+                              {/* Porcentaje */}
+                              <span className="text-sm font-black text-foreground tabular-nums">
+                                {field.porcentaje}
+                                <span className="text-[10px] font-bold text-muted-foreground ml-0.5">%</span>
+                              </span>
+
+                              {/* Descripción */}
+                              <span className="text-xs text-muted-foreground truncate hidden sm:block">
+                                {field.descripcion || <span className="italic opacity-40">—</span>}
+                              </span>
+
+                              {/* Usuario - siempre visible */}
+                              <div className="flex items-center sm:col-auto">
+                                {userName ? (
+                                  <span className="text-[10px] font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-0.5 rounded-lg border border-celeste-kore/20 truncate max-w-[120px] sm:max-w-full">
+                                    {userName}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground/30 italic hidden sm:inline">
+                                    —
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Eliminar */}
+                              <button
+                                type="button"
+                                onClick={() => remove(idx)}
+                                className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground/30 group-hover:text-muted-foreground transition-all cursor-pointer shrink-0"
+                                title="Eliminar"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </motion.div>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* ── Agregar nueva deducción ── */}
+                  <div className="rounded-xl border border-dashed border-border/40 bg-muted/5 p-4 space-y-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                      Agregar Deducción
+                    </p>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {/* Tipo */}
+                      <div className="grid gap-1.5">
+                        <Label>Tipo</Label>
+                        <SelectWrap
+                          value={newDed.tipo}
+                          onChange={(e) => handleTipoChange(e.target.value)}
+                        >
+                          {TIPOS_DEDUCCION.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </SelectWrap>
+                      </div>
+
+                      {/* Porcentaje / Monto */}
+                      <div className="grid gap-1.5">
+                        <Label>% / Monto</Label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={newDed.porcentaje}
+                            onChange={(e) =>
+                              setNewDed((p) => ({
+                                ...p,
+                                porcentaje: Number(e.target.value),
+                              }))
+                            }
+                            className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                          />
+                          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
+                            %
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Descripción */}
+                      <div className="grid gap-1.5">
+                        <Label>Descripción</Label>
+                        <input
+                          type="text"
+                          placeholder="Opcional..."
+                          value={newDed.descripcion}
+                          onChange={(e) =>
+                            setNewDed((p) => ({ ...p, descripcion: e.target.value }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddDed();
+                            }
+                          }}
+                          className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                        />
+                      </div>
+
+                      {/* Asignar a (usuario) */}
+                      <div className="grid gap-1.5">
+                        <Label>Asignar a</Label>
+                        <SelectWrap
+                          value={newDed.usuario_id}
+                          onChange={(e) =>
+                            setNewDed((p) => ({ ...p, usuario_id: e.target.value }))
+                          }
+                        >
+                          <option value="">Sin asignar</option>
+                          {users?.map((u: any) => (
+                            <option key={u.id} value={u.id}>
+                              {u.nombre || "Sin nombre"}
+                            </option>
+                          ))}
+                        </SelectWrap>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...register("monto_mantenimiento", { valueAsNumber: true })}
-                        className={`w-24 text-center ${!watch('aplica_mantenimiento') ? 'pointer-events-none opacity-50' : ''}`}
-                      />
-                      <span className="text-xs font-bold text-muted-foreground">Q (Mes)</span>
-                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAddDed}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl border border-celeste-kore/30 bg-celeste-kore/5 text-celeste-kore hover:bg-celeste-kore/10 active:scale-95 transition-all text-xs font-black uppercase tracking-widest cursor-pointer"
+                    >
+                      <Plus size={13} />
+                      Agregar
+                    </button>
                   </div>
                 </div>
               </div>
@@ -435,7 +779,11 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
             disabled={isSubmitting}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-opacity text-xs font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
           >
-            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {isSubmitting ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Save size={16} />
+            )}
             {isEditing ? "Guardar" : "Crear"}
           </button>
         </div>

@@ -38,6 +38,7 @@ interface ClienteProyecto {
 interface Cliente {
   id: string;
   nombre: string;
+  nit: string;
   telefono: string;
   correo: string;
   created_at: string;
@@ -70,6 +71,7 @@ export default function ClientesDashboard() {
   const [isFormExpanded, setIsFormExpanded] = useState(false);
   const [formData, setFormData] = useState({
     nombre: "",
+    nit: "",
     telefono: "",
     correo: "",
   });
@@ -174,7 +176,7 @@ export default function ClientesDashboard() {
         background: "#18181b",
         color: "#fff",
       });
-      setFormData({ nombre: "", telefono: "", correo: "" });
+      setFormData({ nombre: "", nit: "", telefono: "", correo: "" });
       setEditingId(null);
       setIsFormExpanded(false);
       getClientes()
@@ -187,6 +189,7 @@ export default function ClientesDashboard() {
     setEditingId(client.id);
     setFormData({
       nombre: client.nombre,
+      nit: client.nit,
       telefono: client.telefono,
       correo: client.correo,
     });
@@ -197,7 +200,7 @@ export default function ClientesDashboard() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFormData({ nombre: "", telefono: "", correo: "" });
+    setFormData({ nombre: "", nit: "", telefono: "", correo: "" });
     setFormErrors({});
     setIsFormExpanded(false);
   };
@@ -355,6 +358,21 @@ export default function ClientesDashboard() {
                   </div>
 
                   <div className="grid gap-1.5">
+                    <label htmlFor="nit" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
+                      NIT
+                    </label>
+                    <input
+                      id="nit"
+                      name="nit"
+                      type="text"
+                      placeholder="Ej. 1234567-8 ó CF"
+                      value={formData.nit}
+                      onChange={handleInputChange}
+                      className="flex h-10 w-full rounded-lg border border-border/50 dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
+                    />
+                  </div>
+
+                  <div className="grid gap-1.5">
                     <label htmlFor="telefono" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
                       Teléfono de Contacto
                     </label>
@@ -479,6 +497,11 @@ export default function ClientesDashboard() {
                             {client.nombre}
                           </h3>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                            {client.nit && (
+                              <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
+                                <span className="text-[9px] font-black text-celeste-kore/70 bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">NIT: {client.nit}</span>
+                              </span>
+                            )}
                             {client.telefono && (
                               <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
                                 <Phone size={10} className="shrink-0 text-celeste-kore" />
