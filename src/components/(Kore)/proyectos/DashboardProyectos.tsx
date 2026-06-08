@@ -839,9 +839,6 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             </td>
                             <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className="font-bold text-sm text-foreground">{p.nombre}</p>
-                              <p className="text-[10px] text-muted-foreground">
-                                Vendedor: {p.vendedor_nombre || 'N/A'}{p.desarrollador_nombre ? ` · Dev: ${p.desarrollador_nombre}` : ''}
-                              </p>
                             </td>
                             <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className="text-sm text-foreground">{p.cliente_nombre || 'N/A'}</p>
@@ -927,9 +924,6 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             <h4 className="font-bold text-[11px] text-foreground truncate tracking-tight">{p.nombre}</h4>
                             <p className="text-[8px] text-muted-foreground mt-0.5 truncate">
                               Cliente: <span className="font-semibold text-foreground/80">{p.cliente_nombre || 'Sin cliente'}</span>
-                            </p>
-                            <p className="text-[8px] text-muted-foreground mt-0.5 truncate">
-                              Vendedor: <span className="font-semibold text-foreground/80">{p.vendedor_nombre || 'N/A'}</span>{p.desarrollador_nombre ? ` · Dev: ${p.desarrollador_nombre}` : ''}
                             </p>
                           </div>
                         </div>
