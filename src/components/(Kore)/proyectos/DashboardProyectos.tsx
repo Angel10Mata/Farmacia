@@ -207,7 +207,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
     autoTable(doc, {
       startY: 72,
-      head: [["Código", "Proyecto", "Cliente", "Vendedor", "Dev", "Estado", "Precio", "Comisión", "Desarrollo", "IVA", "Mant.", "Restante"]],
+      head: [["Código", "Proyecto", "Cliente", "Vendedor", "Dev", "Estado", "Precio", "Comisión", "Desarrollo", "IVA", "Mant.", "Saldo Final"]],
       body: tableRows,
       theme: "grid",
       styles: {
@@ -798,7 +798,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             <th className="pb-2 px-2 font-black text-right">IVA</th>
                             <th className="pb-2 px-2 font-black text-right">Doc</th>
                             <th className="pb-2 px-2 font-black text-right">Mant.</th>
-                            <th className="pb-2 px-2 font-black text-right">Restante</th>
+                            <th className="pb-2 px-2 font-black text-right">Saldo Final</th>
                           </tr>
                         </thead>
                         <tbody className="before:block before:h-2">
@@ -1135,7 +1135,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   const restante = precio - totalDeducciones;
 
                   const donutData = [
-                    { name: "Restante (Resta)", value: restante, color: "#B7494E" },
+                    { name: "Saldo Final", value: restante, color: "#B7494E" },
                     { name: "Vendedor", value: vendedor, color: "#3D3C3C" },
                     { name: "Desarrollo", value: dev, color: "#0ea5e9" },
                     { name: "IVA", value: iva, color: "#52525b" },
@@ -1216,7 +1216,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         </div>
 
                         <div className="flex justify-between items-center py-1.5 border-t border-zinc-200 dark:border-zinc-800/80 pt-2.5 font-black text-sm sm:text-base text-celeste-kore">
-                          <span>Restante (Resta):</span>
+                          <span>Saldo Final:</span>
                           <span>Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                         </div>
                       </div>
