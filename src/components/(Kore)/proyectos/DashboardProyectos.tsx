@@ -1087,10 +1087,8 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   </div>
                   <div>
                     <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{detalleProyecto.nombre}</h2>
-                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Vendedor: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{detalleProyecto.vendedor_nombre || 'N/A'}</span></p>
-                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">Desarrollador: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{detalleProyecto.desarrollador_nombre || 'N/A'}</span></p>
                     {detalleProyecto.fecha_entrega && (
-                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
+                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
                     )}
                   </div>
                 </div>
