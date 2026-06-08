@@ -80,6 +80,7 @@ export function Dashboard() {
   });
 
   const handleCardClick = (id: string, href: string) => {
+    setExpandedPerfil(false);
     if (isMobile) {
       if (activeId === id) {
         router.push(href);
@@ -113,7 +114,7 @@ export function Dashboard() {
             initial="idle"
             whileHover={isMobile ? undefined : "hover"}
             animate={isModuleActive ? "active" : "idle"}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            transition={{ type: "tween", duration: 0.2, ease: "easeInOut" }}
             variants={{
               idle: { zIndex: 1, height: isMobile ? 120 : undefined },
               hover: { zIndex: 10, height: isMobile ? 120 : undefined }, // Se quitó la expansión en hover para evitar rebotes
@@ -133,8 +134,14 @@ export function Dashboard() {
                       className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
                     >
                       <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]" />
-                      <button
-                        onClick={() => setExpandedPerfil(false)}
+                       <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedPerfil(false);
+                          if (isMobile) {
+                            setActiveId(null);
+                          }
+                        }}
                         className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
                       >
                         <span className="flex items-center gap-2 text-slate-900 dark:text-white font-black uppercase text-xs tracking-[0.25em]">
@@ -192,7 +199,12 @@ export function Dashboard() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.4, ease: "easeInOut" }}
-                      onClick={() => setExpandedPerfil(true)}
+                      onClick={() => {
+                        setExpandedPerfil(true);
+                        if (isMobile) {
+                          setActiveId("perfil");
+                        }
+                      }}
                       className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
                     >
                       <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 transition-transform duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
