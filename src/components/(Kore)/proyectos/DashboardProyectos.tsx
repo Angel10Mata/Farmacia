@@ -457,6 +457,23 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     return date.toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" });
   };
 
+  const formatPhoneDisplay = (phone: string | null | undefined): string => {
+    if (!phone) return "";
+    const clean = phone.trim();
+    if (!clean) return "";
+    // GT number with +502 and 8 digits -> +502 XXXX-XXXX
+    const gtMatch = clean.match(/^\+502(\d{4})(\d{4})$/);
+    if (gtMatch) {
+      return `+502 ${gtMatch[1]}-${gtMatch[2]}`;
+    }
+    // GT number with 8 digits (no prefix) -> +502 XXXX-XXXX
+    const gtShortMatch = clean.match(/^(\d{4})(\d{4})$/);
+    if (gtShortMatch) {
+      return `+502 ${gtShortMatch[1]}-${gtShortMatch[2]}`;
+    }
+    return clean;
+  };
+
   const getDaysUntil = (dateStr: string) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -828,7 +845,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             </td>
                             <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className="text-sm text-foreground">{p.cliente_nombre || 'N/A'}</p>
-                              <p className="text-[10px] text-muted-foreground">{p.cliente_telefono || ''}</p>
+                              <p className="text-[10px] text-muted-foreground">{formatPhoneDisplay(p.cliente_telefono)}</p>
                             </td>
                             <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
@@ -1101,8 +1118,8 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                     {detalleProyecto.cliente_telefono && (
                       <p className="flex items-center gap-1.5">
                         <span className="text-zinc-500 dark:text-zinc-400">Teléfono:</span> 
-                        <a href={`https://wa.me/${detalleProyecto.cliente_telefono.replace(/\\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-celeste-kore hover:underline flex items-center gap-1">
-                          {detalleProyecto.cliente_telefono}
+                        <a href={`https://wa.me/${detalleProyecto.cliente_telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-celeste-kore hover:underline flex items-center gap-1">
+                          {formatPhoneDisplay(detalleProyecto.cliente_telefono)}
                         </a>
                       </p>
                     )}
