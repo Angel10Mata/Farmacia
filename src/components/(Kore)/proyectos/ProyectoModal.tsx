@@ -92,7 +92,7 @@ const DEFAULT_PCT: Record<string, number> = {
 export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoModalProps) {
   const isEditing = !!proyecto;
   const { effectiveRole } = useUserContext();
-  const isOperator = effectiveRole === "proyectos";
+  const isDeveloper = effectiveRole === "proyectos";
   const supabase = createClient();
 
   // ── Usuarios registrados ──
@@ -455,7 +455,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
               </div>
 
               {/* ── Finanzas y Ventas ── */}
-              {!isOperator && (
+              {!isDeveloper && (
                 <div className="space-y-5">
                   <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
                     Finanzas y Ventas

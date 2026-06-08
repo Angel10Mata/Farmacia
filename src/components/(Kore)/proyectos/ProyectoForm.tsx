@@ -106,7 +106,7 @@ const formatToE164 = (phone: string | null | undefined): string => {
 export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
   const isEditing = !!proyecto;
   const { effectiveRole } = useUserContext();
-  const isOperator = effectiveRole === "proyectos";
+  const isDeveloper = effectiveRole === "proyectos";
   const router = useRouter();
   const supabase = createClient();
 
@@ -523,8 +523,8 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
               </div>
             </div>
 
-            {/* ── Finanzas y Ventas (solo no-operadores) ── */}
-            {!isOperator && (
+            {/* ── Finanzas y Ventas (solo no-desarrolladores) ── */}
+            {!isDeveloper && (
               <div className="space-y-6">
                 <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
                   Finanzas y Ventas
@@ -584,7 +584,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
             {/* ======================= PASO 2 ======================= */}
             <div className={cn("space-y-8", step === 2 ? "block" : "hidden")}>
             
-            {!isOperator && (
+            {!isDeveloper && (
               <div className="space-y-6">
                 {/* ── Sección Deducciones ── */}
                 <div className="space-y-3">

@@ -41,7 +41,7 @@ export function VerUsuarios() {
 
   const roleLabels: Record<string, string> = {
     user: "Usuario (Estándar)",
-    proyectos: "Operador",
+    proyectos: "Desarrollador",
     admin: "Administrador",
     super: "Super Admin",
   };
