@@ -524,7 +524,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           {/* CHARTS SECTION */}
           <div className="grid grid-cols-1 lg:grid-cols-[60%_1fr] gap-4">
             {/* Bar Chart */}
-            <div className="rounded-2xl border border-celeste-kore/30 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
+            <div className="rounded-2xl border border-celeste-kore/55 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
@@ -672,7 +672,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
             </div>
 
             {/* Donut Chart */}
-            <div className="rounded-2xl border border-celeste-kore/30 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20 flex flex-col">
+            <div className="rounded-2xl border border-celeste-kore/55 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20 flex flex-col">
               <div className="flex items-center gap-2 sm:gap-3 mb-4">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
                   <Briefcase size={14} className="text-celeste-kore" />
@@ -743,7 +743,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           </div>
 
           {/* TABLE SECTION - Admin only */}
-          <div className="rounded-2xl border border-celeste-kore/30 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
+          <div className="rounded-2xl border border-celeste-kore/55 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
               <div className="flex items-center gap-2 sm:gap-3">
                 <button 
@@ -902,7 +902,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                       return (
                         <div 
                           key={p.id} 
-                          className="rounded-lg border border-celeste-kore/30 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-none dark:shadow-md hover:border-celeste-kore/50 transition-all duration-300 cursor-pointer"
+                          className="rounded-lg border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-none dark:shadow-md hover:border-celeste-kore/70 transition-all duration-300 cursor-pointer"
                           onClick={() => setDetalleProyecto(p)}
                         >
                           {/* Top row: Code & State */}
@@ -969,7 +969,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                 const isUrgent = days > 0 && days <= 7;
 
                 return (
-                  <div key={p.id} className="flex items-center justify-between p-4 rounded-xl border border-celeste-kore/30 dark:border-white/10 bg-card/40 hover:bg-card/60 backdrop-blur-sm transition-all duration-300 shadow-none dark:shadow-sm">
+                  <div key={p.id} className="flex items-center justify-between p-4 rounded-xl border border-celeste-kore/55 dark:border-white/10 bg-card/40 hover:bg-card/60 backdrop-blur-sm transition-all duration-300 shadow-none dark:shadow-sm">
                     <div className="flex items-center gap-4">
                       <code className="text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-1 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
                       <div>

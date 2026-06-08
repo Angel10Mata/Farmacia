@@ -367,7 +367,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         </button>
       </div>
 
-      <div className="rounded-2xl border border-celeste-kore/30 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
+      <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
         {/* Title bar */}
         <div className="flex items-center gap-4 p-6 border-b border-border/50 bg-muted/5">
           <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">

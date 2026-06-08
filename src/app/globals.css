@@ -21,7 +21,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: 0 0% 98%;
   --border: oklch(0.922 0 0);
-  --input: rgba(183, 73, 78, 0.3);
+  --input: rgba(183, 73, 78, 0.55);
   --ring: #B7494E;
   --radius: 0.625rem;
 }

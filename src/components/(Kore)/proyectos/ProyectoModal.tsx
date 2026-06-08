@@ -312,7 +312,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
           exit={{ opacity: 0, y: 40 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
           className="w-full h-full flex flex-col bg-card overflow-hidden
-            md:h-auto md:max-w-2xl md:rounded-3xl md:shadow-none dark:md:shadow-2xl md:border md:border-celeste-kore/30 dark:md:border-border/50 md:my-auto"
+            md:h-auto md:max-w-2xl md:rounded-3xl md:shadow-none dark:md:shadow-2xl md:border md:border-celeste-kore/55 dark:md:border-border/50 md:my-auto"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/5 sticky top-0 z-10 backdrop-blur-md">

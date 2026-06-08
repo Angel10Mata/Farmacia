@@ -298,7 +298,7 @@ export default function ClientesDashboard() {
       {/* MAIN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
         {/* LEFT COLUMN: Sticky Form Card */}
-        <div className="lg:sticky lg:top-24 bg-white dark:bg-zinc-950/40 backdrop-blur-xl border border-celeste-kore/30 dark:border-white/10 rounded-2xl p-6 shadow-none dark:shadow-2xl transition-all duration-300">
+        <div className="lg:sticky lg:top-24 bg-white dark:bg-zinc-950/40 backdrop-blur-xl border border-celeste-kore/55 dark:border-white/10 rounded-2xl p-6 shadow-none dark:shadow-2xl transition-all duration-300">
           <div
             onClick={() => {
               if (editingId) {
@@ -481,7 +481,7 @@ export default function ClientesDashboard() {
                 return (
                   <div
                     key={client.id}
-                    className="border border-celeste-kore/30 dark:border-white/10 rounded-2xl bg-white dark:bg-zinc-900/10 backdrop-blur-md hover:border-celeste-kore/50 dark:hover:border-white/20 transition-all duration-300 overflow-hidden shadow-none dark:shadow-md"
+                    className="border border-celeste-kore/55 dark:border-white/10 rounded-2xl bg-white dark:bg-zinc-900/10 backdrop-blur-md hover:border-celeste-kore/70 dark:hover:border-white/20 transition-all duration-300 overflow-hidden shadow-none dark:shadow-md"
                   >
                     {/* Header Summary */}
                     <div
