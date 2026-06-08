@@ -21,7 +21,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: 0 0% 98%;
   --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --input: rgba(183, 73, 78, 0.3);
   --ring: #B7494E;
   --radius: 0.625rem;
 }
@@ -169,3 +169,57 @@ select option {
   color: #ffffff !important;
   background-color: #1e1e22 !important;
 }
+
+/* Bordes rojos para los campos de entrada de información en modo claro */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]),
+select,
+textarea,
+.PhoneInput {
+  border: 1px solid rgba(183, 73, 78, 0.35) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):focus,
+select:focus,
+textarea:focus,
+.PhoneInput:focus-within {
+  border-color: rgba(183, 73, 78, 0.7) !important;
+  box-shadow: 0 0 0 2px rgba(183, 73, 78, 0.2) !important;
+  outline: none !important;
+}
+
+/* Modo oscuro: restaurar bordes oscuros / grises */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]),
+.dark select,
+.dark textarea,
+.dark .PhoneInput {
+  border: 1px solid #2d2d34 !important;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):focus,
+.dark select:focus,
+.dark textarea:focus,
+.dark .PhoneInput:focus-within {
+  border-color: rgba(183, 73, 78, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(183, 73, 78, 0.3) !important;
+}
+
+/* Deshabilitados */
+input:disabled, 
+select:disabled, 
+textarea:disabled, 
+.PhoneInput:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  border-color: var(--border) !important;
+}
+
+/* Evitar doble borde en react-phone-number-input */
+.PhoneInput input {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  outline: none !important;
+}
+
+

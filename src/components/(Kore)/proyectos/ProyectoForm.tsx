@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,7 +42,7 @@ const Input = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputEleme
   <input
     {...props}
     className={cn(
-      "flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all outline-none disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
+      "flex h-10 w-full rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all outline-none disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
       className
     )}
   />
@@ -53,7 +53,7 @@ const SelectWrap = ({ className, children, ...props }: React.SelectHTMLAttribute
     <select
       {...props}
       className={cn(
-        "flex h-10 w-full appearance-none rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
+        "flex h-10 w-full appearance-none rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 py-2 text-sm outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
         className
       )}
     >
@@ -179,6 +179,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
       descripcion: "",
       usuario_id: "",
     });
+    setUserSearchQuery("");
   };
 
   // ── Usuarios (para asignación en deducciones y vendedor) ──
@@ -195,6 +196,19 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
     staleTime: 5 * 60 * 1000,
   });
 
+  // ── Autocomplete de usuarios ──
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [showUserSuggestions, setShowUserSuggestions] = useState(false);
+  const [justSelectedUser, setJustSelectedUser] = useState(false);
+  const userAutocompleteRef = useRef<HTMLDivElement>(null);
+
+  const filteredUsers = useMemo(() => {
+    if (!userSearchQuery || userSearchQuery.trim().length < 1) return [];
+    return (users || []).filter((u: any) =>
+      u.nombre?.toLowerCase().includes(userSearchQuery.toLowerCase())
+    );
+  }, [users, userSearchQuery]);
+
   const getUserName = (userId: string): string | null => {
     if (!userId) return null;
     const user = users?.find((u: any) => u.id === userId);
@@ -205,7 +219,12 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
   // ── Sincronización de Vendedor con Deducción de Comisión ──
   const currentDeducciones = watch("deducciones") || [];
   const vendedorId = watch("vendedor_id");
-  const firstComisionUsuarioId = currentDeducciones.find((d: any) => d.tipo === "Comisión")?.usuario_id || "";
+  const firstComision = currentDeducciones.find((d: any) => 
+    (d.tipo === "Vendedor" || d.tipo === "Comisión" || d.tipo === "vendedor") && d.usuario_id
+  ) || currentDeducciones.find((d: any) => 
+    d.tipo === "Vendedor" || d.tipo === "Comisión" || d.tipo === "vendedor"
+  );
+  const firstComisionUsuarioId = firstComision?.usuario_id || "";
 
   useEffect(() => {
     if (firstComisionUsuarioId !== vendedorId) {
@@ -240,6 +259,9 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
     const handleClickOutside = (e: MouseEvent) => {
       if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
+      }
+      if (userAutocompleteRef.current && !userAutocompleteRef.current.contains(e.target as Node)) {
+        setShowUserSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -278,6 +300,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         deducciones:      proyecto.deducciones      || [],
       });
     }
+    setUserSearchQuery("");
   }, [proyecto, reset]);
 
   // ── Submit ──
@@ -344,7 +367,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         </button>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-2xl shadow-black/20 overflow-hidden">
+      <div className="rounded-2xl border border-celeste-kore/30 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
         {/* Title bar */}
         <div className="flex items-center gap-4 p-6 border-b border-border/50 bg-muted/5">
           <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
@@ -676,7 +699,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                               <button
                                 type="button"
                                 onClick={() => remove(idx)}
-                                className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground/30 group-hover:text-muted-foreground transition-all cursor-pointer shrink-0"
+                                className="flex items-center justify-center p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground/30 group-hover:text-muted-foreground transition-all cursor-pointer shrink-0"
                                 title="Eliminar"
                               >
                                 <Trash2 size={13} />
@@ -725,7 +748,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                                   porcentaje: e.target.value === "" ? "" : Number(e.target.value),
                                 }))
                               }
-                              className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                              className="flex h-10 w-full rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
                             />
                             <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
                               %
@@ -745,26 +768,62 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                                 setNewDed((p) => ({ ...p, descripcion: e.target.value }))
                               }
                               rows={1}
-                              className="flex min-h-[40px] w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all resize-y"
+                              className="flex min-h-[40px] w-full rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all resize-y"
                             />
                           </div>
-                          <div className="col-span-1 md:col-span-2 grid gap-1.5">
-                            <Label>Asignar a</Label>
-                            <SelectWrap
-                              value={newDed.usuario_id}
-                              onChange={(e) =>
-                                setNewDed((p) => ({ ...p, usuario_id: e.target.value }))
-                              }
-                            >
-                              <option value="">Sin asignar</option>
-                              {users?.map((u: any) => (
-                                <option key={u.id} value={u.id}>
-                                  {u.nombre || "Sin nombre"}
-                                </option>
-                              ))}
-                            </SelectWrap>
-                          </div>
-                        </>
+                           <div className="col-span-1 md:col-span-2 grid gap-1.5 relative" ref={userAutocompleteRef}>
+                             <Label>Asignar a</Label>
+                             <Input
+                               type="text"
+                               placeholder="Buscar usuario..."
+                               value={userSearchQuery}
+                               autoComplete="off"
+                               onFocus={() => {
+                                 if (userSearchQuery.length >= 1 && !justSelectedUser) {
+                                   setShowUserSuggestions(true);
+                                 }
+                               }}
+                               onChange={(e) => {
+                                 const val = e.target.value;
+                                 setUserSearchQuery(val);
+                                 setJustSelectedUser(false);
+                                 setShowUserSuggestions(val.length >= 1);
+                                 if (val.trim() === "") {
+                                   setNewDed((p) => ({ ...p, usuario_id: "" }));
+                                 }
+                               }}
+                             />
+                             <AnimatePresence>
+                               {showUserSuggestions && filteredUsers.length > 0 && (
+                                 <motion.ul
+                                   initial={{ opacity: 0, y: -6 }}
+                                   animate={{ opacity: 1, y: 0 }}
+                                   exit={{ opacity: 0, y: -6 }}
+                                   transition={{ duration: 0.15 }}
+                                   className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden max-h-48 overflow-y-auto"
+                                 >
+                                   {filteredUsers.map((u: any) => (
+                                     <li
+                                       key={u.id}
+                                       onMouseDown={() => {
+                                         setJustSelectedUser(true);
+                                         setNewDed((p) => ({ ...p, usuario_id: u.id }));
+                                         setUserSearchQuery(u.nombre || "");
+                                         setShowUserSuggestions(false);
+                                         setTimeout(() => setJustSelectedUser(false), 500);
+                                       }}
+                                       className="flex flex-col px-3 py-2 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
+                                     >
+                                       <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">
+                                         {u.nombre || "Sin nombre"}
+                                       </span>
+                                     </li>
+                                   ))}
+                                 </motion.ul>
+                               )}
+                             </AnimatePresence>
+                           </div>
+                         </>
                       )}
                     </div>
 

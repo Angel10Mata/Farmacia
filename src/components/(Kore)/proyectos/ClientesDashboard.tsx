@@ -298,7 +298,7 @@ export default function ClientesDashboard() {
       {/* MAIN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
         {/* LEFT COLUMN: Sticky Form Card */}
-        <div className="lg:sticky lg:top-24 bg-white dark:bg-zinc-950/40 backdrop-blur-xl border border-border/50 dark:border-white/10 rounded-2xl p-6 shadow-xl shadow-black/5 dark:shadow-2xl transition-all duration-300">
+        <div className="lg:sticky lg:top-24 bg-white dark:bg-zinc-950/40 backdrop-blur-xl border border-celeste-kore/30 dark:border-white/10 rounded-2xl p-6 shadow-none dark:shadow-2xl transition-all duration-300">
           <div
             onClick={() => {
               if (editingId) {
@@ -349,7 +349,7 @@ export default function ClientesDashboard() {
                       className={`flex h-10 w-full rounded-lg border bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 transition-all outline-none ${
                         formErrors.nombre
                           ? "border-destructive focus:ring-destructive/50"
-                          : "border-border/50 dark:border-white/10 focus:ring-red-600/50"
+                          : "border-input dark:border-white/10 focus:ring-red-600/50"
                       }`}
                     />
                     {formErrors.nombre && (
@@ -368,7 +368,7 @@ export default function ClientesDashboard() {
                       placeholder="Ej. 1234567-8 ó CF"
                       value={formData.nit}
                       onChange={handleInputChange}
-                      className="flex h-10 w-full rounded-lg border border-border/50 dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
+                      className="flex h-10 w-full rounded-lg border border-input dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
                     />
                   </div>
 
@@ -383,7 +383,7 @@ export default function ClientesDashboard() {
                       placeholder="Ej. 42140797"
                       value={formData.telefono}
                       onChange={handleInputChange}
-                      className="flex h-10 w-full rounded-lg border border-border/50 dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
+                      className="flex h-10 w-full rounded-lg border border-input dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
                     />
                   </div>
 
@@ -401,7 +401,7 @@ export default function ClientesDashboard() {
                       className={`flex h-10 w-full rounded-lg border bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 transition-all outline-none ${
                         formErrors.correo
                           ? "border-destructive focus:ring-destructive/50"
-                          : "border-border/50 dark:border-white/10 focus:ring-red-600/50"
+                          : "border-input dark:border-white/10 focus:ring-red-600/50"
                       }`}
                     />
                     {formErrors.correo && (
@@ -448,7 +448,7 @@ export default function ClientesDashboard() {
               placeholder="Buscar por cliente, teléfono o correo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-10 pr-20 rounded-xl border border-border/50 dark:border-white/10 bg-white dark:bg-zinc-950/40 backdrop-blur-xl text-sm focus:outline-none focus:ring-2 focus:ring-celeste-kore/50 transition-all text-black dark:text-white outline-none shadow-sm dark:shadow-none"
+              className="w-full h-12 pl-10 pr-20 rounded-xl border border-celeste-kore/30 dark:border-white/10 bg-white dark:bg-zinc-950/40 backdrop-blur-xl text-sm focus:outline-none focus:ring-2 focus:ring-celeste-kore/50 transition-all text-black dark:text-white outline-none shadow-none"
             />
             {searchTerm && (
               <button
@@ -467,7 +467,7 @@ export default function ClientesDashboard() {
                 <Loader2 className="animate-spin text-celeste-kore size-8" />
               </div>
             ) : filteredClients.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground border border-dashed border-border/50 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-zinc-950/20 backdrop-blur-sm shadow-sm dark:shadow-none">
+              <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground border border-dashed border-border/50 dark:border-white/10 rounded-2xl bg-white/50 dark:bg-zinc-950/20 backdrop-blur-sm shadow-none">
                 <Users className="size-14 text-muted-foreground/30 mb-3 animate-pulse" />
                 <p className="font-black text-sm uppercase tracking-wide">No se encontraron clientes</p>
                 <p className="text-xs text-muted-foreground/70 mt-1.5">
@@ -481,7 +481,7 @@ export default function ClientesDashboard() {
                 return (
                   <div
                     key={client.id}
-                    className="border border-border/50 dark:border-white/10 rounded-2xl bg-white dark:bg-zinc-900/10 backdrop-blur-md hover:border-border dark:hover:border-white/20 transition-all duration-300 overflow-hidden shadow-sm dark:shadow-md"
+                    className="border border-celeste-kore/30 dark:border-white/10 rounded-2xl bg-white dark:bg-zinc-900/10 backdrop-blur-md hover:border-celeste-kore/50 dark:hover:border-white/20 transition-all duration-300 overflow-hidden shadow-none dark:shadow-md"
                   >
                     {/* Header Summary */}
                     <div
@@ -541,21 +541,21 @@ export default function ClientesDashboard() {
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => startEdit(client)}
-                            className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg border border-border/50 dark:border-white/5 transition-colors cursor-pointer"
+                            className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg border border-border/50 dark:border-white/5 transition-colors cursor-pointer"
                             title="Editar cliente"
                           >
                             <Edit size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(client)}
-                            className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg border border-border/50 dark:border-white/5 transition-colors cursor-pointer"
+                            className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg border border-border/50 dark:border-white/5 transition-colors cursor-pointer"
                             title="Eliminar cliente"
                           >
                             <Trash2 size={16} />
                           </button>
                           <button
                             onClick={() => toggleExpand(client.id)}
-                            className="p-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/15 text-muted-foreground hover:text-black dark:hover:text-white rounded-lg border border-border/50 dark:border-white/5 transition-colors cursor-pointer ml-1"
+                            className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/15 text-muted-foreground hover:text-black dark:hover:text-white rounded-lg border border-border/50 dark:border-white/5 transition-colors cursor-pointer ml-1"
                           >
                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
@@ -606,7 +606,7 @@ export default function ClientesDashboard() {
                                             </span>
                                             <button
                                               onClick={() => handleCopy(getCode(proj.id), proj.id)}
-                                              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                                              className="flex items-center justify-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                                               title="Copiar código"
                                             >
                                               {copiedId === proj.id ? (

@@ -103,7 +103,7 @@ export function Dashboard() {
           <motion.div
             key={mod.id}
             className={[
-              "cursor-pointer w-full relative",
+              "cursor-pointer w-full relative h-[180px] md:h-auto",
               isWide
                 ? "col-span-1 md:col-span-2 min-h-[120px] md:min-h-[300px] lg:h-[380px]"
                 : "col-span-1 min-h-[120px] md:min-h-[400px] lg:h-[380px]"
@@ -114,23 +114,23 @@ export function Dashboard() {
             initial="idle"
             whileHover={isMobile ? undefined : "hover"}
             animate={isModuleActive ? "active" : "idle"}
-            transition={{ type: "tween", duration: 0.2, ease: "easeInOut" }}
+            transition={isMobile ? { duration: 0 } : { type: "tween", duration: 0.2, ease: "easeInOut" }}
             variants={{
-              idle: { zIndex: 1, height: isMobile ? 180 : undefined },
-              hover: { zIndex: 10, height: isMobile ? 180 : undefined },
-              active: { zIndex: 20, height: isMobile ? 180 : undefined },
+              idle: { zIndex: 1 },
+              hover: { zIndex: 10 },
+              active: { zIndex: 20 },
             }}
           >
             {mod.id === "perfil" ? (
-              <div className="group flex flex-col border border-red-500 dark:border-white/40 overflow-hidden h-full w-full rounded-2xl bg-white dark:bg-[#111] transition-colors duration-500 hover:border-red-600 dark:hover:border-white hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-white/10">
+              <div className="group flex flex-col border border-red-500 dark:border-white/40 overflow-hidden h-full w-full rounded-2xl bg-white dark:bg-[#111] md:transition-colors md:duration-500 hover:border-red-600 dark:hover:border-white hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-white/10">
                 <AnimatePresence mode="wait">
                   {expandedPerfil ? (
                     <motion.div
                       key="perfil-expanded"
-                      initial={{ opacity: 0 }}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      exit={isMobile ? { opacity: 1 } : { opacity: 0 }}
+                      transition={{ duration: isMobile ? 0 : 0.4, ease: "easeInOut" }}
                       className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
                     >
                       <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]" />
@@ -149,11 +149,11 @@ export function Dashboard() {
                         </span>
                       </button>
                       <motion.div
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={{ opacity: isMobile ? 1 : 0, y: isMobile ? 0 : 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{
-                          duration: 0.4,
-                          delay: 0.15,
+                          duration: isMobile ? 0 : 0.4,
+                          delay: isMobile ? 0 : 0.15,
                           ease: "easeOut",
                         }}
                         className="relative z-10 w-full flex flex-col gap-1.5 md:gap-3 pb-8 md:pb-[40px]"
@@ -195,10 +195,10 @@ export function Dashboard() {
                   ) : (
                     <motion.div
                       key="perfil-normal"
-                      initial={{ opacity: 0 }}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      exit={isMobile ? { opacity: 1 } : { opacity: 0 }}
+                      transition={{ duration: isMobile ? 0 : 0.4, ease: "easeInOut" }}
                       onClick={() => {
                         setExpandedPerfil(true);
                         if (isMobile) {
@@ -207,19 +207,14 @@ export function Dashboard() {
                       }}
                       className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
                     >
-                      <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 transition-transform duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
-                      <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
+                      <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 md:transition-transform md:duration-500 md:ease-[cubic-bezier(0.33,1,0.68,1)] md:group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
+                      <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 md:transition-all md:duration-500 opacity-0 md:group-hover:opacity-100 md:translate-y-4 md:group-hover:translate-y-0">
                         <span className="flex items-center gap-2 text-slate-900 dark:text-white font-black uppercase text-xs tracking-[0.25em]">
                           Ver opciones
                         </span>
                       </div>
-                      <motion.div
-                        className="w-full h-full flex flex-row md:flex-col justify-start md:justify-center items-center px-4 md:px-0 gap-4 md:gap-0 relative z-10"
-                        variants={{
-                          idle: { paddingBottom: isMobile ? 0 : 40 },
-                          hover: { paddingBottom: isMobile ? 0 : 40 },
-                          active: { paddingBottom: isMobile ? 0 : 40 },
-                        }}
+                      <div
+                        className="w-full h-full flex flex-row md:flex-col justify-start md:justify-center items-center px-4 md:px-0 gap-4 md:gap-0 relative z-10 pb-0 md:pb-10"
                       >
                         <div className="relative z-10 flex justify-center shrink-0 mb-0 md:mb-4">
                           <div className="size-16 md:size-[90px] flex items-center justify-center transition-transform duration-700 ease-out md:group-hover:-translate-y-4 relative">
@@ -236,19 +231,19 @@ export function Dashboard() {
                             />
                           </div>
                         </div>
-                        <div className="relative z-10 w-full flex flex-col items-start md:items-center text-left md:text-center space-y-1 md:space-y-4 transition-transform duration-700 md:group-hover:-translate-y-2">
-                          <h3 className="text-lg md:text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words transition-colors duration-500">
+                        <div className="relative z-10 w-full flex flex-col items-start md:items-center text-left md:text-center space-y-1 md:space-y-4 md:transition-transform md:duration-700 md:group-hover:-translate-y-2">
+                          <h3 className="text-lg md:text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words md:transition-colors md:duration-500">
                             {mod.title}
                             <br />
-                            <span className="text-celeste-kore group-hover:text-white/90 transition-colors duration-500">
+                            <span className="text-celeste-kore group-hover:text-white/90 md:transition-colors md:duration-500">
                               {mod.subtitle}
                             </span>
                           </h3>
-                          <p className="text-[11px] md:text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 transition-colors duration-500">
+                          <p className="text-[11px] md:text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 md:transition-colors md:duration-500">
                             {mod.desc}
                           </p>
                         </div>
-                      </motion.div>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -264,21 +259,22 @@ export function Dashboard() {
                 <div className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 outline-none relative z-10 rounded-[inherit] overflow-hidden">
                   <motion.div
                     variants={{
-                      idle: { scaleY: 0 },
-                      hover: { scaleY: 1 },
-                      active: { scaleY: 1 },
+                      idle: { scaleY: isMobile ? 1 : 0, opacity: isMobile ? 0 : 1 },
+                      hover: { scaleY: 1, opacity: 1 },
+                      active: { scaleY: 1, opacity: 1 },
                     }}
-                    transition={{ duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
+                    transition={isMobile ? { duration: 0 } : { duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
                     className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]"
                   />
                   <div className="absolute inset-0 rounded-[inherit] border border-slate-200 dark:border-slate-700 pointer-events-none z-20" />
                   <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10">
                     <motion.span
                       variants={{
-                        idle: { opacity: 0, y: 16 },
-                        hover: { opacity: 1, y: 0 },
-                        active: { opacity: 1, y: 0 },
+                        idle: { opacity: 0, y: isMobile ? 0 : 16 },
+                        hover: { opacity: 1, y: isMobile ? 0 : 0 },
+                        active: { opacity: 1, y: isMobile ? 0 : 0 },
                       }}
+                      transition={isMobile ? { duration: 0 } : undefined}
                       className="flex items-center gap-2 font-black uppercase text-xs tracking-[0.25em] transition-colors duration-500 text-slate-900 dark:text-white"
                     >
                       {isActive
@@ -288,18 +284,18 @@ export function Dashboard() {
                   </div>
                   <motion.div
                     className={[
-                      "w-full h-full flex relative z-10",
+                      "w-full h-full flex relative z-10 pb-0 md:pb-10",
                       "flex-row items-center justify-start px-4 gap-4",
                       isWide 
                         ? "md:flex-row md:px-10 lg:px-14 md:gap-8" 
                         : "md:flex-col md:justify-center md:px-0 md:gap-0"
                     ].join(" ")}
                     variants={{
-                      idle: { opacity: 1, paddingBottom: isMobile ? 0 : 40 },
-                      hover: { opacity: 1, paddingBottom: isMobile ? 0 : 40 },
-                      active: { opacity: [1, 0.4, 1], paddingBottom: isMobile ? 0 : 40 },
+                      idle: { opacity: 1 },
+                      hover: { opacity: 1 },
+                      active: { opacity: isMobile ? 1 : [1, 0.4, 1] },
                     }}
-                    transition={{
+                    transition={isMobile ? { duration: 0 } : {
                       duration: 1.4,
                       repeat: isActive ? Infinity : 0,
                       ease: "easeInOut",
@@ -312,7 +308,8 @@ export function Dashboard() {
                             hover: { y: isMobile ? 0 : -16 },
                             active: { y: isMobile ? 0 : -16 },
                           }}
-                          className="size-16 md:size-[90px] flex items-center justify-center transition-transform duration-700 relative"
+                          transition={isMobile ? { duration: 0 } : undefined}
+                          className="size-16 md:size-[90px] flex items-center justify-center md:transition-transform md:duration-700 relative"
                         >
                           <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                            <div 
@@ -337,17 +334,18 @@ export function Dashboard() {
                           hover: { y: isMobile ? 0 : -8 },
                           active: { y: isMobile ? 0 : -8 },
                         }}
-                        className="text-lg md:text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter uppercase leading-none w-full break-words transition-colors duration-500"
+                        transition={isMobile ? { duration: 0 } : undefined}
+                        className="text-lg md:text-[1.6rem] lg:text-[1.85rem] font-black tracking-tighter uppercase leading-none w-full break-words md:transition-colors md:duration-500"
                       >
                         <span
-                          className="text-slate-900 dark:text-white group-hover:text-white transition-colors duration-500"
+                          className="text-slate-900 dark:text-white group-hover:text-white md:transition-colors md:duration-500"
                           style={{ color: isActive ? "#ffffff" : undefined }}
                         >
                           {mod.title}
                         </span>
                         <br />
                         <span
-                          className="text-celeste-kore group-hover:text-white/90 transition-colors duration-500"
+                          className="text-celeste-kore group-hover:text-white/90 md:transition-colors md:duration-500"
                           style={{
                             color: isActive
                               ? "rgba(255,255,255,0.9)"
@@ -363,7 +361,8 @@ export function Dashboard() {
                           hover: { y: isMobile ? 0 : -8 },
                           active: { y: isMobile ? 0 : -8 },
                         }}
-                        className="text-[11px] md:text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 transition-colors duration-500"
+                        transition={isMobile ? { duration: 0 } : undefined}
+                        className="text-[11px] md:text-[14px] lg:text-[15px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 md:transition-colors md:duration-500"
                         style={{
                           color: isActive ? "rgba(255,255,255,0.8)" : undefined,
                         }}

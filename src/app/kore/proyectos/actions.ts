@@ -145,16 +145,32 @@ export async function getProyectos() {
       cliente_nit:      cliente.nit      || "",
       cliente_telefono: cliente.telefono || "",
       cliente_correo:   cliente.correo   || "",
-      // Vendedor: usa usuario_id de la primera comisión para resolver el nombre real
-      vendedor_id:     comisionDeds[0]?.usuario_id || "",
-      vendedor_nombre: comisionDeds[0]?.usuario_id
-        ? (profilesMap.get(comisionDeds[0].usuario_id) || comisionDeds[0]?.descripcion || "")
-        : (comisionDeds[0]?.descripcion || ""),
-      // Desarrollador: usa usuario_id de la primera deducción de desarrollo para resolver el nombre real
-      desarrollador_id:     desarrolloDeds[0]?.usuario_id || "",
-      desarrollador_nombre: desarrolloDeds[0]?.usuario_id
-        ? (profilesMap.get(desarrolloDeds[0].usuario_id) || desarrolloDeds[0]?.descripcion || "")
-        : (desarrolloDeds[0]?.descripcion || ""),
+      // Vendedor: usa usuario_id de las comisiones con usuario asignado para resolver el nombre real (divididos por coma si son varios)
+      vendedor_id:     (comisionDeds.find((d: any) => d.usuario_id) || comisionDeds[0])?.usuario_id || "",
+      vendedor_nombre: (() => {
+        const assignedItems = comisionDeds.filter((d: any) => d.usuario_id);
+        if (assignedItems.length > 0) {
+          const names = assignedItems.map((d: any) => profilesMap.get(d.usuario_id) || d.descripcion || "").filter(Boolean);
+          const uniqueNames = Array.from(new Set(names));
+          if (uniqueNames.length > 0) return uniqueNames.join(", ");
+        }
+        const item = comisionDeds[0];
+        if (!item) return "";
+        return item.descripcion || "";
+      })(),
+      // Desarrollador: usa usuario_id de las deducciones de desarrollo con usuario asignado para resolver el nombre real (divididos por coma si son varios)
+      desarrollador_id:     (desarrolloDeds.find((d: any) => d.usuario_id) || desarrolloDeds[0])?.usuario_id || "",
+      desarrollador_nombre: (() => {
+        const assignedItems = desarrolloDeds.filter((d: any) => d.usuario_id);
+        if (assignedItems.length > 0) {
+          const names = assignedItems.map((d: any) => profilesMap.get(d.usuario_id) || d.descripcion || "").filter(Boolean);
+          const uniqueNames = Array.from(new Set(names));
+          if (uniqueNames.length > 0) return uniqueNames.join(", ");
+        }
+        const item = desarrolloDeds[0];
+        if (!item) return "";
+        return item.descripcion || "";
+      })(),
       // Mantenimiento (Step 1)
       mantenimiento: sumPct(mantDeds),
       // Deducciones en formato array para el formulario de edición (excluye mantenimiento)

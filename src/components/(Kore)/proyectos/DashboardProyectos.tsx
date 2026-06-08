@@ -38,6 +38,8 @@ import autoTable from "jspdf-autotable";
 import QRProyecto from "./QRProyecto";
 import { QrCode, Users } from "lucide-react";
 import { useTheme } from "next-themes";
+import { MagicCard } from "@/components/ui/magic-card";
+
 
 // TypeScript declaration for the Lordicon web component
 declare global {
@@ -522,7 +524,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           {/* CHARTS SECTION */}
           <div className="grid grid-cols-1 lg:grid-cols-[60%_1fr] gap-4">
             {/* Bar Chart */}
-            <div className="rounded-2xl border border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20">
+            <div className="rounded-2xl border border-celeste-kore/30 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
@@ -591,7 +593,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
               </div>
 
               {chartTab === "RANGO" && (
-                <div className="flex flex-wrap items-center gap-3 mb-4 p-3 rounded-xl bg-card/40 border border-white/5">
+                <div className="flex flex-wrap items-center gap-3 mb-4 p-3 rounded-xl bg-card/40 border border-celeste-kore/20 dark:border-white/10">
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground">Desde:</span>
                     <input 
@@ -670,7 +672,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
             </div>
 
             {/* Donut Chart */}
-            <div className="rounded-2xl border border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20 flex flex-col">
+            <div className="rounded-2xl border border-celeste-kore/30 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20 flex flex-col">
               <div className="flex items-center gap-2 sm:gap-3 mb-4">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
                   <Briefcase size={14} className="text-celeste-kore" />
@@ -741,7 +743,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
           </div>
 
           {/* TABLE SECTION - Admin only */}
-          <div className="rounded-2xl border border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-2xl shadow-black/20">
+          <div className="rounded-2xl border border-celeste-kore/30 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
               <div className="flex items-center gap-2 sm:gap-3">
                 <button 
@@ -815,7 +817,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             <th className="pb-2 px-2 font-black text-right">IVA</th>
                             <th className="pb-2 px-2 font-black text-right">Doc</th>
                             <th className="pb-2 px-2 font-black text-right">Mant.</th>
-                            <th className="pb-2 px-2 font-black text-right">Saldo Final</th>
+                            <th className="pb-2 pl-2 pr-4 font-black text-right">Saldo Final</th>
                           </tr>
                         </thead>
                         <tbody className="before:block before:h-2">
@@ -832,7 +834,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             <tr
                               key={p.id}
                               onClick={() => setDetalleProyecto(p)}
-                              className="group border-y border-white/5 bg-card/20 hover:bg-card/40 cursor-pointer transition-all duration-300"
+                              className="group border-y border-border/50 dark:border-white/5 bg-card/20 hover:bg-card/40 cursor-pointer transition-all duration-300"
                             >
                               <td className="py-3 px-4 rounded-l-xl border-y border-l border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <code className="text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-1 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
@@ -884,7 +886,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                               <p className={`text-sm ${mant > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>{mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}</p>
                               {mant > 0 && <p className="text-[10px] text-muted-foreground">Mes</p>}
                             </td>
-                            <td className="py-4 text-right rounded-r-xl border-y border-r border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                            <td className="py-4 pr-4 text-right rounded-r-xl border-y border-r border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                               <p className="font-black text-sm text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
                             </td>
                           </tr>
@@ -900,7 +902,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                       return (
                         <div 
                           key={p.id} 
-                          className="rounded-lg border border-white/5 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-md hover:border-celeste-kore/20 transition-all duration-300 cursor-pointer"
+                          className="rounded-lg border border-celeste-kore/30 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-none dark:shadow-md hover:border-celeste-kore/50 transition-all duration-300 cursor-pointer"
                           onClick={() => setDetalleProyecto(p)}
                         >
                           {/* Top row: Code & State */}
@@ -939,7 +941,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
       {/* ========== NORMAL USER VIEW: Only payment dates ========== */}
       {!isAdmin && (
-        <div className="rounded-2xl border border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-2xl shadow-black/20">
+        <div className="rounded-2xl border border-celeste-kore/30 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
               <CalendarDays size={16} className="text-celeste-kore" />
@@ -967,7 +969,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                 const isUrgent = days > 0 && days <= 7;
 
                 return (
-                  <div key={p.id} className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-card/40 hover:bg-card/60 backdrop-blur-sm transition-all duration-300 shadow-sm">
+                  <div key={p.id} className="flex items-center justify-between p-4 rounded-xl border border-celeste-kore/30 dark:border-white/10 bg-card/40 hover:bg-card/60 backdrop-blur-sm transition-all duration-300 shadow-none dark:shadow-sm">
                     <div className="flex items-center gap-4">
                       <code className="text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-1 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
                       <div>
@@ -1018,9 +1020,12 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="relative w-full max-w-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/85 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-zinc-900 dark:text-zinc-100"
+              className="relative w-full max-w-2xl rounded-3xl shadow-none dark:shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
+              <MagicCard
+                className="w-full h-full flex flex-col rounded-3xl border border-border/60 bg-card overflow-hidden text-zinc-900 dark:text-zinc-100"
+              >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 backdrop-blur-md sticky top-0 z-10">
                 <button 
@@ -1042,14 +1047,14 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         onClick={() => {
                           setQrProyecto(detalleProyecto);
                         }}
-                        className="p-2 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors cursor-pointer"
+                        className="flex items-center justify-center p-2 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors cursor-pointer"
                         title="Ver QR"
                       >
                         <QrCode size={16} />
                       </button>
                       <button 
                         onClick={() => router.push(`/kore/proyectos/editar/${detalleProyecto.id}`)}
-                        className="p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
+                        className="flex items-center justify-center p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
                         title="Editar Proyecto"
                       >
                         <Edit size={16} />
@@ -1061,7 +1066,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             setDetalleProyecto(null);
                           }
                         }}
-                        className="p-2 bg-muted/50 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                        className="flex items-center justify-center p-2 bg-muted/50 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors cursor-pointer"
                         title="Eliminar Proyecto"
                       >
                         <Trash2 size={16} />
@@ -1073,7 +1078,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   
                   <button 
                     onClick={() => setDetalleProyecto(null)}
-                    className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
+                    className="flex items-center justify-center p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
                   >
                     <X size={20} />
                   </button>
@@ -1083,7 +1088,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-4 sm:space-y-5 custom-scrollbar">
                 {/* Info General */}
-                <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm">
+                <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <code className="text-[10px] sm:text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2.5 py-1 rounded-lg border border-celeste-kore/20">
                       {getCode(detalleProyecto.id)}
@@ -1098,14 +1103,16 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   </div>
                   <div>
                     <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{detalleProyecto.nombre}</h2>
+                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Vendedor: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{detalleProyecto.vendedor_nombre || 'N/A'}</span></p>
+                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">Desarrollador: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{detalleProyecto.desarrollador_nombre || 'N/A'}</span></p>
                     {detalleProyecto.fecha_entrega && (
-                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
+                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
                     )}
                   </div>
                 </div>
 
                 {/* Info Cliente */}
-                <div className="space-y-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm">
+                <div className="space-y-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
                   <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Información del Cliente</h3>
                   <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
                     <p><span className="text-zinc-500 dark:text-zinc-400">Nombre:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{detalleProyecto.cliente_nombre || 'N/A'}</span></p>
@@ -1154,7 +1161,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   ].filter(d => d.value > 0);
 
                   return (
-                    <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-sm">
+                    <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
                       <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Distribución Financiera</h3>
                       
                       {/* Donut Chart */}
@@ -1199,40 +1206,41 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
 
                       {/* Breakdown List */}
                       <div className="space-y-2.5 pt-3.5 border-t border-zinc-200 dark:border-zinc-800/80 text-xs sm:text-sm">
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className="text-zinc-500 dark:text-zinc-400">Precio Total:</span>
-                          <span className="font-bold text-zinc-950 dark:text-zinc-50">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        <div className="flex justify-between items-center gap-2 py-0.5">
+                          <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">Precio Total:</span>
+                          <span className="font-bold text-zinc-950 dark:text-zinc-50 shrink-0 text-right">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                         </div>
 
                         {["IVA", "Documentación", "Kore", "Vendedor", "Desarrollador"].map((tipo) => {
                           const sum = getDedSum(tipo);
                           const pct = precio > 0 ? (sum / precio) * 100 : 0;
                           return (
-                            <div key={tipo} className="flex justify-between items-center py-0.5">
-                              <span className="text-zinc-500 dark:text-zinc-400">{tipo}:</span>
-                              <span className={`font-bold ${sum > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
+                            <div key={tipo} className="flex justify-between items-center gap-2 py-0.5">
+                              <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">{tipo}:</span>
+                              <span className={`font-bold shrink-0 text-right ${sum > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
                                 {sum > 0 ? `Q${sum.toLocaleString('en-US', {minimumFractionDigits: 2})} (${pct}%)` : '—'}
                               </span>
                             </div>
                           );
                         })}
 
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className="text-zinc-500 dark:text-zinc-400">Mantenimiento Mensual:</span>
-                          <span className={`font-bold ${mant > 0 ? 'text-celeste-kore' : 'text-zinc-400 dark:text-zinc-650'}`}>
+                        <div className="flex justify-between items-center gap-2 py-0.5">
+                          <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">Mantenimiento Mensual:</span>
+                          <span className={`font-bold shrink-0 text-right ${mant > 0 ? 'text-celeste-kore' : 'text-zinc-400 dark:text-zinc-650'}`}>
                             {mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})} / mes` : '—'}
                           </span>
                         </div>
 
-                        <div className="flex justify-between items-center py-1.5 border-t border-zinc-200 dark:border-zinc-800/80 pt-2.5 font-black text-sm sm:text-base text-celeste-kore">
-                          <span>Saldo Final:</span>
-                          <span>Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        <div className="flex justify-between items-center gap-2 py-1.5 border-t border-zinc-200 dark:border-zinc-800/80 pt-2.5 font-black text-sm sm:text-base text-celeste-kore">
+                          <span className="min-w-0 truncate">Saldo Final:</span>
+                          <span className="shrink-0 text-right">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                         </div>
                       </div>
                     </div>
                   );
                 })()}
               </div>
+              </MagicCard>
             </motion.div>
           </motion.div>
         )}
