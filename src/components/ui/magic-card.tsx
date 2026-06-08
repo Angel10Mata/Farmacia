@@ -90,7 +90,7 @@ export function MagicCard({
       />
 
       <div className="bg-background absolute inset-px rounded-[inherit]" />
-      <div className="relative z-10 h-full w-full flex flex-col">{children}</div>
+      <div className="relative z-10 h-full min-h-0 w-full flex flex-col">{children}</div>
     </div>
   );
 }

@@ -1020,11 +1020,11 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="relative w-full max-w-2xl rounded-3xl shadow-none dark:shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+              className="relative w-full max-w-2xl rounded-3xl shadow-none dark:shadow-2xl flex flex-col max-h-[85vh] md:max-h-[90vh] min-h-0 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <MagicCard
-                className="w-full h-full flex flex-col rounded-3xl border border-border/60 bg-card overflow-hidden text-zinc-900 dark:text-zinc-100"
+                className="w-full h-full min-h-0 flex flex-col rounded-3xl border border-border/60 bg-card overflow-hidden text-zinc-900 dark:text-zinc-100"
               >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 backdrop-blur-md sticky top-0 z-10">
