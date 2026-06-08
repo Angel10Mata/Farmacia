@@ -195,8 +195,8 @@ export function Dashboard() {
                       onClick={() => setExpandedPerfil(true)}
                       className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
                     >
-                      <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 transition-transform duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
-                      <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0">
+                      <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] opacity-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 transition-opacity duration-300 pointer-events-none z-0 rounded-t-[inherit] group-hover:opacity-100" />
+                      <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 transition-opacity duration-300 opacity-0 group-hover:opacity-100">
                         <span className="flex items-center gap-2 text-slate-900 dark:text-white font-black uppercase text-xs tracking-[0.25em]">
                           Ver opciones
                         </span>
@@ -252,20 +252,20 @@ export function Dashboard() {
                 <div className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 outline-none relative z-10 rounded-[inherit] overflow-hidden">
                   <motion.div
                     variants={{
-                      idle: { scaleY: 0 },
-                      hover: { scaleY: 1 },
-                      active: { scaleY: 1 },
+                      idle: { opacity: 0 },
+                      hover: { opacity: 1 },
+                      active: { opacity: 1 },
                     }}
-                    transition={{ duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
-                    className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]"
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]"
                   />
                   <div className="absolute inset-0 rounded-[inherit] border border-slate-200 dark:border-slate-700 pointer-events-none z-20" />
                   <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10">
                     <motion.span
                       variants={{
-                        idle: { opacity: 0, y: 16 },
-                        hover: { opacity: 1, y: 0 },
-                        active: { opacity: 1, y: 0 },
+                        idle: { opacity: 0 },
+                        hover: { opacity: 1 },
+                        active: { opacity: 1 },
                       }}
                       className="flex items-center gap-2 font-black uppercase text-xs tracking-[0.25em] transition-colors duration-500 text-slate-900 dark:text-white"
                     >
