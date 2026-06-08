@@ -116,9 +116,9 @@ export function Dashboard() {
             animate={isModuleActive ? "active" : "idle"}
             transition={{ type: "tween", duration: 0.2, ease: "easeInOut" }}
             variants={{
-              idle: { zIndex: 1, height: isMobile ? 120 : undefined },
-              hover: { zIndex: 10, height: isMobile ? 120 : undefined }, // Se quitó la expansión en hover para evitar rebotes
-              active: { zIndex: 20, height: isMobile ? 220 : undefined },
+              idle: { zIndex: 1, height: isMobile ? 180 : undefined },
+              hover: { zIndex: 10, height: isMobile ? 180 : undefined },
+              active: { zIndex: 20, height: isMobile ? 180 : undefined },
             }}
           >
             {mod.id === "perfil" ? (
@@ -217,8 +217,8 @@ export function Dashboard() {
                         className="w-full h-full flex flex-row md:flex-col justify-start md:justify-center items-center px-4 md:px-0 gap-4 md:gap-0 relative z-10"
                         variants={{
                           idle: { paddingBottom: isMobile ? 0 : 40 },
-                          hover: { paddingBottom: isMobile ? 32 : 40 },
-                          active: { paddingBottom: isMobile ? 32 : 40 },
+                          hover: { paddingBottom: isMobile ? 0 : 40 },
+                          active: { paddingBottom: isMobile ? 0 : 40 },
                         }}
                       >
                         <div className="relative z-10 flex justify-center shrink-0 mb-0 md:mb-4">
@@ -296,8 +296,8 @@ export function Dashboard() {
                     ].join(" ")}
                     variants={{
                       idle: { opacity: 1, paddingBottom: isMobile ? 0 : 40 },
-                      hover: { opacity: 1, paddingBottom: isMobile ? 32 : 40 },
-                      active: { opacity: [1, 0.4, 1], paddingBottom: isMobile ? 32 : 40 },
+                      hover: { opacity: 1, paddingBottom: isMobile ? 0 : 40 },
+                      active: { opacity: [1, 0.4, 1], paddingBottom: isMobile ? 0 : 40 },
                     }}
                     transition={{
                       duration: 1.4,
