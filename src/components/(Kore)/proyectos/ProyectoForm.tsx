@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Briefcase, Save, ArrowLeft, Plus, Trash2, Receipt } from "lucide-react";
+import { Loader2, Briefcase, Save, ArrowLeft, Plus, Trash2, Receipt, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Swal from "sweetalert2";
 import {
@@ -113,6 +113,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
       cliente_correo: "",
       fecha_entrega: "",
       precio: 0,
+      mantenimiento: 0,
       estado: "En Progreso",
       vendedor_id: "",
       deducciones: [],
@@ -129,8 +130,13 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const totalDeduccionesPct = fields.reduce((acc, curr) => acc + (Number(curr.porcentaje) || 0), 0);
 
-  const [newDed, setNewDed] = useState({
-    tipo: "Vendedor" as TipoDeduccion,
+  const [newDed, setNewDed] = useState<{
+    tipo: TipoDeduccion;
+    porcentaje: number | string;
+    descripcion: string;
+    usuario_id: string;
+  }>({
+    tipo: "Vendedor",
     porcentaje: 10,
     descripcion: "",
     usuario_id: "",
@@ -250,6 +256,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         cliente_correo:   proyecto.cliente_correo   || "",
         fecha_entrega:    proyecto.fecha_entrega    || "",
         precio:           proyecto.precio           || 0,
+        mantenimiento:    proyecto.mantenimiento    || 0,
         estado:           proyecto.estado           || "En Progreso",
         vendedor_id:      proyecto.vendedor_id      || "",
         deducciones:      proyecto.deducciones      || [],
@@ -454,6 +461,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                         defaultCountry="GT"
                         value={field.value || ""}
                         onChange={field.onChange}
+                        internationalIcon={() => <Globe size={18} className="text-muted-foreground" />}
                         className={cn("flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-within:ring-2 focus-within:ring-red-600/50 transition-all")}
                       />
                     )}
@@ -527,7 +535,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                <button
                  type="button"
                  onClick={() => setStep(2)}
-                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-opacity text-xs font-black uppercase tracking-widest cursor-pointer"
+                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer"
                >
                  Siguiente Paso
                </button>
@@ -596,7 +604,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
     .map((field) => {
       const idx = field.originalIndex;
                           const style =
-                            TIPO_STYLE[field.tipo] || TIPO_STYLE["Comisión"];
+                            TIPO_STYLE[field.tipo] || TIPO_STYLE["Vendedor"] || { pill: "bg-gray-500/10 text-gray-400 border-gray-500/25", dot: "bg-gray-400" };
                           const userName = getUserName(field.usuario_id || "");
 
                           return (
@@ -698,7 +706,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                               onChange={(e) =>
                                 setNewDed((p) => ({
                                   ...p,
-                                  porcentaje: Number(e.target.value),
+                                  porcentaje: e.target.value === "" ? "" : Number(e.target.value),
                                 }))
                               }
                               className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
@@ -761,12 +769,12 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border/50 bg-muted/5 flex justify-end gap-3">
+        <div className="p-4 md:p-6 border-t border-border/50 bg-muted/5 flex flex-wrap justify-end gap-2 md:gap-3">
           {step === 2 && (
              <button
                type="button"
                onClick={() => setStep(1)}
-               className="px-6 py-2.5 rounded-xl border border-border/50 bg-background hover:bg-muted/50 transition-colors text-xs font-bold uppercase tracking-widest cursor-pointer"
+               className="px-4 py-2 rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors text-[10px] font-bold uppercase tracking-widest cursor-pointer"
              >
                Paso Anterior
              </button>
@@ -774,7 +782,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
           <button
             type="button"
             onClick={handleCancel}
-            className="px-6 py-2.5 rounded-xl border border-border/50 bg-background hover:bg-muted/50 transition-colors text-xs font-bold uppercase tracking-widest cursor-pointer"
+            className="px-4 py-2 rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors text-[10px] font-bold uppercase tracking-widest cursor-pointer"
           >
             Cancelar
           </button>
@@ -782,12 +790,12 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
             form="proyecto-form"
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-opacity text-xs font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={14} className="animate-spin" />
             ) : (
-              <Save size={16} />
+              <Save size={14} />
             )}
             {isEditing ? "Guardar" : "Crear"}
           </button>

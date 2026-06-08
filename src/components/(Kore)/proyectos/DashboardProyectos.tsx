@@ -474,9 +474,6 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-primary/80">
-            Módulo Activo
-          </h2>
           <h1 className="text-xl sm:text-4xl font-black tracking-tight mt-0.5 sm:mt-1 leading-none">
             RESUMEN DE <br className="hidden sm:block" />
             <span className="text-celeste-kore">PROYECTOS</span>

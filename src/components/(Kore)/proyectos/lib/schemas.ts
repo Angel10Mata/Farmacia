@@ -28,8 +28,14 @@ export const proyectoSchema = z.object({
   cliente_correo: z.string().email("Correo inválido").optional().or(z.literal("")),
   // Proyecto
   fecha_entrega: z.string().optional().or(z.literal("")),
-  precio: z.coerce.number().min(0, "El precio no puede ser negativo"),
-  mantenimiento: z.coerce.number().min(0).default(0), // Campo de mantenimiento (valor monetario)
+  precio: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined || (typeof val === "number" && Number.isNaN(val)) ? 0 : val),
+    z.coerce.number().min(0, "El precio no puede ser negativo")
+  ),
+  mantenimiento: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined || (typeof val === "number" && Number.isNaN(val)) ? 0 : val),
+    z.coerce.number().min(0)
+  ).default(0), // Campo de mantenimiento (valor monetario)
   estado: z.string().default("En Progreso"),
   // Vendedor (usuario registrado que lleva la comisión principal) - Opcional, pero lo mantenemos para backward compat si se necesita o lo usamos de primer vendedor
   vendedor_id: z.string().optional().or(z.literal("")).default(""),
