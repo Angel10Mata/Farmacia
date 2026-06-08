@@ -73,16 +73,16 @@ const TIPO_STYLE: Record<string, { pill: string; dot: string }> = {
   "Vendedor":      { pill: "bg-blue-500/10 text-blue-400 border-blue-500/25",       dot: "bg-blue-400" },
   "Documentación": { pill: "bg-purple-500/10 text-purple-400 border-purple-500/25", dot: "bg-purple-400" },
   "IVA":           { pill: "bg-amber-500/10 text-amber-400 border-amber-500/25",    dot: "bg-amber-400" },
-  "Mantenimiento": { pill: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25", dot: "bg-emerald-400" },
-  "Desarrollo":    { pill: "bg-celeste-kore/10 text-celeste-kore border-celeste-kore/25", dot: "bg-celeste-kore" },
+  "Desarrollador": { pill: "bg-celeste-kore/10 text-celeste-kore border-celeste-kore/25", dot: "bg-celeste-kore" },
+  "Kore":          { pill: "bg-red-500/10 text-red-400 border-red-500/25",          dot: "bg-red-400" },
 };
 
 const DEFAULT_PCT: Record<string, number> = {
+  "Kore": 10,
   "Vendedor": 10,
   "Documentación": 10,
   "IVA": 12,
-  "Mantenimiento": 0,
-  "Desarrollo": 0,
+  "Desarrollador": 0,
 };
 
 // ── Main Component ────────────────────────────────────────────────────────────
