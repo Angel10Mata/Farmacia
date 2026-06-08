@@ -42,7 +42,7 @@ const Input = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputEleme
   <input
     {...props}
     className={cn(
-      "flex h-10 w-full rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all outline-none disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
+      "flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all outline-none disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
       className
     )}
   />
@@ -53,7 +53,7 @@ const SelectWrap = ({ className, children, ...props }: React.SelectHTMLAttribute
     <select
       {...props}
       className={cn(
-        "flex h-10 w-full appearance-none rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 py-2 text-sm outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
+        "flex h-10 w-full appearance-none rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
         className
       )}
     >
@@ -748,7 +748,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                                   porcentaje: e.target.value === "" ? "" : Number(e.target.value),
                                 }))
                               }
-                              className="flex h-10 w-full rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                              className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
                             />
                             <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
                               %
@@ -768,7 +768,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                                 setNewDed((p) => ({ ...p, descripcion: e.target.value }))
                               }
                               rows={1}
-                              className="flex min-h-[40px] w-full rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all resize-y"
+                              className="flex min-h-[40px] w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all resize-y"
                             />
                           </div>
                            <div className="col-span-1 md:col-span-2 grid gap-1.5 relative" ref={userAutocompleteRef}>

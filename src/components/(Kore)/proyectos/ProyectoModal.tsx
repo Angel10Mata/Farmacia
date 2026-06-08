@@ -40,7 +40,7 @@ const Input = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputEleme
   <input
     {...props}
     className={cn(
-      "flex h-10 w-full rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all outline-none disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
+      "flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all outline-none disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
       className
     )}
   />
@@ -55,7 +55,7 @@ const SelectWrap = ({
     <select
       {...props}
       className={cn(
-        "flex h-10 w-full appearance-none rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 py-2 text-sm outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
+        "flex h-10 w-full appearance-none rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all disabled:opacity-50 disabled:bg-muted/30 disabled:cursor-not-allowed",
         className
       )}
     >
@@ -607,7 +607,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                               min="0"
                               value={newDed.porcentaje}
                               onChange={(e) => setNewDed((p) => ({ ...p, porcentaje: Number(e.target.value) }))}
-                              className="flex h-10 w-full rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                              className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
                             />
                             <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
                               %
@@ -623,7 +623,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                             value={newDed.descripcion}
                             onChange={(e) => setNewDed((p) => ({ ...p, descripcion: e.target.value }))}
                             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddDed(); } }}
-                            className="flex h-10 w-full rounded-lg border border-celeste-kore/30 dark:border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                            className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
                           />
                         </div>
                         {/* Usuario */}
