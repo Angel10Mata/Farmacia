@@ -538,7 +538,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                     <Input
                       id="fecha_entrega"
                       type="date"
-                      className="min-w-0 w-full"
+                      className="min-w-0 w-full block"
                       {...register("fecha_entrega")}
                     />
                   </div>
