@@ -660,9 +660,9 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                               </span>
 
                               {/* Usuario - siempre visible */}
-                              <div className="flex items-center sm:col-auto">
+                              <div className="flex items-center sm:col-auto min-w-0">
                                 {field.tipo === "IVA" ? null : userName ? (
-                                  <span className="text-[10px] font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-0.5 rounded-lg border border-celeste-kore/20 truncate max-w-[120px] sm:max-w-full">
+                                  <span className="text-[10px] font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-0.5 rounded-lg border border-celeste-kore/20 truncate max-w-full">
                                     {userName}
                                   </span>
                                 ) : (
