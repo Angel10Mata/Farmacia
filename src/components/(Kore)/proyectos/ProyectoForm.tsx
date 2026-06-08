@@ -85,6 +85,22 @@ const DEFAULT_PCT: Record<string, number> = {
   "Desarrollador": 0,
 };
 
+const formatToE164 = (phone: string | null | undefined): string => {
+  if (!phone) return "";
+  const clean = phone.trim();
+  if (!clean) return "";
+  if (clean.startsWith("+")) return clean;
+  // Si tiene 8 dígitos (formato estándar de Guatemala), anteponer +502
+  if (clean.length === 8 && /^\d+$/.test(clean)) {
+    return `+502${clean}`;
+  }
+  // Si solo son dígitos y no tiene +, anteponer +502
+  if (/^\d+$/.test(clean)) {
+    return `+502${clean}`;
+  }
+  return clean;
+};
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
@@ -239,7 +255,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
     setJustSelected(true);
     setValue("cliente_nombre", cliente.nombre, { shouldValidate: true });
     setValue("cliente_nit", cliente.nit || "");
-    setValue("cliente_telefono", cliente.telefono || "");
+    setValue("cliente_telefono", formatToE164(cliente.telefono));
     setValue("cliente_correo", cliente.correo || "");
     setShowSuggestions(false);
     setTimeout(() => setJustSelected(false), 500);
@@ -252,7 +268,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         nombre:           proyecto.nombre       || "",
         cliente_nombre:   proyecto.cliente_nombre  || "",
         cliente_nit:      proyecto.cliente_nit     || "",
-        cliente_telefono: proyecto.cliente_telefono || "",
+        cliente_telefono: formatToE164(proyecto.cliente_telefono),
         cliente_correo:   proyecto.cliente_correo   || "",
         fecha_entrega:    proyecto.fecha_entrega    || "",
         precio:           proyecto.precio           || 0,
