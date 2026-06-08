@@ -306,7 +306,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       totalPrecio += precio;
       if (p.aplica_iva) totalIva += precio * (Number(p.porcentaje_iva) || 0) / 100;
       if (p.aplica_vendedor) totalComisiones += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
-      if (p.aplica_mantenimiento) totalMantenimiento += Number(p.monto_mantenimiento) || 0;
+      totalMantenimiento += Number(p.mantenimiento) || 0;
     });
 
     return { totalPrecio, totalIva, totalComisiones, totalMantenimiento, count: proyectos.length };
@@ -319,7 +319,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       "Finalizados": { count: 0, mant: 0 } 
     };
     proyectos.forEach(p => {
-      const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
+      const mant = Number(p.mantenimiento) || 0;
       if (p.estado === "En Progreso") { counts["En Progreso"].count++; counts["En Progreso"].mant += mant; }
       else if (p.estado === "En pausa") { counts["En pausa"].count++; counts["En pausa"].mant += mant; }
       else { counts["Finalizados"].count++; counts["Finalizados"].mant += mant; }
@@ -515,7 +515,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                     <CircleDollarSign size={14} className="text-celeste-kore" />
                   </div>
                   <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest flex flex-wrap items-center gap-2">
-                    <span>Ingresos por {chartTab === "MES" ? "Día" : chartTab === "AÑO" ? "Mes" : "Período"}</span>
+                    <span>Ingreso</span>
                     {chartTab === "MES" && (
                       <div className="flex items-center gap-1.5 ml-1">
                         <select
@@ -811,7 +811,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             const desarrollo = p.aplica_desarrollo ? precio * (Number(p.porcentaje_desarrollo) || 0) / 100 : 0;
                             const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
                             const doc = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
-                            const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
+                            const mant = Number(p.mantenimiento) || 0;
                             const restante = precio - comision - desarrollo - iva - doc + mant;
 
                             return (
@@ -1104,7 +1104,12 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
                     <p><span className="text-zinc-500 dark:text-zinc-400">Nombre:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{detalleProyecto.cliente_nombre || 'N/A'}</span></p>
                     {detalleProyecto.cliente_telefono && (
-                      <p><span className="text-zinc-500 dark:text-zinc-400">Teléfono:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{detalleProyecto.cliente_telefono}</span></p>
+                      <p className="flex items-center gap-1.5">
+                        <span className="text-zinc-500 dark:text-zinc-400">Teléfono:</span> 
+                        <a href={`https://wa.me/${detalleProyecto.cliente_telefono.replace(/\\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-celeste-kore hover:underline flex items-center gap-1">
+                          {detalleProyecto.cliente_telefono}
+                        </a>
+                      </p>
                     )}
                     {detalleProyecto.cliente_correo && (
                       <p><span className="text-zinc-500 dark:text-zinc-400">Correo:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50 break-all">{detalleProyecto.cliente_correo}</span></p>
@@ -1115,19 +1120,30 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                 {/* Finanzas & Dona */}
                 {(() => {
                   const precio = Number(detalleProyecto.precio) || 0;
-                  const comision = detalleProyecto.aplica_vendedor ? precio * (Number(detalleProyecto.porcentaje_vendedor) || 0) / 100 : 0;
-                  const desarrollo = detalleProyecto.aplica_desarrollo ? precio * (Number(detalleProyecto.porcentaje_desarrollo) || 0) / 100 : 0;
-                  const iva = detalleProyecto.aplica_iva ? precio * (Number(detalleProyecto.porcentaje_iva) || 0) / 100 : 0;
-                  const doc = detalleProyecto.aplica_doc ? precio * (Number(detalleProyecto.porcentaje_doc) || 0) / 100 : 0;
-                  const mant = detalleProyecto.aplica_mantenimiento ? Number(detalleProyecto.monto_mantenimiento) || 0 : 0;
-                  const restante = precio - comision - desarrollo - iva - doc;
+                  const mant = Number(detalleProyecto.mantenimiento) || 0;
+                  
+                  const getDedSum = (tipo: string) => {
+                    return (detalleProyecto.deducciones || [])
+                      .filter((d: any) => d.tipo.toLowerCase() === tipo.toLowerCase() || (tipo === "Vendedor" && d.tipo === "Comisión") || (tipo === "Desarrollador" && d.tipo === "Desarrollo"))
+                      .reduce((acc: number, curr: any) => acc + (precio * (Number(curr.porcentaje) || 0) / 100), 0);
+                  };
+
+                  const iva = getDedSum("IVA");
+                  const doc = getDedSum("Documentación");
+                  const vendedor = getDedSum("Vendedor");
+                  const dev = getDedSum("Desarrollador");
+                  const kore = getDedSum("Kore");
+
+                  const totalDeducciones = (detalleProyecto.deducciones || []).reduce((acc: number, curr: any) => acc + (precio * (Number(curr.porcentaje) || 0) / 100), 0);
+                  const restante = precio - totalDeducciones;
 
                   const donutData = [
                     { name: "Restante (Resta)", value: restante, color: "#B7494E" },
-                    { name: "Comisión", value: comision, color: "#3D3C3C" },
-                    { name: "Desarrollo", value: desarrollo, color: "#0ea5e9" },
+                    { name: "Vendedor", value: vendedor, color: "#3D3C3C" },
+                    { name: "Desarrollo", value: dev, color: "#0ea5e9" },
                     { name: "IVA", value: iva, color: "#52525b" },
                     { name: "Doc", value: doc, color: "#a1a1aa" },
+                    { name: "Kore", value: kore, color: "#f59e0b" },
                     { name: "Mantenimiento", value: mant, color: "#14b8a6" },
                   ].filter(d => d.value > 0);
 
@@ -1181,36 +1197,27 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                           <span className="text-zinc-500 dark:text-zinc-400">Precio Total:</span>
                           <span className="font-bold text-zinc-950 dark:text-zinc-50">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                         </div>
+
+                        {["IVA", "Documentación", "Kore", "Vendedor", "Desarrollador"].map((tipo) => {
+                          const sum = getDedSum(tipo);
+                          const pct = precio > 0 ? (sum / precio) * 100 : 0;
+                          return (
+                            <div key={tipo} className="flex justify-between items-center py-0.5">
+                              <span className="text-zinc-500 dark:text-zinc-400">{tipo}:</span>
+                              <span className={`font-bold ${sum > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
+                                {sum > 0 ? `Q${sum.toLocaleString('en-US', {minimumFractionDigits: 2})} (${pct}%)` : '—'}
+                              </span>
+                            </div>
+                          );
+                        })}
+
                         <div className="flex justify-between items-center py-0.5">
-                          <span className="text-zinc-500 dark:text-zinc-400">Comisión Vendedor:</span>
-                          <span className={`font-bold ${comision > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
-                            {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_vendedor}%)` : '—'}
+                          <span className="text-zinc-500 dark:text-zinc-400">Mantenimiento Mensual:</span>
+                          <span className={`font-bold ${mant > 0 ? 'text-celeste-kore' : 'text-zinc-400 dark:text-zinc-650'}`}>
+                            {mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})} / mes` : '—'}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className="text-zinc-500 dark:text-zinc-400">Pago Desarrollador:</span>
-                          <span className={`font-bold ${desarrollo > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
-                            {desarrollo > 0 ? `Q${desarrollo.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_desarrollo}%)` : '—'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className="text-zinc-500 dark:text-zinc-400">IVA:</span>
-                          <span className={`font-bold ${iva > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
-                            {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_iva}%)` : '—'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center py-0.5">
-                          <span className="text-zinc-500 dark:text-zinc-400">Fondo Documentación:</span>
-                          <span className={`font-bold ${doc > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
-                            {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})} (${detalleProyecto.porcentaje_doc}%)` : '—'}
-                          </span>
-                        </div>
-                        {mant > 0 && (
-                          <div className="flex justify-between items-center py-0.5">
-                            <span className="text-zinc-500 dark:text-zinc-400">Mantenimiento Mensual:</span>
-                            <span className="font-bold text-celeste-kore">Q{mant.toLocaleString('en-US', {minimumFractionDigits: 2})} / mes</span>
-                          </div>
-                        )}
+
                         <div className="flex justify-between items-center py-1.5 border-t border-zinc-200 dark:border-zinc-800/80 pt-2.5 font-black text-sm sm:text-base text-celeste-kore">
                           <span>Restante (Resta):</span>
                           <span>Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>

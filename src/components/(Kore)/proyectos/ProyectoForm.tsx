@@ -18,6 +18,9 @@ import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { Controller } from "react-hook-form";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 
 interface ProyectoFormProps {
   proyecto?: any | null;
@@ -67,7 +70,7 @@ const SelectWrap = ({ className, children, ...props }: React.SelectHTMLAttribute
 // ── Color palette por tipo de deducción ──────────────────────────────────────
 
 const TIPO_STYLE: Record<string, { pill: string; dot: string }> = {
-  "Comisión":      { pill: "bg-blue-500/10 text-blue-400 border-blue-500/25",       dot: "bg-blue-400" },
+  "Vendedor":      { pill: "bg-blue-500/10 text-blue-400 border-blue-500/25",       dot: "bg-blue-400" },
   "Documentación": { pill: "bg-purple-500/10 text-purple-400 border-purple-500/25", dot: "bg-purple-400" },
   "IVA":           { pill: "bg-amber-500/10 text-amber-400 border-amber-500/25",    dot: "bg-amber-400" },
   "Mantenimiento": { pill: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25", dot: "bg-emerald-400" },
@@ -75,7 +78,7 @@ const TIPO_STYLE: Record<string, { pill: string; dot: string }> = {
 };
 
 const DEFAULT_PCT: Record<string, number> = {
-  "Comisión": 10,
+  "Vendedor": 10,
   "Documentación": 10,
   "IVA": 12,
   "Mantenimiento": 0,
@@ -112,7 +115,6 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
       precio: 0,
       estado: "En Progreso",
       vendedor_id: "",
-      desarrollador_id: "",
       deducciones: [],
     },
   });
@@ -124,8 +126,11 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
   });
 
   // Estado del formulario de "agregar deducción"
+  const [step, setStep] = useState<1 | 2>(1);
+  const totalDeduccionesPct = fields.reduce((acc, curr) => acc + (Number(curr.porcentaje) || 0), 0);
+
   const [newDed, setNewDed] = useState({
-    tipo: "Comisión" as TipoDeduccion,
+    tipo: "Vendedor" as TipoDeduccion,
     porcentaje: 10,
     descripcion: "",
     usuario_id: "",
@@ -147,8 +152,8 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
       usuario_id: newDed.usuario_id || "",
     });
     setNewDed({
-      tipo: "Comisión",
-      porcentaje: DEFAULT_PCT["Comisión"],
+      tipo: "Vendedor",
+      porcentaje: DEFAULT_PCT["Vendedor"],
       descripcion: "",
       usuario_id: "",
     });
@@ -186,15 +191,6 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
     }
   }, [firstComisionUsuarioId, vendedorId, setValue]);
 
-  // ── Sincronización de Desarrollador con Deducción de Desarrollo ──
-  const desarrolladorId = watch("desarrollador_id");
-  const firstDesarrolloUsuarioId = currentDeducciones.find((d: any) => d.tipo === "Desarrollo")?.usuario_id || "";
-
-  useEffect(() => {
-    if (firstDesarrolloUsuarioId !== desarrolladorId) {
-      setValue("desarrollador_id", firstDesarrolloUsuarioId);
-    }
-  }, [firstDesarrolloUsuarioId, desarrolladorId, setValue]);
 
   // ── Autocomplete de clientes ──
   const clienteNombreValue = watch("cliente_nombre") || "";
@@ -256,7 +252,6 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         precio:           proyecto.precio           || 0,
         estado:           proyecto.estado           || "En Progreso",
         vendedor_id:      proyecto.vendedor_id      || "",
-        desarrollador_id: proyecto.desarrollador_id || "",
         deducciones:      proyecto.deducciones      || [],
       });
     }
@@ -264,6 +259,17 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
 
   // ── Submit ──
   const onSubmit = async (data: ProyectoFormValues) => {
+    const totalPct = data.deducciones.reduce((acc, curr) => acc + (Number(curr.porcentaje) || 0), 0);
+    if (totalPct > 100) {
+      Swal.fire({
+        icon: "error",
+        title: "Suma inválida",
+        text: "Los porcentajes de deducción superan el 100%. Por favor corrige los montos.",
+        background: "#18181b",
+        color: "#fff",
+      });
+      return;
+    }
     const res = isEditing
       ? await updateProyecto(proyecto.id, data)
       : await createProyecto(data);
@@ -336,8 +342,8 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
           <form
             id="proyecto-form"
             onSubmit={handleSubmit(onSubmit as any, onInvalid)}
-            className="space-y-8"
           >
+            <div className={cn("space-y-8", step === 1 ? "block" : "hidden")}>
             {/* ── Información General ── */}
             <div className="space-y-4">
               <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
@@ -438,10 +444,19 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="cliente_telefono">Teléfono</Label>
-                  <Input
-                    id="cliente_telefono"
-                    {...register("cliente_telefono")}
-                    placeholder="12345678"
+                  <Controller
+                    control={control}
+                    name="cliente_telefono"
+                    render={({ field }) => (
+                      <PhoneInput
+                        id="cliente_telefono"
+                        placeholder="1234 5678"
+                        defaultCountry="GT"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        className={cn("flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-within:ring-2 focus-within:ring-red-600/50 transition-all")}
+                      />
+                    )}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -469,13 +484,14 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                 </h4>
 
                 {/* Precio + Fecha + Vendedor + Desarrollador */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="precio">Precio Total (Q)</Label>
+                    <Label htmlFor="precio">Precio Total (Q) *</Label>
                     <Input
                       id="precio"
                       type="number"
                       step="0.01"
+                      inputMode="decimal"
                       {...register("precio", { valueAsNumber: true })}
                       className={errors.precio ? "border-destructive" : ""}
                     />
@@ -484,95 +500,60 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                     )}
                   </div>
                   <div className="grid gap-2">
+                    <Label htmlFor="mantenimiento">Mantenimiento (Q/mes)</Label>
+                    <Input
+                      id="mantenimiento"
+                      type="number"
+                      step="0.01"
+                      inputMode="decimal"
+                      {...register("mantenimiento", { valueAsNumber: true })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
                     <Label htmlFor="fecha_entrega">Fecha de Entrega</Label>
                     <Input
                       id="fecha_entrega"
                       type="date"
+                      className="min-w-0 w-full"
                       {...register("fecha_entrega")}
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="vendedor_id">Vendedor</Label>
-                    <SelectWrap
-                      id="vendedor_id"
-                      value={vendedorId || ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setValue("vendedor_id", val);
-                        
-                        const comisionIdx = currentDeducciones.findIndex((d: any) => d.tipo === "Comisión");
-                        if (val) {
-                          if (comisionIdx >= 0) {
-                            setValue(`deducciones.${comisionIdx}.usuario_id`, val);
-                          } else {
-                            append({
-                              tipo: "Comisión",
-                              porcentaje: 10,
-                              descripcion: "Comisión Vendedor",
-                              usuario_id: val,
-                            });
-                          }
-                        } else {
-                          if (comisionIdx >= 0) {
-                            setValue(`deducciones.${comisionIdx}.usuario_id`, "");
-                          }
-                        }
-                      }}
-                    >
-                      <option value="">Seleccione un vendedor...</option>
-                      {users?.map((u: any) => (
-                        <option key={u.id} value={u.id}>
-                          {u.nombre || "Sin nombre"}
-                        </option>
-                      ))}
-                    </SelectWrap>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="desarrollador_id">Desarrollador</Label>
-                    <SelectWrap
-                      id="desarrollador_id"
-                      value={desarrolladorId || ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setValue("desarrollador_id", val);
-                        
-                        const desIdx = currentDeducciones.findIndex((d: any) => d.tipo === "Desarrollo");
-                        if (val) {
-                          if (desIdx >= 0) {
-                            setValue(`deducciones.${desIdx}.usuario_id`, val);
-                          } else {
-                            append({
-                              tipo: "Desarrollo",
-                              porcentaje: 0,
-                              descripcion: "Desarrollo Proyecto",
-                              usuario_id: val,
-                            });
-                          }
-                        } else {
-                          if (desIdx >= 0) {
-                            setValue(`deducciones.${desIdx}.usuario_id`, "");
-                          }
-                        }
-                      }}
-                    >
-                      <option value="">Seleccione un desarrollador...</option>
-                      {users?.map((u: any) => (
-                        <option key={u.id} value={u.id}>
-                          {u.nombre || "Sin nombre"}
-                        </option>
-                      ))}
-                    </SelectWrap>
-                  </div>
                 </div>
+              </div>
+            )}
+            
+            {/* ── Botones de Paginación Paso 1 ── */}
+            <div className="flex justify-end pt-4">
+               <button
+                 type="button"
+                 onClick={() => setStep(2)}
+                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-opacity text-xs font-black uppercase tracking-widest cursor-pointer"
+               >
+                 Siguiente Paso
+               </button>
+            </div>
+            </div>
 
+            {/* ======================= PASO 2 ======================= */}
+            <div className={cn("space-y-8", step === 2 ? "block" : "hidden")}>
+            
+            {!isOperator && (
+              <div className="space-y-6">
                 {/* ── Sección Deducciones ── */}
                 <div className="space-y-3">
                   {/* Header */}
-                  <div className="flex items-center gap-3">
-                    <Receipt size={14} className="text-celeste-kore shrink-0" />
-                    <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground/70">
-                      Deducciones
-                    </h5>
+                  <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-2">
+                    <div className="flex items-center gap-3">
+                      <Receipt size={14} className="text-celeste-kore shrink-0" />
+                      <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground/70">
+                        Deducciones
+                      </h5>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn("text-xs font-black px-2 py-1 rounded-lg border", totalDeduccionesPct > 100 ? "text-destructive border-destructive bg-destructive/10" : "text-emerald-500 border-emerald-500/20 bg-emerald-500/10")}>
+                        Total: {totalDeduccionesPct}%
+                      </span>
+                    </div>
                     {fields.length > 0 && (
                       <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-celeste-kore/10 text-celeste-kore border border-celeste-kore/20">
                         {fields.length}
@@ -601,7 +582,19 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                           ))}
                         </div>
 
-                        {fields.map((field, idx) => {
+                        {fields
+    .map((field, index) => ({ ...field, originalIndex: index }))
+    .sort((a, b) => {
+      const order = ["IVA", "Documentación"];
+      const aIdx = order.indexOf(a.tipo);
+      const bIdx = order.indexOf(b.tipo);
+      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+      return 0;
+    })
+    .map((field) => {
+      const idx = field.originalIndex;
                           const style =
                             TIPO_STYLE[field.tipo] || TIPO_STYLE["Comisión"];
                           const userName = getUserName(field.usuario_id || "");
@@ -625,20 +618,26 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                                 {field.tipo}
                               </span>
 
-                              {/* Porcentaje */}
-                              <span className="text-sm font-black text-foreground tabular-nums">
-                                {field.porcentaje}
-                                <span className="text-[10px] font-bold text-muted-foreground ml-0.5">%</span>
-                              </span>
+                              {/* Porcentaje Edit */}
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  {...register(`deducciones.${idx}.porcentaje`, { valueAsNumber: true })}
+                                  className="w-14 bg-transparent border-b border-border/50 focus:border-celeste-kore/50 outline-none text-sm font-black tabular-nums text-foreground"
+                                />
+                                <span className="text-[10px] font-bold text-muted-foreground">%</span>
+                              </div>
 
                               {/* Descripción */}
                               <span className="text-xs text-muted-foreground truncate hidden sm:block">
-                                {field.descripcion || <span className="italic opacity-40">—</span>}
+                                {field.tipo === "IVA" ? "" : field.descripcion || <span className="italic opacity-40">—</span>}
                               </span>
 
                               {/* Usuario - siempre visible */}
                               <div className="flex items-center sm:col-auto">
-                                {userName ? (
+                                {field.tipo === "IVA" ? null : userName ? (
                                   <span className="text-[10px] font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-0.5 rounded-lg border border-celeste-kore/20 truncate max-w-[120px] sm:max-w-full">
                                     {userName}
                                   </span>
@@ -671,82 +670,78 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                       Agregar Deducción
                     </p>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {/* Tipo */}
-                      <div className="grid gap-1.5">
-                        <Label>Tipo</Label>
-                        <SelectWrap
-                          value={newDed.tipo}
-                          onChange={(e) => handleTipoChange(e.target.value)}
-                        >
-                          {TIPOS_DEDUCCION.map((t) => (
-                            <option key={t} value={t}>
-                              {t}
-                            </option>
-                          ))}
-                        </SelectWrap>
-                      </div>
-
-                      {/* Porcentaje / Monto */}
-                      <div className="grid gap-1.5">
-                        <Label>% / Monto</Label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={newDed.porcentaje}
-                            onChange={(e) =>
-                              setNewDed((p) => ({
-                                ...p,
-                                porcentaje: Number(e.target.value),
-                              }))
-                            }
-                            className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
-                          />
-                          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
-                            %
-                          </span>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                      {/* Tipo y Porcentaje layout 80/20 */}
+                      <div className="col-span-1 md:col-span-5 grid grid-cols-[1fr_100px] gap-3">
+                        <div className="grid gap-1.5">
+                          <Label>Tipo</Label>
+                          <SelectWrap
+                            value={newDed.tipo}
+                            onChange={(e) => handleTipoChange(e.target.value)}
+                          >
+                            {TIPOS_DEDUCCION.map((t) => (
+                              <option key={t} value={t}>
+                                {t}
+                              </option>
+                            ))}
+                          </SelectWrap>
+                        </div>
+                        <div className="grid gap-1.5">
+                          <Label>% / Monto</Label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              inputMode="decimal"
+                              value={newDed.porcentaje}
+                              onChange={(e) =>
+                                setNewDed((p) => ({
+                                  ...p,
+                                  porcentaje: Number(e.target.value),
+                                }))
+                              }
+                              className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                            />
+                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
+                              %
+                            </span>
+                          </div>
                         </div>
                       </div>
-
-                      {/* Descripción */}
-                      <div className="grid gap-1.5">
-                        <Label>Descripción</Label>
-                        <input
-                          type="text"
-                          placeholder="Opcional..."
-                          value={newDed.descripcion}
-                          onChange={(e) =>
-                            setNewDed((p) => ({ ...p, descripcion: e.target.value }))
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddDed();
-                            }
-                          }}
-                          className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
-                        />
-                      </div>
-
-                      {/* Asignar a (usuario) */}
-                      <div className="grid gap-1.5">
-                        <Label>Asignar a</Label>
-                        <SelectWrap
-                          value={newDed.usuario_id}
-                          onChange={(e) =>
-                            setNewDed((p) => ({ ...p, usuario_id: e.target.value }))
-                          }
-                        >
-                          <option value="">Sin asignar</option>
-                          {users?.map((u: any) => (
-                            <option key={u.id} value={u.id}>
-                              {u.nombre || "Sin nombre"}
-                            </option>
-                          ))}
-                        </SelectWrap>
-                      </div>
+                      {/* Conditional Desc/User based on type */}
+                      {newDed.tipo !== "IVA" && (
+                        <>
+                          <div className="col-span-1 md:col-span-3 grid gap-1.5">
+                            <Label>Descripción</Label>
+                            <textarea
+                              placeholder="Opcional..."
+                              value={newDed.descripcion}
+                              onChange={(e) =>
+                                setNewDed((p) => ({ ...p, descripcion: e.target.value }))
+                              }
+                              rows={1}
+                              className="flex min-h-[40px] w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all resize-y"
+                            />
+                          </div>
+                          <div className="col-span-1 md:col-span-2 grid gap-1.5">
+                            <Label>Asignar a</Label>
+                            <SelectWrap
+                              value={newDed.usuario_id}
+                              onChange={(e) =>
+                                setNewDed((p) => ({ ...p, usuario_id: e.target.value }))
+                              }
+                            >
+                              <option value="">Sin asignar</option>
+                              {users?.map((u: any) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.nombre || "Sin nombre"}
+                                </option>
+                              ))}
+                            </SelectWrap>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <button
@@ -761,11 +756,21 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                 </div>
               </div>
             )}
+            </div>
           </form>
         </div>
 
         {/* Footer */}
         <div className="p-6 border-t border-border/50 bg-muted/5 flex justify-end gap-3">
+          {step === 2 && (
+             <button
+               type="button"
+               onClick={() => setStep(1)}
+               className="px-6 py-2.5 rounded-xl border border-border/50 bg-background hover:bg-muted/50 transition-colors text-xs font-bold uppercase tracking-widest cursor-pointer"
+             >
+               Paso Anterior
+             </button>
+          )}
           <button
             type="button"
             onClick={handleCancel}

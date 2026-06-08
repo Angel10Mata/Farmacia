@@ -72,7 +72,7 @@ const SelectWrap = ({
 // ── Color palette por tipo de deducción ──────────────────────────────────────
 
 const TIPO_STYLE: Record<string, { pill: string }> = {
-  "Comisión":      { pill: "bg-blue-500/10 text-blue-400 border-blue-500/25" },
+  "Vendedor":      { pill: "bg-blue-500/10 text-blue-400 border-blue-500/25" },
   "Documentación": { pill: "bg-purple-500/10 text-purple-400 border-purple-500/25" },
   "IVA":           { pill: "bg-amber-500/10 text-amber-400 border-amber-500/25" },
   "Mantenimiento": { pill: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25" },
@@ -80,7 +80,7 @@ const TIPO_STYLE: Record<string, { pill: string }> = {
 };
 
 const DEFAULT_PCT: Record<string, number> = {
-  "Comisión": 10,
+  "Vendedor": 10,
   "Documentación": 10,
   "IVA": 12,
   "Mantenimiento": 0,
@@ -137,7 +137,6 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
       precio: 0,
       estado: "En Progreso",
       vendedor_id: "",
-      desarrollador_id: "",
       deducciones: [],
     },
   });
@@ -151,7 +150,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
   // ── Sincronización de Vendedor con Deducción de Comisión ──
   const currentDeducciones = watch("deducciones") || [];
   const vendedorId = watch("vendedor_id");
-  const firstComisionUsuarioId = currentDeducciones.find((d: any) => d.tipo === "Comisión")?.usuario_id || "";
+  const firstComisionUsuarioId = currentDeducciones.find((d: any) => d.tipo === "Vendedor")?.usuario_id || "";
 
   useEffect(() => {
     if (firstComisionUsuarioId !== vendedorId) {
@@ -159,19 +158,10 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
     }
   }, [firstComisionUsuarioId, vendedorId, setValue]);
 
-  // ── Sincronización de Desarrollador con Deducción de Desarrollo ──
-  const desarrolladorId = watch("desarrollador_id");
-  const firstDesarrolloUsuarioId = currentDeducciones.find((d: any) => d.tipo === "Desarrollo")?.usuario_id || "";
-
-  useEffect(() => {
-    if (firstDesarrolloUsuarioId !== desarrolladorId) {
-      setValue("desarrollador_id", firstDesarrolloUsuarioId);
-    }
-  }, [firstDesarrolloUsuarioId, desarrolladorId, setValue]);
 
   // Estado del formulario de "agregar deducción"
   const [newDed, setNewDed] = useState({
-    tipo: "Comisión" as TipoDeduccion,
+    tipo: "Vendedor" as TipoDeduccion,
     porcentaje: 10,
     descripcion: "",
     usuario_id: "",
@@ -188,7 +178,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
       descripcion: newDed.descripcion || "",
       usuario_id: newDed.usuario_id || "",
     });
-    setNewDed({ tipo: "Comisión", porcentaje: DEFAULT_PCT["Comisión"], descripcion: "", usuario_id: "" });
+    setNewDed({ tipo: "Vendedor", porcentaje: DEFAULT_PCT["Vendedor"], descripcion: "", usuario_id: "" });
   };
 
   // ── Autocomplete de clientes ──
@@ -252,7 +242,6 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
           precio:           proyecto.precio            || 0,
           estado:           proyecto.estado            || "En Progreso",
           vendedor_id:      proyecto.vendedor_id       || "",
-          desarrollador_id: proyecto.desarrollador_id  || "",
           deducciones:      proyecto.deducciones       || [],
         });
       } else {
@@ -260,10 +249,10 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
           nombre: "", cliente_nombre: "", cliente_nit: "",
           cliente_telefono: "", cliente_correo: "",
           fecha_entrega: "", precio: 0, estado: "En Progreso",
-          vendedor_id: "", desarrollador_id: "",
+          vendedor_id: "",
           deducciones: [],
         });
-        setNewDed({ tipo: "Comisión", porcentaje: 10, descripcion: "", usuario_id: "" });
+        setNewDed({ tipo: "Vendedor", porcentaje: 10, descripcion: "", usuario_id: "" });
       }
     }
   }, [isOpen, proyecto, reset]);
@@ -449,8 +438,8 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                     Finanzas y Ventas
                   </h4>
 
-                  {/* Precio + Fecha + Vendedor + Desarrollador */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Precio + Fecha + Vendedor */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="precio">Precio Total (Q)</Label>
                       <Input
@@ -474,13 +463,13 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                           const val = e.target.value;
                           setValue("vendedor_id", val);
                           
-                          const comisionIdx = currentDeducciones.findIndex((d: any) => d.tipo === "Comisión");
+                          const comisionIdx = currentDeducciones.findIndex((d: any) => d.tipo === "Vendedor");
                           if (val) {
                             if (comisionIdx >= 0) {
                               setValue(`deducciones.${comisionIdx}.usuario_id`, val);
                             } else {
                               append({
-                                tipo: "Comisión",
+                                tipo: "Vendedor",
                                 porcentaje: 10,
                                 descripcion: "Comisión Vendedor",
                                 usuario_id: val,
@@ -494,42 +483,6 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                         }}
                       >
                         <option value="">Seleccione un vendedor...</option>
-                        {users?.map((u: any) => (
-                          <option key={u.id} value={u.id}>
-                            {u.nombre || "Sin nombre"}
-                          </option>
-                        ))}
-                      </SelectWrap>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="desarrollador_id">Desarrollador</Label>
-                      <SelectWrap
-                        id="desarrollador_id"
-                        value={desarrolladorId || ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setValue("desarrollador_id", val);
-                          
-                          const desIdx = currentDeducciones.findIndex((d: any) => d.tipo === "Desarrollo");
-                          if (val) {
-                            if (desIdx >= 0) {
-                              setValue(`deducciones.${desIdx}.usuario_id`, val);
-                            } else {
-                              append({
-                                tipo: "Desarrollo",
-                                porcentaje: 0,
-                                descripcion: "Desarrollo Proyecto",
-                                usuario_id: val,
-                              });
-                            }
-                          } else {
-                            if (desIdx >= 0) {
-                              setValue(`deducciones.${desIdx}.usuario_id`, "");
-                            }
-                          }
-                        }}
-                      >
-                        <option value="">Seleccione un desarrollador...</option>
                         {users?.map((u: any) => (
                           <option key={u.id} value={u.id}>
                             {u.nombre || "Sin nombre"}
@@ -557,7 +510,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                     {/* Lista */}
                     <AnimatePresence mode="popLayout">
                       {fields.map((field, idx) => {
-                        const style = TIPO_STYLE[field.tipo] || TIPO_STYLE["Comisión"];
+                        const style = TIPO_STYLE[field.tipo] || TIPO_STYLE["Vendedor"];
                         const userName = getUserName(field.usuario_id || "");
                         return (
                           <motion.div

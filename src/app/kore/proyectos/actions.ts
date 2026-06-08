@@ -111,7 +111,7 @@ export async function getProyectos() {
 
     // ── Legacy aggregates para el dashboard (compatibilidad sin tocar DashboardProyectos) ──
     const comisionDeds = rawDeds.filter((d: any) =>
-      d.tipo === "Comisión" || d.tipo === "vendedor"
+      d.tipo === "Comisión" || d.tipo === "vendedor" || d.tipo === "Vendedor"
     );
     const ivaDeds = rawDeds.filter((d: any) =>
       d.tipo === "IVA" || d.tipo === "iva"
@@ -123,7 +123,7 @@ export async function getProyectos() {
       d.tipo === "Mantenimiento" || d.tipo === "mantenimiento"
     );
     const desarrolloDeds = rawDeds.filter((d: any) =>
-      d.tipo === "Desarrollo" || d.tipo === "desarrollo"
+      d.tipo === "Desarrollo" || d.tipo === "desarrollo" || d.tipo === "Desarrollador"
     );
 
     const sumPct = (arr: any[]) =>
@@ -155,8 +155,10 @@ export async function getProyectos() {
       desarrollador_nombre: desarrolloDeds[0]?.usuario_id
         ? (profilesMap.get(desarrolloDeds[0].usuario_id) || desarrolloDeds[0]?.descripcion || "")
         : (desarrolloDeds[0]?.descripcion || ""),
-      // Deducciones en formato array para el formulario de edición
-      deducciones,
+      // Mantenimiento (Step 1)
+      mantenimiento: sumPct(mantDeds),
+      // Deducciones en formato array para el formulario de edición (excluye mantenimiento)
+      deducciones: deducciones.filter(d => d.tipo !== "Mantenimiento" && d.tipo !== "mantenimiento"),
       // ── Legacy fields para DashboardProyectos ──
       aplica_vendedor:    comisionDeds.length > 0,
       porcentaje_vendedor: sumPct(comisionDeds),
@@ -206,6 +208,16 @@ export async function createProyecto(data: ProyectoFormValues) {
   }
 
   const deducciones = buildDeducciones(data.deducciones || [], proyecto.id);
+  if (data.mantenimiento && data.mantenimiento > 0) {
+    deducciones.push({
+      proyecto_id: proyecto.id,
+      tipo: "Mantenimiento",
+      porcentaje: Number(data.mantenimiento),
+      descripcion: null,
+      usuario_id: null,
+    });
+  }
+  
   if (deducciones.length > 0) {
     const { error: dedError } = await supabase
       .from("pro_deducciones")
@@ -257,7 +269,17 @@ export async function updateProyecto(id: string, data: Partial<ProyectoFormValue
       return { error: deleteError.message };
     }
 
-    const deducciones = buildDeducciones(data.deducciones, id);
+    const deducciones = buildDeducciones(data.deducciones || [], id);
+    if (data.mantenimiento && data.mantenimiento > 0) {
+      deducciones.push({
+        proyecto_id: id,
+        tipo: "Mantenimiento",
+        porcentaje: Number(data.mantenimiento),
+        descripcion: null,
+        usuario_id: null,
+      });
+    }
+
     if (deducciones.length > 0) {
       const { error: dedError } = await supabase
         .from("pro_deducciones")

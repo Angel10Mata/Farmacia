@@ -111,12 +111,12 @@ export function Dashboard() {
               .trim()}
             id={`${mod.id}-card`}
             initial="idle"
-            whileHover="hover"
+            whileHover={isMobile ? undefined : "hover"}
             animate={isModuleActive ? "active" : "idle"}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
             variants={{
               idle: { zIndex: 1, height: isMobile ? 120 : undefined },
-              hover: { zIndex: 10, height: isMobile ? 220 : undefined },
+              hover: { zIndex: 10, height: isMobile ? 120 : undefined }, // Se quitó la expansión en hover para evitar rebotes
               active: { zIndex: 20, height: isMobile ? 220 : undefined },
             }}
           >
