@@ -237,6 +237,11 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
                             "border-destructive ring-1 ring-destructive",
                         )}
                       />
+                      {logic.state?.errors?.name && (
+                        <p className="text-[10px] text-destructive font-bold px-1 italic">
+                          {logic.state.errors.name[0]}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid gap-2">
@@ -330,6 +335,8 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
                           onChange={(e) => logic.setPasswordValue(e.target.value)}
                           className={cn(
                             "pr-10 bg-muted/20 font-mono border-dashed transition-all",
+                            logic.state?.errors?.password &&
+                              "border-destructive ring-1 ring-destructive",
                             !logic.showPassword && "tracking-[0.15em]",
                           )}
                         />
@@ -347,6 +354,13 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
                           )}
                         </button>
                       </div>
+                      {logic.state?.errors?.password && (
+                        <div className="text-[10px] text-destructive font-bold px-1 italic space-y-0.5">
+                          {logic.state.errors.password.map((err, i) => (
+                            <p key={i}>{err}</p>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {logic.state?.message && (
