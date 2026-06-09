@@ -95,21 +95,6 @@ export default function LogoKoreLogin({
             />
           </motion.div>
 
-          <motion.div
-            variants={textContainerVariants}
-            initial="hidden"
-            animate="visible"
-            className="flex flex-col items-center justify-center text-center relative"
-          >
-            <motion.h1
-              variants={titleVariants}
-              translate="no"
-              className="notranslate font-black whitespace-nowrap text-azul-kore dark:text-white leading-[0.95]"
-              style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "1.65rem" }}
-            >
-              KoreAPP
-            </motion.h1>
-          </motion.div>
         </div>
       </motion.div>
 

@@ -118,22 +118,6 @@ export default function LogoKore({
             />
           </motion.div>
 
-          <motion.div
-            key={animationKey}
-            variants={textContainerVariants}
-            initial="hidden"
-            animate="visible"
-            className="flex flex-col items-center justify-center text-center py-2 relative"
-          >
-            <motion.h1
-              variants={titleVariants}
-              translate="no"
-              className="notranslate font-black whitespace-nowrap text-black dark:text-white leading-[0.95] translate-y-[3px]"
-              style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "clamp(1.5rem, 3.5vw, 2.8rem)" }}
-            >
-              KoreAPP
-            </motion.h1>
-          </motion.div>
         </div>
       </motion.div>
 

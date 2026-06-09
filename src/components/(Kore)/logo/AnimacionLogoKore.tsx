@@ -98,16 +98,6 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
                 transition={{ staggerChildren: 0.12, delayChildren: 0.05 }}
                 className="flex flex-col items-start justify-center py-2 relative shrink-0"
               >
-                <motion.h1
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ type: "spring", stiffness: 40, damping: 18, duration: 1.3 }}
-                  translate="no"
-                  className="notranslate font-black whitespace-nowrap text-black dark:text-white leading-[0.95]"
-                  style={{ fontFamily: "'Arial Black', sans-serif", fontSize: "clamp(2rem, 6vw, 5rem)" }}
-                >
-                  KoreAPP
-                </motion.h1>
 
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
