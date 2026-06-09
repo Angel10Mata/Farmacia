@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Calendar,
   ChevronLeft,
+  ChevronRight,
   X
 } from "lucide-react";
 import {
@@ -55,6 +56,188 @@ declare global {
   }
 }
 
+// ── DashboardDeduccionItem ───────────────────────────────────────────────────────────────────
+
+const DASH_TIPO_STYLE: Record<string, string> = {
+  "IVA":           "bg-amber-500/10 text-amber-400 border-amber-500/25",
+  "Documentación": "bg-purple-500/10 text-purple-400 border-purple-500/25",
+  "Comisión":      "bg-blue-500/10 text-blue-400 border-blue-500/25",
+  "Vendedor":      "bg-blue-500/10 text-blue-400 border-blue-500/25",
+  "Kore":          "bg-red-500/10 text-red-400 border-red-500/25",
+  "Desarrollador": "bg-sky-500/10 text-sky-400 border-sky-500/25",
+};
+
+function DashboardDeduccionItem({ d, forceOpen }: { d: any; forceOpen: boolean }) {
+  const [open, setOpen] = useState(false);
+  const userName = d.usuario_nombre || "";
+  const hasDetails = !!(userName || d.descripcion);
+  const isOpen = forceOpen || open;
+  const pillClass = DASH_TIPO_STYLE[d.tipo] || "bg-zinc-500/10 text-zinc-400 border-zinc-500/25";
+
+  return (
+    <div
+      className={`border-b border-zinc-200 dark:border-zinc-800 last:border-0 ${
+        hasDetails ? "cursor-pointer" : ""
+      }`}
+      onClick={() => hasDetails && setOpen((o) => !o)}
+    >
+      {/* Fila principal */}
+      <div className="flex items-center gap-2 px-4 py-2.5">
+        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border shrink-0 ${pillClass}`}>
+          {d.tipo}
+        </span>
+        <div className="flex-1" />
+        <span className="text-sm font-black tabular-nums text-foreground/90">
+          {Number(d.porcentaje)}%
+        </span>
+        {hasDetails ? (
+          <ChevronDown
+            size={12}
+            className={`text-muted-foreground/40 transition-transform duration-200 shrink-0 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        ) : (
+          <ChevronDown
+            size={12}
+            className="text-transparent shrink-0 pointer-events-none select-none"
+          />
+        )}
+      </div>
+
+      {/* Detalles colapsables */}
+      <AnimatePresence initial={false}>
+        {isOpen && hasDetails && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.16 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-2.5 space-y-0.5 border-t border-zinc-100 dark:border-zinc-800/60">
+              {userName && (
+                <p className="text-[11px] text-foreground/60 pt-1.5">
+                  <span className="font-semibold text-foreground/50">Asignado a:</span>{" "}
+                  <span className="font-bold text-sky-500">{userName}</span>
+                </p>
+              )}
+              {d.descripcion && (
+                <p className="text-[11px] text-muted-foreground leading-snug">{d.descripcion}</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function DedListWithToggle({
+  deds,
+  totalPct,
+  precio,
+  mant,
+  restante,
+}: {
+  deds: any[];
+  totalPct: number;
+  precio: number;
+  mant: number;
+  restante: number;
+}) {
+  const [allExpanded, setAllExpanded] = useState(false);
+
+  // Sort by order: ["IVA", "Documentación"] first, similar to ProyectoForm.tsx
+  const sortedDeds = [...deds].sort((a, b) => {
+    const order = ["IVA", "Documentación"];
+    const aIdx = order.indexOf(a.tipo);
+    const bIdx = order.indexOf(b.tipo);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return 0;
+  });
+
+  return (
+    <div className="space-y-3 pt-3.5 border-t border-zinc-200 dark:border-zinc-800/80">
+      {/* Header — Clickable to expand/collapse all */}
+      <button
+        type="button"
+        onClick={() => setAllExpanded((v) => !v)}
+        className="w-full flex items-center gap-3 pb-2 text-left hover:opacity-80 transition-opacity"
+      >
+        <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground/70">
+          Deducibles:
+        </h5>
+        {sortedDeds.length > 0 && (
+          <span className="text-[11px] font-black text-foreground/70">
+            {sortedDeds.length}
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <span className={`text-xs font-black px-2 py-1 rounded-lg border ${
+            totalPct > 100
+              ? "text-destructive border-destructive bg-destructive/10"
+              : "text-emerald-500 border-emerald-500/20 bg-emerald-500/10"
+          }`}>
+            Total: {totalPct}%
+          </span>
+          {sortedDeds.length > 0 && (
+            <ChevronDown
+              size={13}
+              className={`text-muted-foreground/50 transition-transform duration-200 ${
+                allExpanded ? "rotate-180" : ""
+              }`}
+            />
+          )}
+        </div>
+      </button>
+
+      {/* Accordion List */}
+      <AnimatePresence mode="popLayout">
+        {sortedDeds.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-1.5"
+          >
+            {sortedDeds.map((d, index) => (
+              <DashboardDeduccionItem
+                key={index}
+                d={d}
+                forceOpen={allExpanded}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Extra Financial Details: Mantenimiento (only if > 0) & Saldo Final */}
+      <div className="space-y-2 pt-2 text-xs sm:text-sm border-t border-zinc-100 dark:border-zinc-800/60">
+        {mant > 0 && (
+          <div className="flex justify-between items-center gap-2 py-0.5">
+            <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">
+              Mantenimiento Mensual:
+            </span>
+            <span className="font-bold shrink-0 text-right text-celeste-kore">
+              Q{mant.toLocaleString("en-US", { minimumFractionDigits: 2 })} / mes
+            </span>
+          </div>
+        )}
+
+        <div className="flex justify-between items-center gap-2 py-1.5 border-t border-zinc-200 dark:border-zinc-800/80 pt-2 font-black text-sm sm:text-base text-celeste-kore">
+          <span className="min-w-0 truncate">Saldo Final:</span>
+          <span className="shrink-0 text-right">
+            Q{restante.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface DashboardProyectosProps {
   role: string;
 }
@@ -78,6 +261,12 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [qrProyecto, setQrProyecto] = useState<any | null>(null);
   const [detalleProyecto, setDetalleProyecto] = useState<any | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -441,6 +630,15 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     );
   }, [proyectos, searchTerm]);
 
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredProyectos.length / itemsPerPage) || 1;
+  }, [filteredProyectos]);
+
+  const paginatedProyectos = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredProyectos.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProyectos, currentPage]);
+
   // Proyectos con fecha de entrega para la vista de usuarios normales
   const proyectosConFecha = useMemo(() => {
     return proyectos
@@ -463,16 +661,22 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     if (!phone) return "";
     const clean = phone.trim();
     if (!clean) return "";
-    // GT number with +502 and 8 digits -> +502 XXXX-XXXX
-    const gtMatch = clean.match(/^\+502(\d{4})(\d{4})$/);
+    
+    // Clean spaces to match formats like +502 4214 0797 or +50242140797
+    const cleanNoSpaces = clean.replace(/\s+/g, "");
+    
+    // GT number with +502 and 8 digits -> XXXX-XXXX
+    const gtMatch = cleanNoSpaces.match(/^\+502(\d{4})(\d{4})$/);
     if (gtMatch) {
-      return `+502 ${gtMatch[1]}-${gtMatch[2]}`;
+      return `${gtMatch[1]}-${gtMatch[2]}`;
     }
-    // GT number with 8 digits (no prefix) -> +502 XXXX-XXXX
-    const gtShortMatch = clean.match(/^(\d{4})(\d{4})$/);
+    
+    // GT number with 8 digits (no prefix) -> XXXX-XXXX
+    const gtShortMatch = cleanNoSpaces.match(/^(\d{4})(\d{4})$/);
     if (gtShortMatch) {
-      return `+502 ${gtShortMatch[1]}-${gtShortMatch[2]}`;
+      return `${gtShortMatch[1]}-${gtShortMatch[2]}`;
     }
+    
     return clean;
   };
 
@@ -520,67 +724,245 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       {/* ========== ADMIN VIEW: Summary Cards + Charts + Full Table ========== */}
       {isAdmin && (
         <>
+          {/* TABLE SECTION - Admin only (Rendered FIRST) */}
+          <div className="rounded-2xl border border-celeste-kore/55 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button 
+                  onClick={() => setShowList(!showList)}
+                  className="p-1.5 sm:p-2 hover:bg-muted/50 rounded-lg transition-colors group"
+                >
+                  <motion.div
+                    animate={{ rotate: showList ? 0 : -90 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Filter size={16} className="text-celeste-kore sm:w-[18px] sm:h-[18px]" />
+                  </motion.div>
+                </button>
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-foreground/90">Lista de Proyectos</h3>
+              </div>
+              <motion.div 
+                initial={false}
+                animate={{ opacity: showList ? 1 : 0, scale: showList ? 1 : 0.95, x: showList ? 0 : 20 }}
+                className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto ${!showList ? 'pointer-events-none' : ''}`}
+              >
+                <div className="relative flex-1 sm:w-[240px]">
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input 
+                    type="text" 
+                    placeholder="BUSCAR PROYECTO..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-muted/20 border border-border/60 rounded-lg py-2 pl-9 pr-3 text-[9px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-celeste-kore/30 transition-all placeholder:text-muted-foreground/40 shadow-inner"
+                  />
+                </div>
+                <button 
+                  onClick={exportarPDF}
+                  className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-celeste-kore/30 transition-all text-xs font-bold shadow-sm group whitespace-nowrap"
+                >
+                  <Download size={14} className="text-celeste-kore group-hover:scale-110 transition-transform" />
+                  <span className="uppercase tracking-widest text-[9px]">Exportar</span>
+                </button>
+              </motion.div>
+            </div>
+
+            <motion.div 
+              initial={false}
+              animate={{ 
+                height: showList ? "auto" : 0,
+                opacity: showList ? 1 : 0
+              }}
+              className="w-full overflow-hidden"
+            >
+              {loading ? (
+                <div className="flex justify-center items-center py-10">
+                  <RefreshCw className="animate-spin text-celeste-kore" />
+                </div>
+              ) : filteredProyectos.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground border-t border-border/30">
+                  <p className="text-sm">No se encontraron proyectos.</p>
+                </div>
+              ) : (
+                <>
+                  {/* DESKTOP TABLE - hidden on mobile */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full text-left border-separate border-spacing-y-2">
+                      <thead>
+                        <tr className="text-[10px] text-muted-foreground uppercase tracking-[0.15em]">
+                          <th className="pb-2 px-4 font-black">Código</th>
+                          <th className="pb-2 px-2 font-black">Proyecto</th>
+                          <th className="pb-2 px-2 font-black">Cliente</th>
+                          <th className="pb-2 px-2 font-black">Estado</th>
+                          <th className="pb-2 px-2 font-black text-right">Precio</th>
+                          <th className="pb-2 px-2 font-black text-right">Comisión</th>
+                          <th className="pb-2 px-2 font-black text-right">Desarrollo</th>
+                          <th className="pb-2 px-2 font-black text-right">IVA</th>
+                          <th className="pb-2 px-2 font-black text-right">Doc</th>
+                          <th className="pb-2 px-2 font-black text-right">Mant.</th>
+                          <th className="pb-2 pl-2 pr-4 font-black text-right">Saldo Final</th>
+                        </tr>
+                      </thead>
+                      <tbody className="before:block before:h-2">
+                        {paginatedProyectos.map((p) => {
+                          const precio = Number(p.precio) || 0;
+                          const comision = p.aplica_vendedor ? precio * (Number(p.porcentaje_vendedor) || 0) / 100 : 0;
+                          const desarrollo = p.aplica_desarrollo ? precio * (Number(p.porcentaje_desarrollo) || 0) / 100 : 0;
+                          const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
+                          const doc = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
+                          const mant = Number(p.mantenimiento) || 0;
+                          const restante = precio - comision - desarrollo - iva - doc + mant;
+
+                          return (
+                            <tr
+                              key={p.id}
+                              onClick={() => setDetalleProyecto(p)}
+                              className="group border-y border-border/50 dark:border-white/5 bg-card/20 hover:bg-card/40 cursor-pointer transition-all duration-300"
+                            >
+                              <td className="py-3 px-4 rounded-l-xl border-y border-l border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <code className="text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-1 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
+                              </td>
+                              <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <p className="font-bold text-sm text-foreground">{p.nombre}</p>
+                              </td>
+                              <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <p className="text-sm text-foreground">{p.cliente_nombre || 'N/A'}</p>
+                                <p className="text-[10px] text-muted-foreground">{formatPhoneDisplay(p.cliente_telefono)}</p>
+                              </td>
+                              <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
+                                  p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
+                                  p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
+                                  'bg-azul-kore/10 text-azul-kore border-azul-kore/20 shadow-sm'
+                                }`}>
+                                  {p.estado}
+                                </span>
+                              </td>
+                              <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <p className="font-bold text-sm">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                              </td>
+                              <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <p className={`text-sm ${comision > 0 ? 'text-red-400 font-bold' : 'text-muted-foreground'}`}>
+                                  {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
+                                </p>
+                                {comision > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_vendedor}%</p>}
+                              </td>
+                              <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <p className={`text-sm ${desarrollo > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>
+                                  {desarrollo > 0 ? `Q${desarrollo.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
+                                </p>
+                                {desarrollo > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_desarrollo}%</p>}
+                              </td>
+                              <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <p className={`text-sm ${iva > 0 ? 'text-azul-kore font-bold' : 'text-muted-foreground'}`}>
+                                  {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
+                                </p>
+                                {iva > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_iva}%</p>}
+                              </td>
+                              <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <p className={`text-sm ${doc > 0 ? 'text-azul-kore font-bold' : 'text-muted-foreground'}`}>
+                                  {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
+                                </p>
+                                {doc > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_doc}%</p>}
+                              </td>
+                              <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <p className={`text-sm ${mant > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>{mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}</p>
+                                {mant > 0 && <p className="text-[10px] text-muted-foreground">Mes</p>}
+                              </td>
+                              <td className="py-4 pr-4 text-right rounded-r-xl border-y border-r border-border group-hover:border-celeste-kore/20 transition-all duration-300">
+                                <p className="font-black text-sm text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* MOBILE CARDS - hidden on desktop */}
+                  <div className="lg:hidden flex flex-col gap-2">
+                    {paginatedProyectos.map((p) => {
+                      return (
+                        <div 
+                          key={p.id} 
+                          className="rounded-lg border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-none dark:shadow-md hover:border-celeste-kore/70 transition-all duration-300 cursor-pointer"
+                          onClick={() => setDetalleProyecto(p)}
+                        >
+                          {/* Top row: Code & State */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1 min-w-0">
+                              <code className="text-[8px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1 py-0.5 rounded border border-celeste-kore/20 shrink-0">
+                                {getCode(p.id)}
+                              </code>
+                              <span className={`inline-flex items-center px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border shrink-0 ${
+                                p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
+                                p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
+                                'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
+                              }`}>
+                                {p.estado}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Info row */}
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-[11px] text-foreground truncate tracking-tight">{p.nombre}</h4>
+                            <p className="text-[8px] text-muted-foreground mt-0.5 truncate">
+                              Cliente: <span className="font-semibold text-foreground/80">{p.cliente_nombre || 'Sin cliente'}</span>
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-border/30">
+                      <button
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                        className="p-2 rounded-xl border border-border bg-card/50 hover:bg-muted/50 hover:border-celeste-kore/30 text-muted-foreground hover:text-celeste-kore disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer shadow-sm"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <span className="text-xs font-black uppercase tracking-widest text-foreground bg-muted/30 border border-border/30 px-3.5 py-1.5 rounded-lg select-none">
+                        PÁG. {currentPage} / {totalPages}
+                      </span>
+                      <button
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                        className="p-2 rounded-xl border border-border bg-card/50 hover:bg-muted/50 hover:border-celeste-kore/30 text-muted-foreground hover:text-celeste-kore disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer shadow-sm"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </motion.div>
+          </div>
 
           {/* CHARTS SECTION */}
           <div className="grid grid-cols-1 lg:grid-cols-[60%_1fr] gap-4">
             {/* Bar Chart */}
             <div className="rounded-2xl border border-celeste-kore/55 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+              
+              {/* First Line: INGRESO & SWITCH */}
+              <div className="flex items-center justify-between mb-4 gap-3">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
                     <CircleDollarSign size={14} className="text-celeste-kore" />
                   </div>
-                  <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest flex flex-wrap items-center gap-2">
-                    <span>Ingreso</span>
-                    {chartTab === "MES" && (
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <select
-                          value={selectedMonth}
-                          onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                          className="bg-muted border border-border rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
-                        >
-                          {["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"].map((m, idx) => (
-                            <option key={m} value={idx} className="bg-card text-foreground font-bold">
-                              {m}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={selectedYear}
-                          onChange={(e) => setSelectedYear(Number(e.target.value))}
-                          className="bg-muted border border-border rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
-                        >
-                          {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                            <option key={y} value={y} className="bg-card text-foreground font-bold">
-                              {y}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    {chartTab === "AÑO" && (
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <select
-                          value={selectedYear}
-                          onChange={(e) => setSelectedYear(Number(e.target.value))}
-                          className="bg-muted border border-border rounded-lg px-2 py-0.5 text-[9px] sm:text-[10px] font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
-                        >
-                          {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                            <option key={y} value={y} className="bg-card text-foreground font-bold">
-                              {y}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                  <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-foreground">
+                    Ingreso
                   </h3>
                 </div>
-                <div className="flex items-center rounded-full bg-muted/30 border border-border/30 p-[2px] self-end sm:self-auto">
+                <div className="flex items-center rounded-full bg-muted/30 border border-border/30 p-[2px]">
                   {["MES", "AÑO", "RANGO"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setChartTab(tab as any)}
-                      className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold transition-all ${
+                      className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold transition-all cursor-pointer ${
                         chartTab === tab
                           ? "bg-celeste-kore text-white shadow-md"
                           : "text-muted-foreground hover:bg-muted/50"
@@ -592,28 +974,72 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                 </div>
               </div>
 
-              {chartTab === "RANGO" && (
-                <div className="flex flex-wrap items-center gap-3 mb-4 p-3 rounded-xl bg-card/40 border border-celeste-kore/20 dark:border-white/10">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground">Desde:</span>
-                    <input 
-                      type="date" 
-                      value={dateRange.start}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                      className="bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
-                    />
+              {/* Second Line: Active Filters (Centered) */}
+              <div className="flex items-center justify-center w-full min-h-[40px] mt-2 mb-4">
+                {chartTab === "MES" && (
+                  <div className="flex items-center gap-2 bg-muted/20 border border-border/40 px-3 py-1.5 rounded-xl">
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                      className="bg-muted border border-border rounded-lg px-2.5 py-1 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
+                    >
+                      {["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"].map((m, idx) => (
+                        <option key={m} value={idx} className="bg-card text-foreground font-bold">
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(Number(e.target.value))}
+                      className="bg-muted border border-border rounded-lg px-2.5 py-1 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
+                    >
+                      {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                        <option key={y} value={y} className="bg-card text-foreground font-bold">
+                          {y}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground">Hasta:</span>
-                    <input 
-                      type="date" 
-                      value={dateRange.end}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                      className="bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
-                    />
+                )}
+                {chartTab === "AÑO" && (
+                  <div className="flex items-center justify-center gap-2 bg-muted/20 border border-border/40 px-3 py-1.5 rounded-xl">
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(Number(e.target.value))}
+                      className="bg-muted border border-border rounded-lg px-2.5 py-1 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
+                    >
+                      {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                        <option key={y} value={y} className="bg-card text-foreground font-bold">
+                          {y}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                </div>
-              )}
+                )}
+                {chartTab === "RANGO" && (
+                  <div className="flex flex-wrap items-center justify-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/40 w-full sm:w-auto">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground">Desde:</span>
+                      <input 
+                        type="date" 
+                        value={dateRange.start}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                        className="bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground">Hasta:</span>
+                      <input 
+                        type="date" 
+                        value={dateRange.end}
+                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                        className="bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
               
               <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="flex items-center gap-1.5">
@@ -740,201 +1166,6 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* TABLE SECTION - Admin only */}
-          <div className="rounded-2xl border border-celeste-kore/55 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button 
-                  onClick={() => setShowList(!showList)}
-                  className="p-1.5 sm:p-2 hover:bg-muted/50 rounded-lg transition-colors group"
-                >
-                  <motion.div
-                    animate={{ rotate: showList ? 0 : -90 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Filter size={16} className="text-celeste-kore sm:w-[18px] sm:h-[18px]" />
-                  </motion.div>
-                </button>
-                <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-foreground/90">Lista de Proyectos</h3>
-              </div>
-              <motion.div 
-                initial={false}
-                animate={{ opacity: showList ? 1 : 0, scale: showList ? 1 : 0.95, x: showList ? 0 : 20 }}
-                className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto ${!showList ? 'pointer-events-none' : ''}`}
-              >
-                <div className="relative flex-1 sm:w-[240px]">
-                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input 
-                    type="text" 
-                    placeholder="BUSCAR PROYECTO..." 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-muted/20 border border-border/60 rounded-lg py-2 pl-9 pr-3 text-[9px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-celeste-kore/30 transition-all placeholder:text-muted-foreground/40 shadow-inner"
-                  />
-                </div>
-                <button 
-                  onClick={exportarPDF}
-                  className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-celeste-kore/30 transition-all text-xs font-bold shadow-sm group whitespace-nowrap"
-                >
-                  <Download size={14} className="text-celeste-kore group-hover:scale-110 transition-transform" />
-                  <span className="uppercase tracking-widest text-[9px]">Exportar</span>
-                </button>
-              </motion.div>
-            </div>
-
-              <motion.div 
-                initial={false}
-                animate={{ 
-                  height: showList ? "auto" : 0,
-                  opacity: showList ? 1 : 0
-                }}
-                className="w-full overflow-hidden"
-              >
-                {loading ? (
-                  <div className="flex justify-center items-center py-10">
-                    <RefreshCw className="animate-spin text-celeste-kore" />
-                  </div>
-                ) : filteredProyectos.length === 0 ? (
-                  <div className="text-center py-10 text-muted-foreground border-t border-border/30">
-                    <p className="text-sm">No se encontraron proyectos.</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* DESKTOP TABLE - hidden on mobile */}
-                    <div className="hidden lg:block overflow-x-auto">
-                      <table className="w-full text-left border-separate border-spacing-y-2">
-                        <thead>
-                          <tr className="text-[10px] text-muted-foreground uppercase tracking-[0.15em]">
-                            <th className="pb-2 px-4 font-black">Código</th>
-                            <th className="pb-2 px-2 font-black">Proyecto</th>
-                            <th className="pb-2 px-2 font-black">Cliente</th>
-                            <th className="pb-2 px-2 font-black">Estado</th>
-                            <th className="pb-2 px-2 font-black text-right">Precio</th>
-                            <th className="pb-2 px-2 font-black text-right">Comisión</th>
-                            <th className="pb-2 px-2 font-black text-right">Desarrollo</th>
-                            <th className="pb-2 px-2 font-black text-right">IVA</th>
-                            <th className="pb-2 px-2 font-black text-right">Doc</th>
-                            <th className="pb-2 px-2 font-black text-right">Mant.</th>
-                            <th className="pb-2 pl-2 pr-4 font-black text-right">Saldo Final</th>
-                          </tr>
-                        </thead>
-                        <tbody className="before:block before:h-2">
-                          {filteredProyectos.map((p) => {
-                            const precio = Number(p.precio) || 0;
-                            const comision = p.aplica_vendedor ? precio * (Number(p.porcentaje_vendedor) || 0) / 100 : 0;
-                            const desarrollo = p.aplica_desarrollo ? precio * (Number(p.porcentaje_desarrollo) || 0) / 100 : 0;
-                            const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
-                            const doc = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
-                            const mant = Number(p.mantenimiento) || 0;
-                            const restante = precio - comision - desarrollo - iva - doc + mant;
-
-                            return (
-                            <tr
-                              key={p.id}
-                              onClick={() => setDetalleProyecto(p)}
-                              className="group border-y border-border/50 dark:border-white/5 bg-card/20 hover:bg-card/40 cursor-pointer transition-all duration-300"
-                            >
-                              <td className="py-3 px-4 rounded-l-xl border-y border-l border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <code className="text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-1 rounded border border-celeste-kore/20">{getCode(p.id)}</code>
-                            </td>
-                            <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <p className="font-bold text-sm text-foreground">{p.nombre}</p>
-                            </td>
-                            <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <p className="text-sm text-foreground">{p.cliente_nombre || 'N/A'}</p>
-                              <p className="text-[10px] text-muted-foreground">{formatPhoneDisplay(p.cliente_telefono)}</p>
-                            </td>
-                            <td className="py-4 border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
-                                p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
-                                p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
-                                'bg-azul-kore/10 text-azul-kore border-azul-kore/20 shadow-sm'
-                              }`}>
-                                {p.estado}
-                              </span>
-                            </td>
-                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <p className="font-bold text-sm">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
-                            </td>
-                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <p className={`text-sm ${comision > 0 ? 'text-red-400 font-bold' : 'text-muted-foreground'}`}>
-                                {comision > 0 ? `Q${comision.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                              </p>
-                              {comision > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_vendedor}%</p>}
-                            </td>
-                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <p className={`text-sm ${desarrollo > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>
-                                {desarrollo > 0 ? `Q${desarrollo.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                              </p>
-                              {desarrollo > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_desarrollo}%</p>}
-                            </td>
-                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <p className={`text-sm ${iva > 0 ? 'text-azul-kore font-bold' : 'text-muted-foreground'}`}>
-                                {iva > 0 ? `Q${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                              </p>
-                              {iva > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_iva}%</p>}
-                            </td>
-                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <p className={`text-sm ${doc > 0 ? 'text-azul-kore font-bold' : 'text-muted-foreground'}`}>
-                                {doc > 0 ? `Q${doc.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}
-                              </p>
-                              {doc > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_doc}%</p>}
-                            </td>
-                            <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <p className={`text-sm ${mant > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>{mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}</p>
-                              {mant > 0 && <p className="text-[10px] text-muted-foreground">Mes</p>}
-                            </td>
-                            <td className="py-4 pr-4 text-right rounded-r-xl border-y border-r border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                              <p className="font-black text-sm text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
-                            </td>
-                          </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* MOBILE CARDS - hidden on desktop */}
-                  <div className="lg:hidden flex flex-col gap-2">
-                    {filteredProyectos.map((p) => {
-                      return (
-                        <div 
-                          key={p.id} 
-                          className="rounded-lg border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-none dark:shadow-md hover:border-celeste-kore/70 transition-all duration-300 cursor-pointer"
-                          onClick={() => setDetalleProyecto(p)}
-                        >
-                          {/* Top row: Code & State */}
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1 min-w-0">
-                              <code className="text-[8px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1 py-0.5 rounded border border-celeste-kore/20 shrink-0">
-                                {getCode(p.id)}
-                              </code>
-                              <span className={`inline-flex items-center px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border shrink-0 ${
-                                p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
-                                p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
-                                'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
-                              }`}>
-                                {p.estado}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Info row */}
-                          <div className="min-w-0">
-                            <h4 className="font-bold text-[11px] text-foreground truncate tracking-tight">{p.nombre}</h4>
-                            <p className="text-[8px] text-muted-foreground mt-0.5 truncate">
-                              Cliente: <span className="font-semibold text-foreground/80">{p.cliente_nombre || 'Sin cliente'}</span>
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </motion.div>
           </div>
         </>
       )}
@@ -1103,10 +1334,8 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   </div>
                   <div>
                     <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{detalleProyecto.nombre}</h2>
-                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Vendedor: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{detalleProyecto.vendedor_nombre || 'N/A'}</span></p>
-                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">Desarrollador: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{detalleProyecto.desarrollador_nombre || 'N/A'}</span></p>
                     {detalleProyecto.fecha_entrega && (
-                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
+                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
                     )}
                   </div>
                 </div>
@@ -1129,6 +1358,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                     )}
                   </div>
                 </div>
+
 
                 {/* Finanzas & Dona */}
                 {(() => {
@@ -1204,38 +1434,20 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         </div>
                       )}
 
-                      {/* Breakdown List */}
-                      <div className="space-y-2.5 pt-3.5 border-t border-zinc-200 dark:border-zinc-800/80 text-xs sm:text-sm">
-                        <div className="flex justify-between items-center gap-2 py-0.5">
-                          <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">Precio Total:</span>
-                          <span className="font-bold text-zinc-950 dark:text-zinc-50 shrink-0 text-right">Q{precio.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                        </div>
+                      {/* Deducibles en acordeón — mismo estilo que el formulario */}
+                      {(() => {
+                        const activeDeds = (detalleProyecto.deducciones || []).filter(
+                          (d: any) => (Number(d.porcentaje) || 0) > 0
+                        );
+                        const totalPct = activeDeds.reduce(
+                          (acc: number, d: any) => acc + (Number(d.porcentaje) || 0), 0
+                        );
+                        if (activeDeds.length === 0) return null;
 
-                        {["IVA", "Documentación", "Kore", "Vendedor", "Desarrollador"].map((tipo) => {
-                          const sum = getDedSum(tipo);
-                          const pct = precio > 0 ? (sum / precio) * 100 : 0;
-                          return (
-                            <div key={tipo} className="flex justify-between items-center gap-2 py-0.5">
-                              <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">{tipo}:</span>
-                              <span className={`font-bold shrink-0 text-right ${sum > 0 ? 'text-zinc-950 dark:text-zinc-50' : 'text-zinc-400 dark:text-zinc-650'}`}>
-                                {sum > 0 ? `Q${sum.toLocaleString('en-US', {minimumFractionDigits: 2})} (${pct}%)` : '—'}
-                              </span>
-                            </div>
-                          );
-                        })}
-
-                        <div className="flex justify-between items-center gap-2 py-0.5">
-                          <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">Mantenimiento Mensual:</span>
-                          <span className={`font-bold shrink-0 text-right ${mant > 0 ? 'text-celeste-kore' : 'text-zinc-400 dark:text-zinc-650'}`}>
-                            {mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})} / mes` : '—'}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between items-center gap-2 py-1.5 border-t border-zinc-200 dark:border-zinc-800/80 pt-2.5 font-black text-sm sm:text-base text-celeste-kore">
-                          <span className="min-w-0 truncate">Saldo Final:</span>
-                          <span className="shrink-0 text-right">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                        </div>
-                      </div>
+                        return (
+                          <DedListWithToggle deds={activeDeds} totalPct={totalPct} precio={precio} mant={mant} restante={restante} />
+                        );
+                      })()}
                     </div>
                   );
                 })()}

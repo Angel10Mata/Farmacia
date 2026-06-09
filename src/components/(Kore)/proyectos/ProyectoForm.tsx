@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Briefcase, Save, ArrowLeft, Plus, Trash2, Receipt, Globe } from "lucide-react";
+import { Loader2, Briefcase, Save, ArrowLeft, Plus, Trash2, ChevronDown, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Swal from "sweetalert2";
 import {
@@ -18,9 +18,8 @@ import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { Controller } from "react-hook-form";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
+import { KorePhoneInput } from "@/components/ui/KorePhoneInput";
+
 
 interface ProyectoFormProps {
   proyecto?: any | null;
@@ -87,7 +86,7 @@ const DEFAULT_PCT: Record<string, number> = {
 
 const formatToE164 = (phone: string | null | undefined): string => {
   if (!phone) return "";
-  const clean = phone.trim();
+  const clean = phone.trim().replace(/\s+/g, "");
   if (!clean) return "";
   if (clean.startsWith("+")) return clean;
   // Si tiene 8 dígitos (formato estándar de Guatemala), anteponer +502
@@ -100,6 +99,139 @@ const formatToE164 = (phone: string | null | undefined): string => {
   }
   return clean;
 };
+
+const stripCountryCode = (phone: string | null | undefined): string => {
+  if (!phone) return "";
+  const clean = phone.trim().replace(/\s+/g, "");
+  if (clean.startsWith("+502")) return clean.slice(4).trim();
+  if (clean.startsWith("502") && clean.length === 11) return clean.slice(3).trim();
+  return clean;
+};
+
+// ── AccordionDeduccion ──────────────────────────────────────────────────────────────────────────────
+
+function DeduccionRow({
+  field,
+  idx,
+  style,
+  userName,
+  register,
+  onRemove,
+  forceOpen,
+}: {
+  field: any;
+  idx: number;
+  style: { pill: string; dot: string };
+  userName: string | null;
+  register: any;
+  onRemove: () => void;
+  forceOpen: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasDetails = !!(userName || (field.tipo !== "IVA" && field.descripcion));
+  const isOpen = forceOpen || open;
+
+  return (
+    <motion.div
+      key={field.id}
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      layout
+      className="rounded-xl border border-border/30 bg-muted/10 overflow-hidden group hover:border-border/50 transition-all"
+    >
+      {/* Fila 1: Etiqueta + % + Eliminar (siempre visible, clickable para expandir) */}
+      <div
+        className={cn(
+          "flex items-center gap-2 px-3 py-2.5",
+          hasDetails && "cursor-pointer"
+        )}
+        onClick={() => hasDetails && setOpen((o) => !o)}
+      >
+        {/* Pill */}
+        <span
+          className={cn(
+            "text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border shrink-0",
+            style.pill
+          )}
+        >
+          {field.tipo}
+        </span>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Porcentaje editable */}
+        <div
+          className="flex items-center gap-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="number"
+            step="0.01"
+            inputMode="decimal"
+            {...register(`deducciones.${idx}.porcentaje`, { valueAsNumber: true })}
+            className="w-10 bg-transparent border-b border-border/50 focus:border-celeste-kore/50 outline-none text-sm font-black tabular-nums text-foreground text-right"
+          />
+          <span className="text-[10px] font-bold text-muted-foreground">%</span>
+        </div>
+
+        {/* Chevron (si tiene detalles) */}
+        {hasDetails ? (
+          <ChevronDown
+            size={12}
+            className={cn(
+              "text-muted-foreground/40 transition-transform duration-200 shrink-0",
+              isOpen && "rotate-180"
+            )}
+          />
+        ) : (
+          <ChevronDown
+            size={12}
+            className="text-transparent shrink-0 pointer-events-none select-none"
+          />
+        )}
+
+        {/* Eliminar */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          className="flex items-center justify-center p-1 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-all cursor-pointer shrink-0"
+          title="Eliminar"
+        >
+          <Trash2 size={12} />
+        </button>
+      </div>
+
+      {/* Filas colapsables: Asignado a + Descripción */}
+      <AnimatePresence initial={false}>
+        {isOpen && hasDetails && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.16 }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-2.5 pt-0 space-y-0.5 border-t border-border/20">
+              {userName && (
+                <p className="text-[11px] text-foreground/60 pt-1.5">
+                  <span className="font-semibold text-foreground/50">Asignado a:</span>{" "}
+                  <span className="font-bold text-celeste-kore">{userName}</span>
+                </p>
+              )}
+              {field.tipo !== "IVA" && field.descripcion && (
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  {field.descripcion}
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
@@ -197,6 +329,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
   });
 
   // ── Autocomplete de usuarios ──
+  const [allDedExpanded, setAllDedExpanded] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [showUserSuggestions, setShowUserSuggestions] = useState(false);
   const [justSelectedUser, setJustSelectedUser] = useState(false);
@@ -277,7 +410,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
     setJustSelected(true);
     setValue("cliente_nombre", cliente.nombre, { shouldValidate: true });
     setValue("cliente_nit", cliente.nit || "");
-    setValue("cliente_telefono", formatToE164(cliente.telefono));
+    setValue("cliente_telefono", cliente.telefono || "");
     setValue("cliente_correo", cliente.correo || "");
     setShowSuggestions(false);
     setTimeout(() => setJustSelected(false), 500);
@@ -290,7 +423,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         nombre:           proyecto.nombre       || "",
         cliente_nombre:   proyecto.cliente_nombre  || "",
         cliente_nit:      proyecto.cliente_nit     || "",
-        cliente_telefono: formatToE164(proyecto.cliente_telefono),
+        cliente_telefono: proyecto.cliente_telefono || "",
         cliente_correo:   proyecto.cliente_correo   || "",
         fecha_entrega:    proyecto.fecha_entrega    || "",
         precio:           proyecto.precio           || 0,
@@ -316,6 +449,8 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
       });
       return;
     }
+    
+    // Phone number is already formatted as E164 from KorePhoneInput
     const res = isEditing
       ? await updateProyecto(proyecto.id, data)
       : await createProyecto(data);
@@ -490,20 +625,11 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="cliente_telefono">Teléfono</Label>
-                  <Controller
-                    control={control}
-                    name="cliente_telefono"
-                    render={({ field }) => (
-                      <PhoneInput
-                        id="cliente_telefono"
-                        placeholder="1234 5678"
-                        defaultCountry="GT"
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        internationalIcon={() => <Globe size={18} className="text-muted-foreground" />}
-                        className={cn("flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-within:ring-2 focus-within:ring-red-600/50 transition-all")}
-                      />
-                    )}
+                  <KorePhoneInput
+                    id="cliente_telefono"
+                    value={watch("cliente_telefono") || ""}
+                    onChange={(val) => setValue("cliente_telefono", val, { shouldValidate: true })}
+                    placeholder="1234 5678"
                   />
                 </div>
                 <div className="grid gap-2">
@@ -561,7 +687,6 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                     <Input
                       id="fecha_entrega"
                       type="date"
-                      className="min-w-0 w-full block"
                       {...register("fecha_entrega")}
                     />
                   </div>
@@ -588,47 +713,45 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
               <div className="space-y-6">
                 {/* ── Sección Deducciones ── */}
                 <div className="space-y-3">
-                  {/* Header */}
-                  <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-2">
-                    <div className="flex items-center gap-3">
-                      <Receipt size={14} className="text-celeste-kore shrink-0" />
-                      <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground/70">
-                        Deducciones
-                      </h5>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={cn("text-xs font-black px-2 py-1 rounded-lg border", totalDeduccionesPct > 100 ? "text-destructive border-destructive bg-destructive/10" : "text-emerald-500 border-emerald-500/20 bg-emerald-500/10")}>
-                        Total: {totalDeduccionesPct}%
-                      </span>
-                    </div>
+                  {/* Header — clickable para expandir/colapsar todos */}
+                  <button
+                    type="button"
+                    onClick={() => setAllDedExpanded((v) => !v)}
+                    className="w-full flex items-center gap-3 border-b border-border/50 pb-2 text-left hover:opacity-80 transition-opacity"
+                  >
+                    <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground/70">
+                      Deducciones:
+                    </h5>
                     {fields.length > 0 && (
-                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-celeste-kore/10 text-celeste-kore border border-celeste-kore/20">
+                      <span className="text-[11px] font-black text-foreground/70">
                         {fields.length}
                       </span>
                     )}
-                  </div>
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className={cn("text-xs font-black px-2 py-1 rounded-lg border", totalDeduccionesPct > 100 ? "text-destructive border-destructive bg-destructive/10" : "text-emerald-500 border-emerald-500/20 bg-emerald-500/10")}>
+                        Total: {totalDeduccionesPct}%
+                      </span>
+                      {fields.length > 0 && (
+                        <ChevronDown
+                          size={13}
+                          className={cn(
+                            "text-muted-foreground/50 transition-transform duration-200",
+                            allDedExpanded && "rotate-180"
+                          )}
+                        />
+                      )}
+                    </div>
+                  </button>
 
-                  {/* Lista de deducciones agregadas */}
+                  {/* Lista de deducciones — acordeón */}
                   <AnimatePresence mode="popLayout">
                     {fields.length > 0 && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="space-y-2"
+                        className="space-y-1.5"
                       >
-                        {/* Table header */}
-                        <div className="hidden sm:grid grid-cols-[auto_70px_1fr_130px_36px] gap-2 px-3 py-1">
-                          {["Tipo", "%/Monto", "Descripción", "Asignado a", ""].map((h) => (
-                            <span
-                              key={h}
-                              className="text-[9px] font-black uppercase tracking-widest text-muted-foreground"
-                            >
-                              {h}
-                            </span>
-                          ))}
-                        </div>
-
                         {fields
     .map((field, index) => ({ ...field, originalIndex: index }))
     .sort((a, b) => {
@@ -647,64 +770,16 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                           const userName = getUserName(field.usuario_id || "");
 
                           return (
-                            <motion.div
+                            <DeduccionRow
                               key={field.id}
-                              initial={{ opacity: 0, x: -12 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 12 }}
-                              layout
-                              className="grid grid-cols-[auto_auto_1fr_36px] sm:grid-cols-[auto_70px_1fr_130px_36px] gap-2 items-center px-3 py-2.5 rounded-xl bg-muted/10 border border-border/30 group hover:border-border/60 transition-all"
-                            >
-                              {/* Tipo pill */}
-                              <span
-                                className={cn(
-                                  "text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border shrink-0",
-                                  style.pill
-                                )}
-                              >
-                                {field.tipo}
-                              </span>
-
-                              {/* Porcentaje Edit */}
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  inputMode="decimal"
-                                  {...register(`deducciones.${idx}.porcentaje`, { valueAsNumber: true })}
-                                  className="w-14 bg-transparent border-b border-border/50 focus:border-celeste-kore/50 outline-none text-sm font-black tabular-nums text-foreground"
-                                />
-                                <span className="text-[10px] font-bold text-muted-foreground">%</span>
-                              </div>
-
-                              {/* Descripción */}
-                              <span className="text-xs text-muted-foreground truncate hidden sm:block">
-                                {field.tipo === "IVA" ? "" : field.descripcion || <span className="italic opacity-40">—</span>}
-                              </span>
-
-                              {/* Usuario - siempre visible */}
-                              <div className="flex items-center sm:col-auto min-w-0">
-                                {field.tipo === "IVA" ? null : userName ? (
-                                  <span className="text-[10px] font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-0.5 rounded-lg border border-celeste-kore/20 truncate max-w-full">
-                                    {userName}
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-muted-foreground/30 italic hidden sm:inline">
-                                    —
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Eliminar */}
-                              <button
-                                type="button"
-                                onClick={() => remove(idx)}
-                                className="flex items-center justify-center p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground/30 group-hover:text-muted-foreground transition-all cursor-pointer shrink-0"
-                                title="Eliminar"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </motion.div>
+                              field={field}
+                              idx={idx}
+                              style={style}
+                              userName={userName}
+                              register={register}
+                              onRemove={() => remove(idx)}
+                              forceOpen={allDedExpanded}
+                            />
                           );
                         })}
                       </motion.div>

@@ -102,11 +102,12 @@ export async function getProyectos() {
     const rawDeds: any[] = p.pro_deducciones || [];
 
     // Deducciones en formato de formulario
-    const deducciones: DeduccionItem[] = rawDeds.map((d: any) => ({
-      tipo:       d.tipo,
-      porcentaje: Number(d.porcentaje) || 0,
-      descripcion: d.descripcion || "",
-      usuario_id:  d.usuario_id  || "",
+    const deducciones = rawDeds.map((d: any) => ({
+      tipo:          d.tipo,
+      porcentaje:    Number(d.porcentaje) || 0,
+      descripcion:   d.descripcion || "",
+      usuario_id:    d.usuario_id  || "",
+      usuario_nombre: d.usuario_id ? (profilesMap.get(d.usuario_id) || "") : "",
     }));
 
     // ── Legacy aggregates para el dashboard (compatibilidad sin tocar DashboardProyectos) ──

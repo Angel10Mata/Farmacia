@@ -17,6 +17,7 @@ import { createProyecto, updateProyecto } from "@/app/kore/proyectos/actions";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { KorePhoneInput } from "@/components/ui/KorePhoneInput";
 
 interface ProyectoModalProps {
   isOpen: boolean;
@@ -85,6 +86,30 @@ const DEFAULT_PCT: Record<string, number> = {
   "IVA": 12,
   "Mantenimiento": 0,
   "Desarrollo": 0,
+};
+
+const formatToE164 = (phone: string | null | undefined): string => {
+  if (!phone) return "";
+  const clean = phone.trim().replace(/\s+/g, "");
+  if (!clean) return "";
+  if (clean.startsWith("+")) return clean;
+  // Si tiene 8 dígitos (formato estándar de Guatemala), anteponer +502
+  if (clean.length === 8 && /^\d+$/.test(clean)) {
+    return `+502${clean}`;
+  }
+  // Si solo son dígitos y no tiene +, anteponer +502
+  if (/^\d+$/.test(clean)) {
+    return `+502${clean}`;
+  }
+  return clean;
+};
+
+const stripCountryCode = (phone: string | null | undefined): string => {
+  if (!phone) return "";
+  const clean = phone.trim().replace(/\s+/g, "");
+  if (clean.startsWith("+502")) return clean.slice(4).trim();
+  if (clean.startsWith("502") && clean.length === 11) return clean.slice(3).trim();
+  return clean;
 };
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -282,6 +307,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
 
   // ── Submit ──
   const onSubmit = async (data: ProyectoFormValues) => {
+    // Phone number is already formatted as E164 from KorePhoneInput
     const res = isEditing
       ? await updateProyecto(proyecto.id, data)
       : await createProyecto(data);
@@ -437,7 +463,12 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="cliente_telefono">Teléfono</Label>
-                    <Input id="cliente_telefono" {...register("cliente_telefono")} placeholder="12345678" />
+                    <KorePhoneInput
+                      id="cliente_telefono"
+                      value={watch("cliente_telefono") || ""}
+                      onChange={(val) => setValue("cliente_telefono", val, { shouldValidate: true })}
+                      placeholder="1234 5678"
+                    />
                   </div>
                   <div className="grid gap-2 md:col-span-3">
                     <Label htmlFor="cliente_correo">Correo</Label>

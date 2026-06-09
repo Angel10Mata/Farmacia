@@ -131,7 +131,7 @@ export function Dashboard() {
                       animate={{ opacity: 1 }}
                       exit={isMobile ? { opacity: 1 } : { opacity: 0 }}
                       transition={{ duration: isMobile ? 0 : 0.4, ease: "easeInOut" }}
-                      className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
+                      className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-0 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
                     >
                       <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]" />
                        <button
@@ -156,7 +156,7 @@ export function Dashboard() {
                           delay: isMobile ? 0 : 0.15,
                           ease: "easeOut",
                         }}
-                        className="relative z-10 w-full flex flex-col gap-1.5 md:gap-3 pb-8 md:pb-[40px]"
+                        className="relative z-10 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] flex flex-col justify-center gap-1.5 md:gap-3 px-6"
                       >
                         <button
                           onClick={() => setIsProfileOpen(true)}
@@ -205,7 +205,7 @@ export function Dashboard() {
                           setActiveId("perfil");
                         }
                       }}
-                      className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
+                      className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-0 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
                     >
                       <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 md:transition-transform md:duration-500 md:ease-[cubic-bezier(0.33,1,0.68,1)] md:group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
                       <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 md:transition-all md:duration-500 opacity-0 md:group-hover:opacity-100 md:translate-y-4 md:group-hover:translate-y-0">
@@ -214,7 +214,7 @@ export function Dashboard() {
                         </span>
                       </div>
                       <div
-                        className="w-full h-full flex flex-row md:flex-col justify-start md:justify-center items-center px-4 md:px-0 gap-4 md:gap-0 relative z-10 pb-0 md:pb-10"
+                        className="w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] flex flex-row md:flex-col justify-start md:justify-center items-center px-6 md:px-0 gap-4 md:gap-0 relative z-10 pb-0 md:pb-10"
                       >
                         <div className="relative z-10 flex justify-center shrink-0 mb-0 md:mb-4">
                           <div className="size-16 md:size-[90px] flex items-center justify-center transition-transform duration-700 ease-out md:group-hover:-translate-y-4 relative">
@@ -256,14 +256,14 @@ export function Dashboard() {
                   borderColor: isActive ? "#ef4444" : undefined,
                 }}
               >
-                <div className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-3 md:p-6 outline-none relative z-10 rounded-[inherit] overflow-hidden">
+                <div className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-0 outline-none relative z-10 rounded-[inherit] overflow-hidden">
                   <motion.div
                     variants={{
-                      idle: { scaleY: isMobile ? 1 : 0, opacity: isMobile ? 0 : 1 },
+                      idle: { scaleY: 0, opacity: 0 },
                       hover: { scaleY: 1, opacity: 1 },
                       active: { scaleY: 1, opacity: 1 },
                     }}
-                    transition={isMobile ? { duration: 0 } : { duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
+                    transition={{ duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
                     className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]"
                   />
                   <div className="absolute inset-0 rounded-[inherit] border border-slate-200 dark:border-slate-700 pointer-events-none z-20" />
@@ -274,7 +274,7 @@ export function Dashboard() {
                         hover: { opacity: 1, y: isMobile ? 0 : 0 },
                         active: { opacity: 1, y: isMobile ? 0 : 0 },
                       }}
-                      transition={isMobile ? { duration: 0 } : undefined}
+                      transition={{ duration: 0.3 }}
                       className="flex items-center gap-2 font-black uppercase text-xs tracking-[0.25em] transition-colors duration-500 text-slate-900 dark:text-white"
                     >
                       {isActive
@@ -284,11 +284,11 @@ export function Dashboard() {
                   </div>
                   <motion.div
                     className={[
-                      "w-full h-full flex relative z-10 pb-0 md:pb-10",
-                      "flex-row items-center justify-start px-4 gap-4",
+                      "w-full flex relative z-10",
+                      "h-[calc(100%-32px)] md:h-[calc(100%-70px)] flex-row items-center justify-start px-6 gap-4",
                       isWide 
                         ? "md:flex-row md:px-10 lg:px-14 md:gap-8" 
-                        : "md:flex-col md:justify-center md:px-0 md:gap-0"
+                        : "md:flex-col md:justify-center md:px-6 md:gap-0"
                     ].join(" ")}
                     variants={{
                       idle: { opacity: 1 },
