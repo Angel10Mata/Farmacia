@@ -2,8 +2,8 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Kore",
-    short_name: "Kore",
+    name: "KoreApp",
+    short_name: "KoreApp",
     description:
       "Sistema de Gestión Kore para la optimización de operaciones y mejora de la eficiencia.",
     start_url: "/",

@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Kore",
+  title: "KoreApp",
   description: "Sistema Integral de Gestión - Kore",
   other: {
     google: "notranslate",
@@ -38,11 +38,11 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Kore",
+    title: "KoreApp",
   },
   icons: {
-    icon: "/apple-touch-icon.png",
-    apple: "/apple-touch-icon.png",
+    icon: "/kore/logo.png",
+    apple: "/kore/logo.png",
   },
 };
 
