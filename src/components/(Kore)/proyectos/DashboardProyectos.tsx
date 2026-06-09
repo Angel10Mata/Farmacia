@@ -128,9 +128,6 @@ function DashboardDeduccionItem({ d, forceOpen, precio }: { d: any; forceOpen: b
                   <span className="font-bold text-sky-500">{userName}</span>
                 </p>
               )}
-              {d.descripcion && (
-                <p className="text-[11px] text-muted-foreground leading-snug">{d.descripcion}</p>
-              )}
             </div>
           </motion.div>
         )}
@@ -1302,16 +1299,8 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         <Trash2 size={16} />
                       </button>
                       
-                      <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-800 mx-1" />
                     </>
                   )}
-                  
-                  <button 
-                    onClick={() => setDetalleProyecto(null)}
-                    className="flex items-center justify-center p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors cursor-pointer"
-                  >
-                    <X size={20} />
-                  </button>
                 </div>
               </div>
 
