@@ -83,7 +83,7 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
                 className="flex-shrink-0"
               >
                 <Image
-                  src="/kore/logo.png"
+                  src="/kore/kore.png"
                   alt="KoreAPP"
                   width={250}
                   height={250}

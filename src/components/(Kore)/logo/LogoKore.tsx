@@ -109,7 +109,7 @@ export default function LogoKore({
         <div className="flex flex-row items-center justify-center gap-6 lg:gap-10 w-full px-4 lg:px-8">
           <motion.div variants={logoVariants} className="flex-shrink-0">
             <Image
-              src="/kore/logo.png"
+              src="/kore/kore.png"
               alt="KoreAPP"
               width={150}
               height={150}
