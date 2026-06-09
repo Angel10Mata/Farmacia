@@ -53,15 +53,14 @@ export default function Header() {
                 onClick={handleLogoClick}
                 className="flex flex-row items-center shrink-0 group gap-1 md:gap-1.5 cursor-pointer"
               >
-                <motion.h1 
+                <motion.img 
+                  src="/kore/kore.png"
+                  alt="KORE"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  translate="no"
-                  className="notranslate text-2xl md:text-4xl font-extrabold tracking-tighter leading-none text-black dark:text-white transition-transform duration-300 group-hover:scale-105 origin-left translate-y-[1px]"
-                >
-                  KoreAPP
-                </motion.h1>
+                  className="h-6 md:h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-105 origin-left"
+                />
                 <motion.div 
                   initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
                   animate={{ opacity: 1, clipPath: "inset(0 0 0 0)" }}
