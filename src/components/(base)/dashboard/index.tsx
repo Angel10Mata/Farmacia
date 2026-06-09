@@ -133,7 +133,13 @@ export function Dashboard() {
                       transition={{ duration: isMobile ? 0 : 0.4, ease: "easeInOut" }}
                       className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-0 relative z-10 bg-transparent rounded-[inherit] overflow-hidden"
                     >
-                      <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]" />
+                      <motion.div
+                        initial={isMobile ? { scaleY: 0, opacity: 0 } : { scaleY: 1, opacity: 1 }}
+                        animate={{ scaleY: 1, opacity: 1 }}
+                        exit={isMobile ? { scaleY: 0, opacity: 0 } : { scaleY: 1, opacity: 1 }}
+                        transition={{ duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
+                        className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit]"
+                      />
                        <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -207,7 +213,9 @@ export function Dashboard() {
                       }}
                       className="w-full h-full md:min-h-[300px] flex flex-col justify-center items-center p-0 relative z-10 bg-transparent rounded-[inherit] overflow-hidden cursor-pointer"
                     >
-                      <div className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom scale-y-0 bg-gradient-to-t from-celeste-kore to-celeste-kore/80 md:transition-transform md:duration-500 md:ease-[cubic-bezier(0.33,1,0.68,1)] md:group-hover:scale-y-100 pointer-events-none z-0 rounded-t-[inherit]" />
+                      <div
+                        className="absolute top-0 left-0 w-full h-[calc(100%-32px)] md:h-[calc(100%-70px)] origin-bottom bg-gradient-to-t from-celeste-kore to-celeste-kore/80 pointer-events-none z-0 rounded-t-[inherit] transition-all duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] scale-y-0 opacity-0 group-hover:scale-y-100 group-hover:opacity-100"
+                      />
                       <div className="absolute bottom-0 left-0 w-full h-8 md:h-[70px] flex justify-center items-center z-10 md:transition-all md:duration-500 opacity-0 md:group-hover:opacity-100 md:translate-y-4 md:group-hover:translate-y-0">
                         <span className="flex items-center gap-2 text-slate-900 dark:text-white font-black uppercase text-xs tracking-[0.25em]">
                           Ver opciones

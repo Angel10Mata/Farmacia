@@ -71,7 +71,7 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
 
       <aside
         className={cn(
-          `fixed right-0 ${mobileTop} md:top-16 z-50 ${mobileHeight} md:h-[calc(100vh-4rem)] w-full sm:w-100 bg-white dark:bg-black border-l border-border/40 transition-transform duration-500 overflow-y-auto shadow-2xl flex flex-col`,
+          `fixed right-0 ${mobileTop} md:top-16 z-50 ${mobileHeight} md:h-[calc(100vh-4rem)] w-full sm:w-100 bg-white dark:bg-background border-l border-border/40 transition-transform duration-500 overflow-y-auto shadow-2xl flex flex-col`,
           isOpen ? "translate-x-0" : "translate-x-full",
         )}
       >

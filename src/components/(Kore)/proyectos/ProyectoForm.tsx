@@ -728,7 +728,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                       </span>
                     )}
                     <div className="ml-auto flex items-center gap-2">
-                      <span className={cn("text-xs font-black px-2 py-1 rounded-lg border", totalDeduccionesPct > 100 ? "text-destructive border-destructive bg-destructive/10" : "text-emerald-500 border-emerald-500/20 bg-emerald-500/10")}>
+                      <span className="text-xs font-black px-2 py-1 rounded-lg border text-destructive border-destructive/20 bg-destructive/10">
                         Total: {totalDeduccionesPct}%
                       </span>
                       {fields.length > 0 && (
@@ -753,16 +753,19 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                         className="space-y-1.5"
                       >
                         {fields
-    .map((field, index) => ({ ...field, originalIndex: index }))
-    .sort((a, b) => {
-      const order = ["IVA", "Documentación"];
-      const aIdx = order.indexOf(a.tipo);
-      const bIdx = order.indexOf(b.tipo);
-      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
-      if (aIdx !== -1) return -1;
-      if (bIdx !== -1) return 1;
-      return 0;
-    })
+                          .map((field, index) => ({ ...field, originalIndex: index }))
+                          .sort((a, b) => {
+                            const getOrderScore = (tipo: string) => {
+                              const t = tipo.toLowerCase();
+                              if (t === "kore") return 1;
+                              if (t === "iva") return 2;
+                              if (t === "documentación" || t === "documentacion") return 3;
+                              if (t === "desarrollador" || t === "desarrolladores" || t === "desarrollo") return 4;
+                              if (t === "vendedor" || t === "vendedores" || t === "comisión" || t === "comision") return 5;
+                              return 6;
+                            };
+                            return getOrderScore(a.tipo) - getOrderScore(b.tipo);
+                          })
     .map((field) => {
       const idx = field.originalIndex;
                           const style =

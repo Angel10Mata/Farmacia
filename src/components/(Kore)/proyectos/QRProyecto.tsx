@@ -178,7 +178,7 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[110] flex items-center justify-center p-0 md:p-4"
           onClick={onClose}
         >
           {/* Backdrop */}
@@ -191,10 +191,10 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
             exit={{ scale: 0.85, opacity: 0, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm bg-card text-card-foreground border border-border dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+            className="relative w-full h-full md:h-auto md:max-w-sm bg-card text-card-foreground border-0 md:border md:border-border dark:md:border-white/10 rounded-none md:rounded-3xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border dark:border-white/10 bg-muted/5">
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border dark:border-white/10 bg-muted/5 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-[#B7494E]/10 border border-[#B7494E]/20 flex items-center justify-center">
                   <QrCode size={18} className="text-[#B7494E]" />
@@ -217,15 +217,15 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
             </div>
 
             {/* QR Content */}
-            <div className="flex flex-col items-center px-6 py-6 gap-5">
+            <div className="flex-1 overflow-y-auto flex flex-col items-center px-6 py-6 gap-5 custom-scrollbar">
               {/* QR Code */}
               <div
                 ref={canvasRef}
-                className="p-4 bg-white rounded-2xl shadow-xl shadow-black/30"
+                className="p-4 bg-white rounded-2xl shrink-0 border border-zinc-200/80"
               >
                 <QRCodeCanvas
                   value={qrValue}
-                  size={256}
+                  size={180}
                   bgColor="#ffffff"
                   fgColor="#09090b"
                   level="H"
@@ -233,15 +233,15 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
                     src: "/kore/kore-light.png",
                     x: undefined,
                     y: undefined,
-                    height: 36,
-                    width: 36,
+                    height: 28,
+                    width: 28,
                     excavate: true,
                   }}
                 />
               </div>
 
               {/* Formulario de Configuración de Acceso manual */}
-              <div className="w-full flex flex-col gap-2.5 bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 rounded-2xl p-4">
+              <div className="w-full flex flex-col gap-2.5 bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 rounded-2xl p-4 shrink-0">
                 <p className="text-[10px] font-black uppercase tracking-widest text-[#B7494E]">
                   Configurar Acceso Cliente
                 </p>
@@ -287,31 +287,31 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
               </div>
 
               {/* Info Cards */}
-              <div className="w-full grid grid-cols-1 gap-2">
+              <div className="w-full grid grid-cols-1 gap-2 shrink-0">
                 <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Código</span>
                   <code className="text-xs font-mono font-bold text-[#B7494E] bg-[#B7494E]/10 px-2 py-0.5 rounded border border-[#B7494E]/20">
                     {shortCode}
                   </code>
                 </div>
-                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cliente</span>
-                  <span className="text-xs font-bold text-foreground dark:text-white">{proyecto.cliente_nombre || "N/A"}</span>
+                <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Cliente</span>
+                  <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.cliente_nombre || "N/A"}</span>
                 </div>
-                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Vendedor</span>
-                  <span className="text-xs font-bold text-foreground dark:text-white">{proyecto.vendedor_nombre || "N/A"}</span>
+                <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Vendedor</span>
+                  <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.vendedor_nombre || "N/A"}</span>
                 </div>
-                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Desarrollador</span>
-                  <span className="text-xs font-bold text-foreground dark:text-white">{proyecto.desarrollador_nombre || "N/A"}</span>
+                <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Desarrollador</span>
+                  <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.desarrollador_nombre || "N/A"}</span>
                 </div>
               </div>
 
               {/* Download Button */}
               <button
                 onClick={handleDownload}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-sm tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-[#B7494E]/20 cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-sm tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-[#B7494E]/20 cursor-pointer shrink-0"
               >
                 <Download size={16} />
                 DESCARGAR QR

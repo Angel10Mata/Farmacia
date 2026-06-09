@@ -130,7 +130,7 @@ export default function ClientesModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="relative z-10 w-full max-w-4xl h-full md:h-[85vh] bg-[#121214]/95 border border-white/10 shadow-2xl rounded-none md:rounded-2xl flex flex-col overflow-hidden"
+            className="relative z-10 w-full max-w-4xl h-full md:h-[85vh] bg-background/95 border border-white/10 shadow-2xl rounded-none md:rounded-2xl flex flex-col overflow-hidden"
           >
             {/* Background decorative glows */}
             <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-celeste-kore/5 rounded-full blur-[100px] pointer-events-none -z-10" />
@@ -336,7 +336,7 @@ export default function ClientesModal({
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-white/10 bg-[#121214]/50 flex justify-end shrink-0">
+            <div className="p-4 border-t border-white/10 bg-background/50 flex justify-end shrink-0">
               <button
                 onClick={onClose}
                 className="px-6 py-2.5 rounded-xl border border-white/10 bg-background hover:bg-white/5 text-white hover:text-white transition-colors text-xs font-bold uppercase tracking-widest cursor-pointer"

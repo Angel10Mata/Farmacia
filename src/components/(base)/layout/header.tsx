@@ -44,7 +44,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="w-full fixed top-0 left-0 transition-all bg-white dark:bg-black border-b border-border/40 z-[100] shadow-sm">
+      <header className="w-full fixed top-0 left-0 transition-all bg-white dark:bg-background border-b border-border/40 z-[100] shadow-sm">
         <div className="mx-auto flex h-14 md:h-16 items-center justify-between px-4 md:px-8 gap-4">
           <div className="flex items-center h-full">
             <div className="flex items-center shrink-0">
@@ -129,7 +129,7 @@ export default function Header() {
       </header>
 
       {user && !isRoot && (
-        <div className="fixed top-14 left-0 md:hidden w-full px-6 py-3 border-b border-border/40 bg-white dark:bg-black z-[99]">
+        <div className="fixed top-14 left-0 md:hidden w-full px-6 py-3 border-b border-border/40 bg-white dark:bg-background z-[99]">
           <BreadcrumbNav />
         </div>
       )}

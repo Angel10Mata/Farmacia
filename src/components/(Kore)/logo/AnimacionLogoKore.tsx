@@ -18,6 +18,11 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
     : "Sistema de Gestión empresarial";
 
   useEffect(() => {
+    if (!isOpen) {
+      setDisplayedText("");
+      return;
+    }
+
     let index = 0;
     setDisplayedText("");
     const interval = setInterval(() => {
@@ -29,7 +34,7 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
       }
     }, 45);
     return () => clearInterval(interval);
-  }, [targetText]);
+  }, [targetText, isOpen]);
 
   return (
     <AnimatePresence mode="wait">
@@ -40,7 +45,7 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-[1000000] flex items-center justify-center bg-white/70 dark:bg-black/80 backdrop-blur-[20px] cursor-pointer p-4 lg:p-12 overflow-hidden"
+          className="fixed inset-0 z-[1000000] flex items-center justify-center bg-white/70 dark:bg-background/80 backdrop-blur-[20px] cursor-pointer p-4 lg:p-12 overflow-hidden"
           style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
         >
           <motion.button

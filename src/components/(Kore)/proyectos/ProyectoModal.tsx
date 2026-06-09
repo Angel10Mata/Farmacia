@@ -563,51 +563,66 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
 
                     {/* Lista */}
                     <AnimatePresence mode="popLayout">
-                      {fields.map((field, idx) => {
-                        const style = TIPO_STYLE[field.tipo] || TIPO_STYLE["Vendedor"];
-                        const userName = getUserName(field.usuario_id || "");
-                        return (
-                          <motion.div
-                            key={field.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
-                            layout
-                            className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted/10 border border-border/30 group hover:border-border/60 transition-all"
-                          >
-                            <span
-                              className={cn(
-                                "text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border shrink-0",
-                                style.pill
+                      {fields
+                        .map((field, index) => ({ ...field, originalIndex: index }))
+                        .sort((a, b) => {
+                          const getOrderScore = (tipo: string) => {
+                            const t = tipo.toLowerCase();
+                            if (t === "kore") return 1;
+                            if (t === "iva") return 2;
+                            if (t === "documentación" || t === "documentacion") return 3;
+                            if (t === "desarrollador" || t === "desarrolladores" || t === "desarrollo") return 4;
+                            if (t === "vendedor" || t === "vendedores" || t === "comisión" || t === "comision") return 5;
+                            return 6;
+                          };
+                          return getOrderScore(a.tipo) - getOrderScore(b.tipo);
+                        })
+                        .map((field) => {
+                          const idx = field.originalIndex;
+                          const style = TIPO_STYLE[field.tipo] || TIPO_STYLE["Vendedor"];
+                          const userName = getUserName(field.usuario_id || "");
+                          return (
+                            <motion.div
+                              key={field.id}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 10 }}
+                              layout
+                              className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted/10 border border-border/30 group hover:border-border/60 transition-all"
+                            >
+                              <span
+                                className={cn(
+                                  "text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border shrink-0",
+                                  style.pill
+                                )}
+                              >
+                                {field.tipo}
+                              </span>
+                              <span className="text-sm font-black text-foreground tabular-nums min-w-[38px]">
+                                {field.porcentaje}
+                                <span className="text-[10px] font-bold text-muted-foreground ml-0.5">%</span>
+                              </span>
+                              {field.descripcion && (
+                                <span className="text-xs text-muted-foreground flex-1 truncate">
+                                  {field.descripcion}
+                                </span>
                               )}
-                            >
-                              {field.tipo}
-                            </span>
-                            <span className="text-sm font-black text-foreground tabular-nums min-w-[38px]">
-                              {field.porcentaje}
-                              <span className="text-[10px] font-bold text-muted-foreground ml-0.5">%</span>
-                            </span>
-                            {field.descripcion && (
-                              <span className="text-xs text-muted-foreground flex-1 truncate">
-                                {field.descripcion}
-                              </span>
-                            )}
-                            {userName && (
-                              <span className="text-[10px] font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-0.5 rounded-lg border border-celeste-kore/20 shrink-0 max-w-[110px] truncate">
-                                {userName}
-                              </span>
-                            )}
-                            <div className="flex-1" />
-                            <button
-                              type="button"
-                              onClick={() => remove(idx)}
-                              className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground transition-all cursor-pointer shrink-0"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </motion.div>
-                        );
-                      })}
+                              {userName && (
+                                <span className="text-[10px] font-bold text-celeste-kore bg-celeste-kore/10 px-2 py-0.5 rounded-lg border border-celeste-kore/20 shrink-0 max-w-[110px] truncate">
+                                  {userName}
+                                </span>
+                              )}
+                              <div className="flex-1" />
+                              <button
+                                type="button"
+                                onClick={() => remove(idx)}
+                                className="opacity-0 group-hover:opacity-100 flex items-center justify-center p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground transition-all cursor-pointer shrink-0"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </motion.div>
+                          );
+                        })}
                     </AnimatePresence>
 
                     {/* Formulario de agregar */}

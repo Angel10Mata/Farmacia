@@ -1,10 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #F6F4F0;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -27,7 +27,7 @@
 }
 
 .dark {
-  --background: #121214;
+  --background: #3F3F3F;
   --foreground: oklch(98.5% 0 0);
   --card: #1e1e22;
   --card-foreground: oklch(98.5% 0 0);
@@ -48,7 +48,7 @@
   --ring: #B7494E;
 }
 
-@theme inline {
+@theme {
   --color-azul-kore: #3D3C3C;
   --color-celeste-kore: #B7494E;
   --color-background: var(--background);
@@ -100,6 +100,7 @@
     @apply bg-background text-foreground antialiased;
   }
   .dark body {
+    background-color: var(--background);
     background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 24px 24px;
     background-attachment: fixed;

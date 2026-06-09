@@ -67,12 +67,13 @@ const DASH_TIPO_STYLE: Record<string, string> = {
   "Desarrollador": "bg-sky-500/10 text-sky-400 border-sky-500/25",
 };
 
-function DashboardDeduccionItem({ d, forceOpen }: { d: any; forceOpen: boolean }) {
+function DashboardDeduccionItem({ d, forceOpen, precio }: { d: any; forceOpen: boolean; precio: number }) {
   const [open, setOpen] = useState(false);
   const userName = d.usuario_nombre || "";
   const hasDetails = !!(userName || d.descripcion);
   const isOpen = forceOpen || open;
   const pillClass = DASH_TIPO_STYLE[d.tipo] || "bg-zinc-500/10 text-zinc-400 border-zinc-500/25";
+  const valorMonetario = precio * (Number(d.porcentaje) || 0) / 100;
 
   return (
     <div
@@ -87,9 +88,14 @@ function DashboardDeduccionItem({ d, forceOpen }: { d: any; forceOpen: boolean }
           {d.tipo}
         </span>
         <div className="flex-1" />
-        <span className="text-sm font-black tabular-nums text-foreground/90">
-          {Number(d.porcentaje)}%
-        </span>
+        <div className="flex flex-col items-end shrink-0 text-right">
+          <span className="text-sm font-black tabular-nums text-foreground">
+            Q{valorMonetario.toLocaleString('en-US', {minimumFractionDigits: 2})}
+          </span>
+          <span className="text-[10px] font-bold text-muted-foreground tabular-nums leading-none mt-0.5">
+            {Number(d.porcentaje)}%
+          </span>
+        </div>
         {hasDetails ? (
           <ChevronDown
             size={12}
@@ -148,15 +154,18 @@ function DedListWithToggle({
 }) {
   const [allExpanded, setAllExpanded] = useState(false);
 
-  // Sort by order: ["IVA", "Documentación"] first, similar to ProyectoForm.tsx
+  // Sort by specific order: Kore, IVA, Documentación, Desarrollador, Vendedor, others
   const sortedDeds = [...deds].sort((a, b) => {
-    const order = ["IVA", "Documentación"];
-    const aIdx = order.indexOf(a.tipo);
-    const bIdx = order.indexOf(b.tipo);
-    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
-    if (aIdx !== -1) return -1;
-    if (bIdx !== -1) return 1;
-    return 0;
+    const getOrderScore = (tipo: string) => {
+      const t = tipo.toLowerCase();
+      if (t === "kore") return 1;
+      if (t === "iva") return 2;
+      if (t === "documentación" || t === "documentacion") return 3;
+      if (t === "desarrollador" || t === "desarrolladores" || t === "desarrollo") return 4;
+      if (t === "vendedor" || t === "vendedores" || t === "comisión" || t === "comision") return 5;
+      return 6;
+    };
+    return getOrderScore(a.tipo) - getOrderScore(b.tipo);
   });
 
   return (
@@ -176,11 +185,7 @@ function DedListWithToggle({
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <span className={`text-xs font-black px-2 py-1 rounded-lg border ${
-            totalPct > 100
-              ? "text-destructive border-destructive bg-destructive/10"
-              : "text-emerald-500 border-emerald-500/20 bg-emerald-500/10"
-          }`}>
+          <span className="text-xs font-black px-2 py-1 rounded-lg border text-destructive border-destructive/20 bg-destructive/10">
             Total: {totalPct}%
           </span>
           {sortedDeds.length > 0 && (
@@ -208,6 +213,7 @@ function DedListWithToggle({
                 key={index}
                 d={d}
                 forceOpen={allExpanded}
+                precio={precio}
               />
             ))}
           </motion.div>
@@ -1240,23 +1246,16 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       <AnimatePresence>
         {detalleProyecto && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
-            onClick={() => setDetalleProyecto(null)}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="fixed inset-0 z-[110] bg-background flex flex-col w-screen h-screen min-h-0 overflow-hidden text-zinc-900 dark:text-zinc-100"
+            onClick={(e) => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="relative w-full max-w-2xl rounded-3xl shadow-none dark:shadow-2xl flex flex-col max-h-[85vh] md:max-h-[90vh] min-h-0 overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
+            <MagicCard
+              className="w-full h-full min-h-0 flex flex-col rounded-none border-0 bg-card overflow-hidden text-zinc-900 dark:text-zinc-100"
             >
-              <MagicCard
-                className="w-full h-full min-h-0 flex flex-col rounded-3xl border border-border/60 bg-card overflow-hidden text-zinc-900 dark:text-zinc-100"
-              >
               {/* Header */}
               <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 backdrop-blur-md sticky top-0 z-10">
                 <button 
@@ -1452,8 +1451,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                   );
                 })()}
               </div>
-              </MagicCard>
-            </motion.div>
+            </MagicCard>
           </motion.div>
         )}
       </AnimatePresence>
