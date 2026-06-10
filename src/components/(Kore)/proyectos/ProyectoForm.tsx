@@ -1247,23 +1247,17 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 md:p-6 border-t border-border/50 bg-muted/5 flex flex-nowrap justify-end gap-1.5 sm:gap-3 overflow-x-auto custom-scrollbar">
+        <div className="p-4 md:p-6 border-t border-border/50 bg-muted/5 flex flex-nowrap justify-center gap-1.5 sm:gap-3 overflow-x-auto custom-scrollbar">
           {step === 2 && (
              <button
                type="button"
                onClick={() => setStep(1)}
-               className="px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors text-[10px] font-bold uppercase tracking-widest cursor-pointer whitespace-nowrap"
+               className="px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer whitespace-nowrap"
              >
                Paso Anterior
              </button>
           )}
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors text-[10px] font-bold uppercase tracking-widest cursor-pointer whitespace-nowrap"
-          >
-            Cancelar
-          </button>
+
           <button
             form="proyecto-form"
             type="submit"

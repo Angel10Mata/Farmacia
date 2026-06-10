@@ -380,7 +380,7 @@ export function Dashboard() {
   );
 
   return (
-    <div className="relative w-full min-h-screen">
+    <div className="relative w-full flex-1 flex flex-col">
       {/* MODALES */}
       <VerPerfil
         isOpen={isProfileOpen}
@@ -397,9 +397,9 @@ export function Dashboard() {
         <div className="w-full px-4 pt-20 pb-20">{renderCardsGrid()}</div>
       </div>
 
-      <div className="hidden md:block relative w-full min-h-screen">
-        <div className="relative z-10 w-full">
-          <div className="w-full min-h-screen bg-transparent px-8 lg:px-12 pt-20 pb-20">
+      <div className="hidden md:flex md:flex-col md:flex-1 relative w-full">
+        <div className="relative z-10 w-full flex-1 flex flex-col">
+          <div className="w-full flex-1 bg-transparent px-8 lg:px-12 pt-20 pb-20 flex flex-col justify-center">
             <div className="w-full max-w-2xl mx-auto">
               {renderCardsGrid()}
             </div>
