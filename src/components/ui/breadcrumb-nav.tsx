@@ -58,7 +58,7 @@ export function BreadcrumbNav() {
             className="group flex items-center justify-center hover:text-foreground transition-colors cursor-pointer mr-1"
             title="Atrás"
           >
-            <ArrowLeft className="size-4 md:size-5 transition-transform group-hover:-translate-x-1" />
+            <ArrowLeft className="size-5 md:size-6 transition-transform group-hover:-translate-x-1" />
           </Link>
         </motion.div>
 
@@ -67,7 +67,7 @@ export function BreadcrumbNav() {
             href="/kore"
             className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
           >
-            <Home className="size-4 md:size-5" />
+            <Home className="size-5 md:size-6" />
           </Link>
         </motion.div>
 
@@ -103,7 +103,7 @@ export function BreadcrumbNav() {
                   }}
                   className="flex items-center gap-1 shrink-0 whitespace-nowrap"
                 >
-                  <ChevronRight className="size-4 md:size-5 text-muted-foreground/40 shrink-0" />
+                  <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
                   <Link
                     href={href}
                     className={`capitalize hover:text-foreground transition-colors truncate ${
