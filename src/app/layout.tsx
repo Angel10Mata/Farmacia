@@ -73,7 +73,7 @@ export default async function RootLayout({
               <main className="flex-1 w-full flex flex-col">
                 {children}
               </main>
-              <footer className="w-full transition-all backdrop-blur-3xl bg-white/50 dark:bg-background/50 border-t border-white/50 dark:border-white/10 relative z-10 mt-auto">
+              <footer className="w-full transition-all backdrop-blur-3xl bg-white/50 dark:bg-black border-t border-white/50 dark:border-white/10 relative z-10 mt-auto">
                 <div className="mx-auto flex h-14 md:h-16 items-center justify-center px-4 md:px-8">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}

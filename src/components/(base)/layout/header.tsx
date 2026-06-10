@@ -44,7 +44,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="w-full fixed top-0 left-0 transition-all bg-white dark:bg-background border-b border-border/40 z-[100] shadow-sm">
+      <header className="w-full fixed top-0 left-0 transition-all bg-white dark:bg-black border-b border-border/40 z-[100] shadow-sm">
         <div className="mx-auto flex h-14 md:h-16 items-center justify-between px-4 md:px-8 gap-4">
           <div className="flex items-center h-full">
             <div className="flex items-center shrink-0">
@@ -59,7 +59,7 @@ export default function Header() {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="h-6 md:h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-105 origin-left"
+                  className="h-10 md:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105 origin-left"
                 />
                 <motion.div 
                   initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
@@ -86,7 +86,7 @@ export default function Header() {
               onClick={() => window.location.reload()}
               className="flex items-center justify-center text-black hover:text-celeste-kore dark:text-white dark:hover:text-celeste-kore cursor-pointer transition-all hover:rotate-180 duration-500 active:scale-95"
             >
-              <RefreshCw className="size-5 md:size-6" />
+              <RefreshCw className="size-6 md:size-7" />
             </button>
             <div className="relative ml-2">
               <button
@@ -102,7 +102,7 @@ export default function Header() {
                       exit={{ opacity: 0, rotate: 90, scale: 0.8 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <X className="size-6 md:size-8" />
+                      <X className="size-7 md:size-9" />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -112,7 +112,7 @@ export default function Header() {
                       exit={{ opacity: 0, rotate: -90, scale: 0.8 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <MenuIcon className="size-6 md:size-8" />
+                      <MenuIcon className="size-7 md:size-9" />
                     </motion.div>
                   )}
                 </AnimatePresence>

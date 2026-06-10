@@ -191,7 +191,7 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
           exit={{ opacity: 0, scale: 0.95 }}
           className="w-full max-w-md relative"
         >
-          <MagicCard className="rounded-3xl border border-border/50 bg-card shadow-none overflow-hidden">
+          <MagicCard className="rounded-3xl border border-border/50 bg-white dark:bg-black shadow-none overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/5">
               <div className="flex items-center gap-4">
                 <UserPlus size={30} className="text-primary" />
