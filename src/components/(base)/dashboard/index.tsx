@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
-import LogoKore from "@/components/(Kore)/logo/LogoKore";
-import LogoKoreMobile from "@/components/(Kore)/logo/LogoKore-mobile";
+
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import PassKeysModal from "@/components/(base)/layout/modals/PassKeysModal";
 import {
@@ -57,9 +56,6 @@ export function Dashboard() {
   const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
 
-  const { scrollY } = useScroll();
-  const logoY = useTransform(scrollY, [0, 600], [0, -300]);
-  const logoOpacity = useTransform(scrollY, [0, 400], [1, 0]);
 
 
 
@@ -215,26 +211,20 @@ export function Dashboard() {
                         className="w-full h-[calc(100%-36px)] flex flex-row justify-start items-center px-6 gap-4 relative z-10"
                       >
                         <div className="relative z-10 flex justify-center shrink-0">
-                          <div className="size-14 sm:size-16 flex items-center justify-center transition-transform duration-700 ease-out md:group-hover:-translate-y-1 relative">
+                          <div className="size-14 sm:size-16 flex items-center justify-center relative">
                             <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <motion.div 
-                              variants={{
-                                idle: { opacity: 1, scale: 1 },
-                                hover: { opacity: 1, scale: 1.08 },
-                                active: { opacity: 1, scale: 0.95 },
-                              }}
-                              transition={{ duration: 0.3 }}
-                              className="absolute inset-0 bg-white rounded-2xl border border-slate-200/80 shadow-md -z-10"
-                            />
                             <motion.div
                               variants={{
-                                idle: { y: 0, scale: 1 },
-                                hover: { y: 3, scale: 1.05 },
-                                active: { y: 3, scale: 1.05 },
+                                idle: { y: 0 },
+                                hover: { y: -18 },
+                                active: { y: -18 },
                               }}
                               transition={{ duration: 0.3 }}
-                              className="w-full h-full flex items-center justify-center"
+                              className="w-full h-full flex items-center justify-center relative"
                             >
+                              <div 
+                                className="absolute inset-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 opacity-100 scale-100 -z-10"
+                              />
                               <AnimatedIcon
                                 iconKey={mod.icon}
                                 target={`#${mod.id}-card`}
@@ -245,7 +235,15 @@ export function Dashboard() {
                             </motion.div>
                           </div>
                         </div>
-                        <div className="relative z-10 flex-1 flex flex-col items-start text-left space-y-1 md:transition-transform md:duration-700 md:group-hover:-translate-y-0.5">
+                        <motion.div
+                          variants={{
+                            idle: { y: 0 },
+                            hover: { y: isMobile ? 0 : -18 },
+                            active: { y: isMobile ? 0 : -18 },
+                          }}
+                          transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                          className="relative z-10 flex-1 flex flex-col items-start text-left space-y-1"
+                        >
                           <h3 className="text-base sm:text-lg font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words md:transition-colors md:duration-500">
                             {mod.title}
                             <br />
@@ -256,7 +254,7 @@ export function Dashboard() {
                           <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 md:transition-colors md:duration-500">
                             {mod.desc}
                           </p>
-                        </div>
+                        </motion.div>
                       </div>
                     </motion.div>
                   )}
@@ -310,34 +308,20 @@ export function Dashboard() {
                     }}
                   >
                     <div className="relative z-10 flex justify-center shrink-0">
-                      <motion.div
-                        variants={{
-                          idle: { y: 0 },
-                          hover: { y: isMobile ? 0 : -2 },
-                          active: { y: isMobile ? 0 : -2 },
-                        }}
-                        transition={isMobile ? { duration: 0 } : undefined}
-                        className="size-14 sm:size-16 flex items-center justify-center relative"
-                      >
+                      <div className="size-14 sm:size-16 flex items-center justify-center relative">
                         <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <motion.div 
-                          variants={{
-                            idle: { opacity: 1, scale: 1 },
-                            hover: { opacity: 1, scale: 1.08 },
-                            active: { opacity: 1, scale: 0.95 },
-                          }}
-                          transition={{ duration: 0.3 }}
-                          className="absolute inset-0 bg-white rounded-2xl border border-slate-200/80 shadow-md -z-10"
-                        />
                         <motion.div
                           variants={{
-                            idle: { y: 0, scale: 1 },
-                            hover: { y: 3, scale: 1.05 },
-                            active: { y: 3, scale: 1.05 },
+                            idle: { y: 0 },
+                            hover: { y: -18 },
+                            active: { y: -18 },
                           }}
                           transition={{ duration: 0.3 }}
-                          className="w-full h-full flex items-center justify-center"
+                          className="w-full h-full flex items-center justify-center relative"
                         >
+                          <div 
+                            className="absolute inset-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 -z-10 opacity-100 scale-100"
+                          />
                           <AnimatedIcon
                             iconKey={mod.icon}
                             target={`#${mod.id}-card`}
@@ -346,18 +330,18 @@ export function Dashboard() {
                             trigger="hover"
                           />
                         </motion.div>
-                      </motion.div>
+                      </div>
                     </div>
-                    <div className="relative z-10 flex-1 flex flex-col items-start space-y-1 text-left">
-                      <motion.h3
-                        variants={{
-                          idle: { y: 0 },
-                          hover: { y: isMobile ? 0 : -1 },
-                          active: { y: isMobile ? 0 : -1 },
-                        }}
-                        transition={isMobile ? { duration: 0 } : undefined}
-                        className="text-base sm:text-lg font-black tracking-tighter uppercase leading-none w-full break-words md:transition-colors md:duration-500"
-                      >
+                    <motion.div
+                      variants={{
+                        idle: { y: 0 },
+                        hover: { y: isMobile ? 0 : -18 },
+                        active: { y: isMobile ? 0 : -18 },
+                      }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                      className="relative z-10 flex-1 flex flex-col items-start space-y-1 text-left"
+                    >
+                      <h3 className="text-base sm:text-lg font-black tracking-tighter uppercase leading-none w-full break-words md:transition-colors md:duration-500">
                         <span
                           className="text-slate-900 dark:text-white group-hover:text-white md:transition-colors md:duration-500"
                           style={{ color: isActive ? "#ffffff" : undefined }}
@@ -375,22 +359,16 @@ export function Dashboard() {
                         >
                           {mod.subtitle}
                         </span>
-                      </motion.h3>
-                      <motion.p
-                        variants={{
-                          idle: { y: 0 },
-                          hover: { y: isMobile ? 0 : -1 },
-                          active: { y: isMobile ? 0 : -1 },
-                        }}
-                        transition={isMobile ? { duration: 0 } : undefined}
+                      </h3>
+                      <p
                         className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 md:transition-colors md:duration-500"
                         style={{
                           color: isActive ? "rgba(255,255,255,0.8)" : undefined,
                         }}
                       >
                         {mod.desc}
-                      </motion.p>
-                    </div>
+                      </p>
+                    </motion.div>
                   </motion.div>
                 </div>
               </div>
@@ -416,24 +394,12 @@ export function Dashboard() {
       />
 
       <div className="flex flex-col md:hidden w-full bg-transparent">
-        <div className="w-full pt-20 pb-4 relative z-[2]">
-          <LogoKoreMobile backgroundEffect="blur" />
-        </div>
-        <div className="w-full px-4 pt-4 pb-20">{renderCardsGrid()}</div>
+        <div className="w-full px-4 pt-20 pb-20">{renderCardsGrid()}</div>
       </div>
 
       <div className="hidden md:block relative w-full min-h-screen">
-        <motion.div
-          className="fixed top-0 left-0 w-full h-[22vh] flex justify-center items-center z-[5] pt-10"
-          style={{ y: logoY, opacity: logoOpacity }}
-        >
-          <div className="relative flex justify-center items-center px-8">
-            <LogoKore />
-          </div>
-        </motion.div>
-
-        <div className="relative z-10 w-full mt-[22vh]">
-          <div className="w-full min-h-screen bg-transparent px-8 lg:px-12 pt-10 pb-20">
+        <div className="relative z-10 w-full">
+          <div className="w-full min-h-screen bg-transparent px-8 lg:px-12 pt-20 pb-20">
             <div className="w-full max-w-2xl mx-auto">
               {renderCardsGrid()}
             </div>

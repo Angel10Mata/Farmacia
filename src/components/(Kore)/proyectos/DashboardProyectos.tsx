@@ -19,8 +19,11 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  ArrowLeft,
+  Home
 } from "lucide-react";
+import Link from "next/link";
 import {
   BarChart,
   Bar,
@@ -150,6 +153,7 @@ function DedListWithToggle({
   restante: number;
 }) {
   const [allExpanded, setAllExpanded] = useState(false);
+  const totalDeduccionesMonetario = (precio * totalPct) / 100;
 
   // Sort by specific order: Kore, IVA, Documentación, Desarrollador, Vendedor, others
   const sortedDeds = [...deds].sort((a, b) => {
@@ -183,7 +187,7 @@ function DedListWithToggle({
         )}
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs font-black px-2 py-1 rounded-lg border text-destructive border-destructive/20 bg-destructive/10">
-            Total: {totalPct}%
+            Total: Q{totalDeduccionesMonetario.toLocaleString("en-US", { minimumFractionDigits: 2 })} ({totalPct}%)
           </span>
           {sortedDeds.length > 0 && (
             <ChevronDown
@@ -219,6 +223,15 @@ function DedListWithToggle({
 
       {/* Extra Financial Details: Mantenimiento (only if > 0) & Saldo Final */}
       <div className="space-y-2 pt-2 text-xs sm:text-sm border-t border-zinc-100 dark:border-zinc-800/60">
+        <div className="flex justify-between items-center gap-2 py-0.5">
+          <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">
+            Total Deducibles ({totalPct}%):
+          </span>
+          <span className="font-bold shrink-0 text-right text-destructive">
+            Q{totalDeduccionesMonetario.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+
         {mant > 0 && (
           <div className="flex justify-between items-center gap-2 py-0.5">
             <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">
@@ -642,6 +655,10 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
     return filteredProyectos.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredProyectos, currentPage]);
 
+  const emptyRowsCount = useMemo(() => {
+    return itemsPerPage - paginatedProyectos.length;
+  }, [paginatedProyectos]);
+
   // Proyectos con fecha de entrega para la vista de usuarios normales
   const proyectosConFecha = useMemo(() => {
     return proyectos
@@ -701,7 +718,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-4xl font-black tracking-tight mt-0.5 sm:mt-1 leading-none">
-            RESUMEN DE <br className="hidden sm:block" />
+            GESTIÓN DE <br className="hidden sm:block" />
             <span className="text-celeste-kore">PROYECTOS</span>
           </h1>
         </div>
@@ -818,7 +835,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                           return (
                             <tr
                               key={p.id}
-                              onClick={() => setDetalleProyecto(p)}
+                              onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
                               className="group border-y border-border/50 dark:border-white/5 bg-card/20 hover:bg-card/40 cursor-pointer transition-all duration-300"
                             >
                               <td className="py-3 px-4 rounded-l-xl border-y border-l border-border group-hover:border-celeste-kore/20 transition-all duration-300">
@@ -877,6 +894,52 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                             </tr>
                           );
                         })}
+                        {emptyRowsCount > 0 && Array.from({ length: emptyRowsCount }).map((_, idx) => (
+                          <tr
+                            key={`empty-${idx}`}
+                            className="opacity-0 pointer-events-none select-none"
+                          >
+                            <td className="py-3 px-4">
+                              <code className="text-xs font-mono font-bold">&nbsp;</code>
+                            </td>
+                            <td className="py-4">
+                              <p className="font-bold text-sm text-foreground">&nbsp;</p>
+                            </td>
+                            <td className="py-4">
+                              <p className="text-sm text-foreground">&nbsp;</p>
+                              <p className="text-[10px] text-muted-foreground">&nbsp;</p>
+                            </td>
+                            <td className="py-4">
+                              <span className="inline-flex items-center px-2.5 py-1 text-[10px] font-black uppercase tracking-wider">&nbsp;</span>
+                            </td>
+                            <td className="py-4 text-right">
+                              <p className="font-bold text-sm">&nbsp;</p>
+                            </td>
+                            <td className="py-4 text-right">
+                              <p className="text-sm text-muted-foreground">&nbsp;</p>
+                              <p className="text-[10px] text-muted-foreground">&nbsp;</p>
+                            </td>
+                            <td className="py-4 text-right">
+                              <p className="text-sm text-muted-foreground">&nbsp;</p>
+                              <p className="text-[10px] text-muted-foreground">&nbsp;</p>
+                            </td>
+                            <td className="py-4 text-right">
+                              <p className="text-sm text-muted-foreground">&nbsp;</p>
+                              <p className="text-[10px] text-muted-foreground">&nbsp;</p>
+                            </td>
+                            <td className="py-4 text-right">
+                              <p className="text-sm text-muted-foreground">&nbsp;</p>
+                              <p className="text-[10px] text-muted-foreground">&nbsp;</p>
+                            </td>
+                            <td className="py-4 text-right">
+                              <p className="text-sm text-muted-foreground">&nbsp;</p>
+                              <p className="text-[10px] text-muted-foreground">&nbsp;</p>
+                            </td>
+                            <td className="py-4 pr-4 text-right">
+                              <p className="font-black text-sm text-celeste-kore">&nbsp;</p>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -888,7 +951,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         <div 
                           key={p.id} 
                           className="rounded-lg border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-none dark:shadow-md hover:border-celeste-kore/70 transition-all duration-300 cursor-pointer"
-                          onClick={() => setDetalleProyecto(p)}
+                          onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
                         >
                           {/* Top row: Code & State */}
                           <div className="flex items-center justify-between gap-2">
@@ -916,6 +979,22 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         </div>
                       );
                     })}
+                    {emptyRowsCount > 0 && Array.from({ length: emptyRowsCount }).map((_, idx) => (
+                      <div
+                        key={`empty-mobile-${idx}`}
+                        className="opacity-0 pointer-events-none select-none p-2.5 flex flex-col gap-1.5 border border-transparent bg-transparent rounded-lg"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <code className="text-[8px]">&nbsp;</code>
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-[11px]">&nbsp;</h4>
+                          <p className="text-[8px] mt-0.5">&nbsp;</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Pagination Controls */}
@@ -1253,55 +1332,74 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
             <MagicCard
               className="w-full h-full min-h-0 flex flex-col rounded-none border-0 bg-card overflow-hidden text-zinc-900 dark:text-zinc-100"
             >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 backdrop-blur-md sticky top-0 z-10">
-                <button 
-                  onClick={() => setDetalleProyecto(null)}
-                  className="flex items-center gap-1.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 cursor-pointer"
-                >
-                  <ChevronLeft size={16} />
-                  Volver
-                </button>
-                
-                <span className="hidden md:inline text-xs sm:text-sm font-black uppercase tracking-widest text-celeste-kore">
-                  Detalle del Proyecto
-                </span>
-                
-                <div className="flex items-center gap-2">
-                  {isAdmin && (
-                    <>
-                      <button
-                        onClick={() => {
-                          setQrProyecto(detalleProyecto);
-                        }}
-                        className="flex items-center justify-center p-2 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors cursor-pointer"
-                        title="Ver QR"
-                      >
-                        <QrCode size={16} />
-                      </button>
-                      <button 
-                        onClick={() => router.push(`/kore/proyectos/editar/${detalleProyecto.id}`)}
-                        className="flex items-center justify-center p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
-                        title="Editar Proyecto"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button 
-                        onClick={async () => {
-                          const success = await handleDelete(detalleProyecto.id);
-                          if (success) {
-                            setDetalleProyecto(null);
-                          }
-                        }}
-                        className="flex items-center justify-center p-2 bg-muted/50 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors cursor-pointer"
-                        title="Eliminar Proyecto"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                      
-                    </>
-                  )}
+              {/* Header with Breadcrumbs */}
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 backdrop-blur-md sticky top-0 z-10 w-full overflow-hidden gap-4">
+                <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-medium text-muted-foreground overflow-hidden whitespace-nowrap flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setDetalleProyecto(null)}
+                    className="group flex items-center justify-center hover:text-foreground transition-colors cursor-pointer mr-1"
+                    title="Atrás"
+                  >
+                    <ArrowLeft className="size-5 md:size-6 transition-transform group-hover:-translate-x-1" />
+                  </button>
+
+                  <Link
+                    href="/kore"
+                    className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
+                  >
+                    <Home className="size-5 md:size-6" />
+                  </Link>
+
+                  <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+
+                  <button
+                    type="button"
+                    onClick={() => setDetalleProyecto(null)}
+                    className="capitalize hover:text-foreground transition-colors truncate cursor-pointer"
+                  >
+                    Gestión de Proyectos
+                  </button>
+
+                  <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+
+                  <span className="capitalize text-foreground underline underline-offset-4 pointer-events-none text-xs md:text-base font-black text-celeste-kore shrink-0">
+                    Detalle del Proyecto
+                  </span>
                 </div>
+
+                {isAdmin && (
+                  <div className="flex items-center gap-2 border-l border-zinc-200 dark:border-zinc-800 pl-4 shrink-0">
+                    <button
+                      onClick={() => {
+                        setQrProyecto(detalleProyecto);
+                      }}
+                      className="flex items-center justify-center p-2 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors cursor-pointer"
+                      title="Ver QR"
+                    >
+                      <QrCode size={16} />
+                    </button>
+                    <button 
+                      onClick={() => router.push(`/kore/proyectos/editar/${detalleProyecto.id}`)}
+                      className="flex items-center justify-center p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
+                      title="Editar Proyecto"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        const success = await handleDelete(detalleProyecto.id);
+                        if (success) {
+                          setDetalleProyecto(null);
+                        }
+                      }}
+                      className="flex items-center justify-center p-2 bg-muted/50 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                      title="Eliminar Proyecto"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Content */}

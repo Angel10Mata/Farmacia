@@ -225,55 +225,46 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
     );
   }, [users, userSearchQuery]);
 
-  // ── Autocomplete de clientes ──
-  const clienteNombreValue = watch("cliente_nombre") || "";
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [justSelected, setJustSelected] = useState(false);
-  const autocompleteRef = useRef<HTMLDivElement>(null);
-
-  const { data: clientesSuggestions } = useQuery({
-    queryKey: ["pro-clientes-search", clienteNombreValue],
+  // ── Lista de clientes ──
+  const { data: clientes } = useQuery({
+    queryKey: ["pro-clientes-list"],
     queryFn: async () => {
-      if (!clienteNombreValue || clienteNombreValue.length < 2) return [];
       const { data, error } = await supabase
         .from("pro_clientes")
         .select("id, nombre, nit, telefono, correo")
-        .ilike("nombre", `%${clienteNombreValue}%`)
-        .limit(6);
+        .order("nombre", { ascending: true });
       if (error) return [];
       return data || [];
     },
-    enabled: clienteNombreValue.length >= 2 && !justSelected,
-    staleTime: 10 * 1000,
+    staleTime: 5 * 60 * 1000,
   });
+
+  // ── Autocomplete de clientes ──
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  const [justSelectedClient, setJustSelectedClient] = useState(false);
+  const clientAutocompleteRef = useRef<HTMLDivElement>(null);
+  
+  const clientSearchQuery = watch("cliente_nombre") || "";
+
+  const filteredClientes = useMemo(() => {
+    if (!clientSearchQuery || clientSearchQuery.trim().length < 2) return [];
+    return (clientes || []).filter((c: any) =>
+      c.nombre?.toLowerCase().includes(clientSearchQuery.toLowerCase())
+    );
+  }, [clientes, clientSearchQuery]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
       if (userAutocompleteRef.current && !userAutocompleteRef.current.contains(e.target as Node)) {
         setShowUserSuggestions(false);
+      }
+      if (clientAutocompleteRef.current && !clientAutocompleteRef.current.contains(e.target as Node)) {
+        setShowClientSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleSelectCliente = (cliente: {
-    nombre: string;
-    nit?: string | null;
-    telefono: string | null;
-    correo: string | null;
-  }) => {
-    setJustSelected(true);
-    setValue("cliente_nombre", cliente.nombre, { shouldValidate: true });
-    setValue("cliente_nit", cliente.nit || "");
-    setValue("cliente_telefono", cliente.telefono || "");
-    setValue("cliente_correo", cliente.correo || "");
-    setShowSuggestions(false);
-    setTimeout(() => setJustSelected(false), 500);
-  };
 
   // ── Cargar / resetear al abrir ──
   useEffect(() => {
@@ -406,60 +397,83 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                   Información del Cliente
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Autocomplete */}
-                  <div className="grid gap-2 relative" ref={autocompleteRef}>
+                  <div className="grid gap-2 relative" ref={clientAutocompleteRef}>
                     <Label htmlFor="cliente_nombre">Nombre Cliente</Label>
                     <Input
                       id="cliente_nombre"
-                      {...register("cliente_nombre")}
-                      placeholder="Juan Pérez"
+                      type="text"
+                      placeholder="Escribe el nombre del cliente..."
                       autoComplete="off"
+                      value={clientSearchQuery}
                       onFocus={() => {
-                        if (clienteNombreValue.length >= 2) setShowSuggestions(true);
+                        if (clientSearchQuery.trim().length >= 2 && !justSelectedClient) {
+                          setShowClientSuggestions(true);
+                        }
                       }}
                       onChange={(e) => {
-                        register("cliente_nombre").onChange(e);
-                        setJustSelected(false);
-                        setShowSuggestions(e.target.value.length >= 2);
+                        const val = e.target.value;
+                        setValue("cliente_nombre", val, { shouldValidate: true });
+                        setJustSelectedClient(false);
+                        setShowClientSuggestions(val.trim().length >= 2);
+                        
+                        // Si el nombre no coincide exactamente con un cliente existente, vaciar los campos auto-completados
+                        const matched = (clientes || []).find((c: any) => c.nombre?.toLowerCase() === val.trim().toLowerCase());
+                        if (matched) {
+                          setValue("cliente_nit", matched.nit || "");
+                          setValue("cliente_telefono", matched.telefono || "");
+                          setValue("cliente_correo", matched.correo || "");
+                        } else {
+                          setValue("cliente_nit", "");
+                          setValue("cliente_telefono", "");
+                          setValue("cliente_correo", "");
+                        }
                       }}
+                      className={errors.cliente_nombre ? "border-destructive ring-1 ring-destructive" : ""}
                     />
                     <AnimatePresence>
-                      {showSuggestions && clientesSuggestions && clientesSuggestions.length > 0 && (
+                      {showClientSuggestions && filteredClientes.length > 0 && (
                         <motion.ul
                           initial={{ opacity: 0, y: -6 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -6 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden"
+                          className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden max-h-48 overflow-y-auto"
                         >
-                          {clientesSuggestions.map((c: any) => (
+                          {filteredClientes.map((c: any) => (
                             <li
                               key={c.id}
-                              onMouseDown={() => handleSelectCliente(c)}
-                              className="flex flex-col px-3 py-2.5 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
+                              onMouseDown={() => {
+                                setJustSelectedClient(true);
+                                setValue("cliente_nombre", c.nombre, { shouldValidate: true });
+                                setValue("cliente_nit", c.nit || "");
+                                setValue("cliente_telefono", c.telefono || "");
+                                setValue("cliente_correo", c.correo || "");
+                                setShowClientSuggestions(false);
+                              }}
+                              className="px-4 py-2 text-sm hover:bg-muted cursor-pointer transition-colors text-left"
                             >
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">
-                                  {c.nombre}
-                                </span>
-                                {c.nit && (
-                                  <span className="text-[9px] font-black text-celeste-kore/70 bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
-                                    NIT: {c.nit}
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-[10px] text-muted-foreground">
-                                {[c.telefono, c.correo].filter(Boolean).join(" · ") || "Sin datos de contacto"}
-                              </span>
+                              <p className="font-bold text-foreground">{c.nombre}</p>
+                              {c.nit && (
+                                <p className="text-[10px] text-muted-foreground">NIT: {c.nit}</p>
+                              )}
                             </li>
                           ))}
                         </motion.ul>
                       )}
                     </AnimatePresence>
+                    {errors.cliente_nombre && (
+                      <p className="text-[10px] text-destructive">{errors.cliente_nombre.message}</p>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="cliente_nit">NIT</Label>
-                    <Input id="cliente_nit" {...register("cliente_nit")} placeholder="CF" />
+                    <Input
+                      id="cliente_nit"
+                      {...register("cliente_nit")}
+                      placeholder="CF"
+                      readOnly
+                      className="bg-muted/30 cursor-not-allowed text-muted-foreground"
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="cliente_telefono">Teléfono</Label>
@@ -468,6 +482,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                       value={watch("cliente_telefono") || ""}
                       onChange={(val) => setValue("cliente_telefono", val, { shouldValidate: true })}
                       placeholder="1234 5678"
+                      disabled={true}
                     />
                   </div>
                   <div className="grid gap-2 md:col-span-3">
@@ -477,6 +492,8 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                       type="email"
                       {...register("cliente_correo")}
                       placeholder="juan@correo.com"
+                      readOnly
+                      className="bg-muted/30 cursor-not-allowed text-muted-foreground"
                     />
                     {errors.cliente_correo && (
                       <p className="text-[10px] text-destructive">{errors.cliente_correo.message}</p>

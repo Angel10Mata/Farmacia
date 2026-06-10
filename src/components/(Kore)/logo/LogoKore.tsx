@@ -9,122 +9,128 @@ import AnimacionLogoKore from "./AnimacionLogoKore";
 interface LogoKoreProps {
   scale?: number;
   noAnimation?: boolean;
-  refreshInterval?: number;
   backgroundEffect?: "blur" | "glow" | "none";
 }
 
 export default function LogoKore({
-  scale: scaleValue = 1,
   noAnimation = false,
-  refreshInterval = 0,
   backgroundEffect = "blur",
 }: LogoKoreProps) {
-  const [animationKey, setAnimationKey] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const init = async () => setMounted(true);
-    init();
+    setMounted(true);
   }, []);
-
-  const handleHover = () => {
-    if (!noAnimation && !isFullScreen) {
-      setAnimationKey(prev => prev + 1);
-    }
-  };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!noAnimation) {
-      setIsFullScreen(true);
-    }
+    if (!noAnimation) setIsFullScreen(true);
   };
 
-  const repeatConfig = refreshInterval > 0 && !isFullScreen ? {
-    repeat: Infinity,
-    repeatDelay: refreshInterval,
-    repeatType: "loop" as const
-  } : {};
-
-  const textContainerVariants = {
-    hidden: { opacity: 0 },
+  // — Sweep animation variants —
+  const containerVariants = {
+    hidden: {},
     visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.12, delayChildren: 0.05 },
+      transition: { staggerChildren: 0.15, delayChildren: 0.1 },
     },
   };
 
   const logoVariants = {
-    hidden: { opacity: 0, scale: 0.8, rotate: -5 },
+    hidden: { opacity: 0, y: 30, scale: 0.88 },
     visible: {
-      opacity: 1, scale: 1, rotate: 0,
-      transition: { type: "spring" as const, stiffness: 50, damping: 16, duration: 2.4 },
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { type: "spring" as const, stiffness: 55, damping: 16, duration: 1.6 },
     },
   };
 
-  const titleVariants = {
-    hidden: { opacity: 0, x: -20 },
+  const sweepVariants = {
+    hidden: { opacity: 0, x: -40, clipPath: "inset(0 100% 0 0)" },
     visible: {
-      opacity: 1, x: 0,
-      transition: { type: "spring" as const, stiffness: 40, damping: 18, duration: 1.3, ...repeatConfig },
-    },
-  };
-
-  const sloganVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: {
-      opacity: 1, y: 0,
-      transition: { type: "spring" as const, stiffness: 50, damping: 16, duration: 1.1, ...repeatConfig },
+      opacity: 1,
+      x: 0,
+      clipPath: "inset(0 0% 0 0)",
+      transition: { duration: 0.7, ease: [0.33, 1, 0.68, 1] as [number, number, number, number] },
     },
   };
 
   const lineVariants = {
-    hidden: { scaleX: 0 },
+    hidden: { scaleX: 0, originX: 0 },
     visible: {
       scaleX: 1,
-      transition: { duration: 1.2, ease: "easeInOut" as const, ...repeatConfig },
+      transition: { duration: 0.9, ease: "easeInOut" as const },
     },
   };
 
-  const countriesVariants = {
-    hidden: { opacity: 0, y: 5 },
+  const suiteVariants = {
+    hidden: { opacity: 0, y: 8 },
     visible: {
-      opacity: 1, y: 0,
-      transition: { duration: 0.3, ease: "easeOut" as const, ...repeatConfig },
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" as const },
     },
   };
 
   return (
     <>
       <motion.div
-        onMouseEnter={handleHover}
         onClick={handleClick}
-        whileTap={{ scale: 0.96 }}
-        className="relative select-none cursor-pointer flex items-center justify-center p-2 w-full"
-        style={{ scale: scaleValue }}
+        whileTap={{ scale: 0.97 }}
+        className="relative select-none cursor-pointer flex flex-col items-center justify-center gap-0 w-full"
+        variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        <div className="flex flex-row items-center justify-center gap-6 lg:gap-10 w-full px-4 lg:px-8">
-          <motion.div variants={logoVariants} className="flex-shrink-0">
-            <Image
-              src="/kore/kore.png"
-              alt="KoreAPP"
-              width={150}
-              height={150}
-              className="w-[120px] lg:w-[150px] h-auto object-contain rounded-2xl"
-              priority
-            />
-          </motion.div>
+        {/* Logo image — big */}
+        <motion.div variants={logoVariants} className="flex-shrink-0">
+          <Image
+            src="/kore/kore.png"
+            alt="KoreAPP"
+            width={220}
+            height={220}
+            className="w-[160px] sm:w-[200px] lg:w-[220px] h-auto object-contain rounded-3xl"
+            priority
+          />
+        </motion.div>
 
+        {/* Text block — below logo */}
+        <div className="flex flex-col items-center mt-4 gap-1 w-full px-2">
+          {/* BMS — sweeps in left to right */}
+          <motion.span
+            variants={sweepVariants}
+            translate="no"
+            className="notranslate text-sm sm:text-base font-black uppercase tracking-[0.35em] text-celeste-kore"
+          >
+            BMS
+          </motion.span>
+
+          {/* Divider line — grows from left */}
+          <motion.div
+            variants={lineVariants}
+            className="w-full max-w-[200px] h-px bg-white/30 my-1"
+            style={{ originX: 0 }}
+          />
+
+          {/* Business Management Suite */}
+          <motion.span
+            variants={suiteVariants}
+            className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.3em] text-white/50"
+          >
+            Business Management Suite
+          </motion.span>
         </div>
       </motion.div>
 
-      {mounted && createPortal(
-        <AnimacionLogoKore isOpen={isFullScreen} onClose={() => setIsFullScreen(false)} />,
-        document.body
-      )}
+      {mounted &&
+        createPortal(
+          <AnimacionLogoKore
+            isOpen={isFullScreen}
+            onClose={() => setIsFullScreen(false)}
+          />,
+          document.body
+        )}
     </>
   );
 }

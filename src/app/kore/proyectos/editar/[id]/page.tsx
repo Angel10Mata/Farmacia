@@ -48,7 +48,7 @@ export default function EditarProyectoPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4 pt-28 md:p-8 md:pt-24">
+      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
         <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <RefreshCw size={32} className="animate-spin text-celeste-kore" />
           <p className="text-sm font-bold uppercase tracking-widest">Cargando proyecto…</p>
@@ -59,23 +59,17 @@ export default function EditarProyectoPage() {
 
   if (notFound) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4 pt-28 md:p-8 md:pt-24">
+      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
         <div className="text-center space-y-3">
           <p className="text-lg font-black text-foreground">Proyecto no encontrado</p>
           <p className="text-sm text-muted-foreground">El proyecto que buscas no existe o fue eliminado.</p>
-          <button
-            onClick={() => router.push("/kore/proyectos")}
-            className="mt-4 px-6 py-2.5 rounded-xl bg-celeste-kore text-black text-xs font-black uppercase tracking-widest hover:opacity-90 transition-opacity"
-          >
-            Volver a Proyectos
-          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pt-28 md:p-8 md:pt-24">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pt-32 md:p-8 md:pt-24">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -18,10 +18,10 @@ interface PageProps {
 export default async function ProyectoPublicPage({ searchParams }: PageProps) {
   const params = await searchParams;
   
-  const code = typeof params.c === "string" ? params.c : "N/A";
-  const nombre = typeof params.n === "string" ? params.n : "Proyecto sin nombre";
-  const cliente = typeof params.cl === "string" ? params.cl : "N/A";
-  const vendedor = typeof params.v === "string" ? params.v : "N/A";
+  let code = "N/A";
+  let nombre = "Proyecto sin nombre";
+  let cliente = "N/A";
+  let vendedor = "N/A";
   
   let usuario = typeof params.usr === "string" ? params.usr : null;
   let password = typeof params.pwd === "string" ? params.pwd : null;
@@ -29,24 +29,44 @@ export default async function ProyectoPublicPage({ searchParams }: PageProps) {
 
   const projectId = typeof params.id === "string" ? params.id : null;
   if (projectId) {
+    const rawCode = projectId.replace(/-/g, "").slice(0, 6).toUpperCase();
+    code = rawCode.slice(0, 3) + "-" + rawCode.slice(3, 6);
+
     try {
       const { createAdminClient } = await import("@/utils/supabase/admin");
       const adminSupabase = createAdminClient();
       const { data: dbProyecto } = await adminSupabase
         .from("proyectos")
-        .select("otros_campos")
+        .select(`
+          nombre,
+          cliente_nombre,
+          otros_campos,
+          vendedor:profiles!vendedor_id(nombre)
+        `)
         .eq("id", projectId)
         .single();
 
-      if (dbProyecto?.otros_campos) {
-        const otros = dbProyecto.otros_campos as any;
-        if (otros.usuario_acceso) usuario = otros.usuario_acceso;
-        if (otros.pass_acceso) password = otros.pass_acceso;
-        if (otros.url_acceso) loginUrl = otros.url_acceso;
+      if (dbProyecto) {
+        const proj = dbProyecto as any;
+        if (proj.nombre) nombre = proj.nombre;
+        if (proj.cliente_nombre) cliente = proj.cliente_nombre;
+        if (proj.vendedor?.nombre) vendedor = proj.vendedor.nombre;
+        
+        if (proj.otros_campos) {
+          const otros = proj.otros_campos as any;
+          if (otros.usuario_acceso) usuario = otros.usuario_acceso;
+          if (otros.pass_acceso) password = otros.pass_acceso;
+          if (otros.url_acceso) loginUrl = otros.url_acceso;
+        }
       }
     } catch (err) {
-      console.error("Error loading project access credentials from database:", err);
+      console.error("Error loading project details from database:", err);
     }
+  } else {
+    if (typeof params.c === "string") code = params.c;
+    if (typeof params.n === "string") nombre = params.n;
+    if (typeof params.cl === "string") cliente = params.cl;
+    if (typeof params.v === "string") vendedor = params.v;
   }
 
   // Formatear URL para asegurar que tenga protocolo absoluto si es externa

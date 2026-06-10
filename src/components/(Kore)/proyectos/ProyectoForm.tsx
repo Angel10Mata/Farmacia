@@ -4,21 +4,41 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Briefcase, Save, ArrowLeft, Plus, Trash2, ChevronDown, Globe } from "lucide-react";
+import {
+  Loader2,
+  Briefcase,
+  Save,
+  Plus,
+  Trash2,
+  ChevronDown,
+  Globe,
+  QrCode,
+  Eye,
+  ChevronLeft,
+  CircleDollarSign,
+  ArrowLeft,
+  Home,
+  ChevronRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import Swal from "sweetalert2";
+import Link from "next/link";
 import {
   proyectoSchema,
   ProyectoFormValues,
   TIPOS_DEDUCCION,
   TipoDeduccion,
 } from "./lib/schemas";
-import { createProyecto, updateProyecto } from "@/app/kore/proyectos/actions";
+import { createProyecto, updateProyecto, deleteProyecto } from "@/app/kore/proyectos/actions";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { KorePhoneInput } from "@/components/ui/KorePhoneInput";
+import { useTheme } from "next-themes";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import QRProyecto from "./QRProyecto";
+import { MagicCard } from "@/components/ui/magic-card";
 
 
 interface ProyectoFormProps {
@@ -233,6 +253,193 @@ function DeduccionRow({
   );
 }
 
+const DASH_TIPO_STYLE: Record<string, string> = {
+  "IVA":           "bg-amber-500/10 text-amber-400 border-amber-500/25",
+  "Documentación": "bg-purple-500/10 text-purple-400 border-purple-500/25",
+  "Comisión":      "bg-blue-500/10 text-blue-400 border-blue-500/25",
+  "Vendedor":      "bg-blue-500/10 text-blue-400 border-blue-500/25",
+  "Kore":          "bg-red-500/10 text-red-400 border-red-500/25",
+  "Desarrollador": "bg-sky-500/10 text-sky-400 border-sky-500/25",
+};
+
+function FormDashboardDeduccionItem({ d, forceOpen, precio }: { d: any; forceOpen: boolean; precio: number }) {
+  const [open, setOpen] = useState(false);
+  const userName = d.usuario_nombre || "";
+  const hasDetails = !!(userName || d.descripcion);
+  const isOpen = forceOpen || open;
+  const pillClass = DASH_TIPO_STYLE[d.tipo] || "bg-zinc-500/10 text-zinc-400 border-zinc-500/25";
+  const valorMonetario = precio * (Number(d.porcentaje) || 0) / 100;
+
+  return (
+    <div
+      className={`border-b border-zinc-200 dark:border-zinc-800 last:border-0 ${
+        hasDetails ? "cursor-pointer" : ""
+      }`}
+      onClick={() => hasDetails && setOpen((o) => !o)}
+    >
+      <div className="flex items-center gap-2 px-4 py-2.5">
+        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border shrink-0 ${pillClass}`}>
+          {d.tipo}
+        </span>
+        <div className="flex-1" />
+        <div className="flex flex-col items-end shrink-0 text-right">
+          <span className="text-sm font-black tabular-nums text-foreground">
+            Q{valorMonetario.toLocaleString('en-US', {minimumFractionDigits: 2})}
+          </span>
+          <span className="text-[10px] font-bold text-muted-foreground tabular-nums leading-none mt-0.5">
+            {Number(d.porcentaje)}%
+          </span>
+        </div>
+        {hasDetails ? (
+          <ChevronDown
+            size={12}
+            className={`text-muted-foreground/40 transition-transform duration-200 shrink-0 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        ) : (
+          <ChevronDown
+            size={12}
+            className="text-transparent shrink-0 pointer-events-none select-none"
+          />
+        )}
+      </div>
+
+      <AnimatePresence initial={false}>
+        {isOpen && hasDetails && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.16 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-2.5 space-y-0.5 border-t border-zinc-100 dark:border-zinc-800/60">
+              {userName && (
+                <p className="text-[11px] text-foreground/60 pt-1.5">
+                  <span className="font-semibold text-foreground/50">Asignado a:</span>{" "}
+                  <span className="font-bold text-sky-500">{userName}</span>
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function FormDedListWithToggle({
+  deds,
+  totalPct,
+  precio,
+  mant,
+  restante,
+}: {
+  deds: any[];
+  totalPct: number;
+  precio: number;
+  mant: number;
+  restante: number;
+}) {
+  const [allExpanded, setAllExpanded] = useState(false);
+  const totalDeduccionesMonetario = (precio * totalPct) / 100;
+
+  const sortedDeds = [...deds].sort((a, b) => {
+    const getOrderScore = (tipo: string) => {
+      const t = tipo.toLowerCase();
+      if (t === "kore") return 1;
+      if (t === "iva") return 2;
+      if (t === "documentación" || t === "documentacion") return 3;
+      if (t === "desarrollador" || t === "desarrolladores" || t === "desarrollo") return 4;
+      if (t === "vendedor" || t === "vendedores" || t === "comisión" || t === "comision") return 5;
+      return 6;
+    };
+    return getOrderScore(a.tipo) - getOrderScore(b.tipo);
+  });
+
+  return (
+    <div className="space-y-3 pt-3.5 border-t border-zinc-200 dark:border-zinc-800/80">
+      <button
+        type="button"
+        onClick={() => setAllExpanded((v) => !v)}
+        className="w-full flex items-center gap-3 pb-2 text-left hover:opacity-80 transition-opacity"
+      >
+        <h5 className="text-[11px] font-black uppercase tracking-widest text-foreground/70">
+          Deducibles:
+        </h5>
+        {sortedDeds.length > 0 && (
+          <span className="text-[11px] font-black text-foreground/70">
+            {sortedDeds.length}
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs font-black px-2 py-1 rounded-lg border text-destructive border-destructive/20 bg-destructive/10">
+            Total: Q{totalDeduccionesMonetario.toLocaleString("en-US", { minimumFractionDigits: 2 })} ({totalPct}%)
+          </span>
+          {sortedDeds.length > 0 && (
+            <ChevronDown
+              size={13}
+              className={`text-muted-foreground/50 transition-transform duration-200 ${
+                allExpanded ? "rotate-180" : ""
+              }`}
+            />
+          )}
+        </div>
+      </button>
+
+      <AnimatePresence mode="popLayout">
+        {sortedDeds.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-1.5"
+          >
+            {sortedDeds.map((d, index) => (
+              <FormDashboardDeduccionItem
+                key={index}
+                d={d}
+                forceOpen={allExpanded}
+                precio={precio}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="space-y-2 pt-2 text-xs sm:text-sm border-t border-zinc-100 dark:border-zinc-800/60">
+        <div className="flex justify-between items-center gap-2 py-0.5">
+          <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">
+            Total Deducibles ({totalPct}%):
+          </span>
+          <span className="font-bold shrink-0 text-right text-destructive">
+            Q{totalDeduccionesMonetario.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+
+        {mant > 0 && (
+          <div className="flex justify-between items-center gap-2 py-0.5">
+            <span className="text-zinc-500 dark:text-zinc-400 min-w-0 truncate">
+              Mantenimiento Mensual:
+            </span>
+            <span className="font-bold shrink-0 text-right text-celeste-kore">
+              Q{mant.toLocaleString("en-US", { minimumFractionDigits: 2 })} / mes
+            </span>
+          </div>
+        )}
+
+        <div className="flex justify-between items-center gap-2 py-1.5 border-t border-zinc-200 dark:border-zinc-800/80 pt-2 font-black text-sm sm:text-base text-celeste-kore">
+          <span className="min-w-0 truncate">Saldo Final:</span>
+          <span className="shrink-0 text-right">
+            Q{restante.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
@@ -241,6 +448,83 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
   const isDeveloper = effectiveRole === "proyectos";
   const router = useRouter();
   const supabase = createClient();
+  const [showDetails, setShowDetails] = useState(false);
+  const [localProyecto, setLocalProyecto] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (proyecto) {
+      setLocalProyecto(proyecto);
+    }
+  }, [proyecto]);
+
+  const [qrProyecto, setQrProyecto] = useState<any | null>(null);
+  const { theme } = useTheme();
+
+  const getCode = (id: string) => {
+    if (!id) return "";
+    const clean = id.replace(/-/g, "").slice(0, 6).toUpperCase();
+    return clean.slice(0, 3) + "-" + clean.slice(3, 6);
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr + "T00:00:00");
+    return date.toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const formatPhoneDisplay = (phone: string | null | undefined): string => {
+    if (!phone) return "";
+    const clean = phone.trim();
+    if (!clean) return "";
+    const cleanNoSpaces = clean.replace(/\s+/g, "");
+    const gtMatch = cleanNoSpaces.match(/^\+502(\d{4})(\d{4})$/);
+    if (gtMatch) return `${gtMatch[1]}-${gtMatch[2]}`;
+    const gtShortMatch = cleanNoSpaces.match(/^(\d{4})(\d{4})$/);
+    if (gtShortMatch) return `${gtShortMatch[1]}-${gtShortMatch[2]}`;
+    return clean;
+  };
+
+  const handleDelete = async () => {
+    if (!proyecto) return;
+    const isDark = theme === 'dark';
+    const result = await Swal.fire({
+      title: '¿Eliminar proyecto?',
+      text: "Esta acción no se puede deshacer.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: isDark ? '#27272a' : '#e4e4e7',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      background: isDark ? '#18181b' : '#ffffff',
+      color: isDark ? '#ffffff' : '#000000',
+    });
+
+    if (result.isConfirmed) {
+      const res = await deleteProyecto(proyecto.id);
+      if (res.error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: res.error,
+          background: isDark ? '#18181b' : '#ffffff',
+          color: isDark ? '#ffffff' : '#000000',
+        });
+      } else {
+        Swal.fire({
+          icon: 'success',
+          title: 'Eliminado',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          background: isDark ? '#18181b' : '#ffffff',
+          color: isDark ? '#ffffff' : '#000000',
+        });
+        router.push("/kore/proyectos");
+      }
+    }
+  };
 
   // ── React Hook Form ──
   const {
@@ -366,55 +650,46 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
   }, [firstComisionUsuarioId, vendedorId, setValue]);
 
 
-  // ── Autocomplete de clientes ──
-  const clienteNombreValue = watch("cliente_nombre") || "";
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [justSelected, setJustSelected] = useState(false);
-  const autocompleteRef = useRef<HTMLDivElement>(null);
-
-  const { data: clientesSuggestions } = useQuery({
-    queryKey: ["pro-clientes-search", clienteNombreValue],
+  // ── Lista de clientes ──
+  const { data: clientes } = useQuery({
+    queryKey: ["pro-clientes-list"],
     queryFn: async () => {
-      if (!clienteNombreValue || clienteNombreValue.length < 2) return [];
       const { data, error } = await supabase
         .from("pro_clientes")
         .select("id, nombre, nit, telefono, correo")
-        .ilike("nombre", `%${clienteNombreValue}%`)
-        .limit(6);
+        .order("nombre", { ascending: true });
       if (error) return [];
       return data || [];
     },
-    enabled: clienteNombreValue.length >= 2 && !justSelected,
-    staleTime: 10 * 1000,
+    staleTime: 5 * 60 * 1000,
   });
+
+  // ── Autocomplete de clientes ──
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  const [justSelectedClient, setJustSelectedClient] = useState(false);
+  const clientAutocompleteRef = useRef<HTMLDivElement>(null);
+  
+  const clientSearchQuery = watch("cliente_nombre") || "";
+
+  const filteredClientes = useMemo(() => {
+    if (!clientSearchQuery || clientSearchQuery.trim().length < 2) return [];
+    return (clientes || []).filter((c: any) =>
+      c.nombre?.toLowerCase().includes(clientSearchQuery.toLowerCase())
+    );
+  }, [clientes, clientSearchQuery]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
       if (userAutocompleteRef.current && !userAutocompleteRef.current.contains(e.target as Node)) {
         setShowUserSuggestions(false);
+      }
+      if (clientAutocompleteRef.current && !clientAutocompleteRef.current.contains(e.target as Node)) {
+        setShowClientSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleSelectCliente = (cliente: {
-    nombre: string;
-    nit?: string | null;
-    telefono: string | null;
-    correo: string | null;
-  }) => {
-    setJustSelected(true);
-    setValue("cliente_nombre", cliente.nombre, { shouldValidate: true });
-    setValue("cliente_nit", cliente.nit || "");
-    setValue("cliente_telefono", cliente.telefono || "");
-    setValue("cliente_correo", cliente.correo || "");
-    setShowSuggestions(false);
-    setTimeout(() => setJustSelected(false), 500);
-  };
 
   // ── Cargar datos al editar ──
   useEffect(() => {
@@ -474,7 +749,25 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         background: "#18181b",
         color: "#fff",
       });
-      router.push("/kore/proyectos");
+      if (isEditing) {
+        setLocalProyecto((prev: any) => ({
+          ...prev,
+          nombre: data.nombre,
+          cliente_nombre: data.cliente_nombre,
+          cliente_nit: data.cliente_nit,
+          cliente_telefono: data.cliente_telefono,
+          cliente_correo: data.cliente_correo,
+          fecha_entrega: data.fecha_entrega,
+          precio: data.precio,
+          mantenimiento: data.mantenimiento,
+          estado: data.estado,
+          vendedor_id: data.vendedor_id,
+          deducciones: data.deducciones,
+        }));
+        setShowDetails(true);
+      } else {
+        router.push("/kore/proyectos");
+      }
     }
   };
 
@@ -490,32 +783,54 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="w-full max-w-3xl mx-auto"
     >
-      {/* Back button */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors group"
-        >
-          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-          Volver a Proyectos
-        </button>
-      </div>
+
 
       <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
         {/* Title bar */}
-        <div className="flex items-center gap-4 p-6 border-b border-border/50 bg-muted/5">
-          <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
-            <Briefcase size={20} className="text-celeste-kore" />
+        <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/5 gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
+              <Briefcase size={20} className="text-celeste-kore" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black tracking-tight text-foreground uppercase">
+                {isEditing ? "Editar Proyecto" : "Nuevo Proyecto"}
+              </h1>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                {isEditing ? "Modificando información" : "Registro de datos"}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-black tracking-tight text-foreground uppercase">
-              {isEditing ? "Editar Proyecto" : "Nuevo Proyecto"}
-            </h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-              {isEditing ? "Modificando información" : "Registro de datos"}
-            </p>
-          </div>
+
+          {/* Action buttons (only when editing and user is admin/super) */}
+          {isEditing && !isDeveloper && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDetails(true)}
+                className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-celeste-kore/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
+                title="Ver Detalles"
+              >
+                <Eye size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setQrProyecto(proyecto)}
+                className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-[#B7494E]/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors cursor-pointer"
+                title="Ver QR"
+              >
+                <QrCode size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                title="Eliminar Proyecto"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Form body */}
@@ -560,59 +875,73 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                 Información del Cliente
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Autocomplete */}
-                <div className="grid gap-2 relative" ref={autocompleteRef}>
+                <div className="grid gap-2 relative" ref={clientAutocompleteRef}>
                   <Label htmlFor="cliente_nombre">Nombre Cliente</Label>
                   <Input
                     id="cliente_nombre"
-                    {...register("cliente_nombre")}
-                    placeholder="Juan Pérez"
+                    type="text"
+                    placeholder="Escribe el nombre del cliente..."
                     autoComplete="off"
+                    value={clientSearchQuery}
                     onFocus={() => {
-                      if (clienteNombreValue.length >= 2) setShowSuggestions(true);
+                      if (clientSearchQuery.trim().length >= 2 && !justSelectedClient) {
+                        setShowClientSuggestions(true);
+                      }
                     }}
                     onChange={(e) => {
-                      register("cliente_nombre").onChange(e);
-                      setJustSelected(false);
-                      setShowSuggestions(e.target.value.length >= 2);
+                      const val = e.target.value;
+                      setValue("cliente_nombre", val, { shouldValidate: true });
+                      setJustSelectedClient(false);
+                      setShowClientSuggestions(val.trim().length >= 2);
+                      
+                      // Si el nombre no coincide exactamente con un cliente existente, vaciar los campos auto-completados
+                      const matched = (clientes || []).find((c: any) => c.nombre?.toLowerCase() === val.trim().toLowerCase());
+                      if (matched) {
+                        setValue("cliente_nit", matched.nit || "");
+                        setValue("cliente_telefono", matched.telefono || "");
+                        setValue("cliente_correo", matched.correo || "");
+                      } else {
+                        setValue("cliente_nit", "");
+                        setValue("cliente_telefono", "");
+                        setValue("cliente_correo", "");
+                      }
                     }}
+                    className={errors.cliente_nombre ? "border-destructive ring-1 ring-destructive" : ""}
                   />
                   <AnimatePresence>
-                    {showSuggestions &&
-                      clientesSuggestions &&
-                      clientesSuggestions.length > 0 && (
-                        <motion.ul
-                          initial={{ opacity: 0, y: -6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -6 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden"
-                        >
-                          {clientesSuggestions.map((c: any) => (
-                            <li
-                              key={c.id}
-                              onMouseDown={() => handleSelectCliente(c)}
-                              className="flex flex-col px-3 py-2.5 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">
-                                  {c.nombre}
-                                </span>
-                                {c.nit && (
-                                  <span className="text-[9px] font-black text-celeste-kore/70 bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
-                                    NIT: {c.nit}
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-[10px] text-muted-foreground">
-                                {[c.telefono, c.correo].filter(Boolean).join(" · ") ||
-                                  "Sin datos de contacto"}
-                              </span>
-                            </li>
-                          ))}
-                        </motion.ul>
-                      )}
+                    {showClientSuggestions && filteredClientes.length > 0 && (
+                      <motion.ul
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden max-h-48 overflow-y-auto"
+                      >
+                        {filteredClientes.map((c: any) => (
+                          <li
+                            key={c.id}
+                            onMouseDown={() => {
+                              setJustSelectedClient(true);
+                              setValue("cliente_nombre", c.nombre, { shouldValidate: true });
+                              setValue("cliente_nit", c.nit || "");
+                              setValue("cliente_telefono", c.telefono || "");
+                              setValue("cliente_correo", c.correo || "");
+                              setShowClientSuggestions(false);
+                            }}
+                            className="px-4 py-2 text-sm hover:bg-muted cursor-pointer transition-colors text-left"
+                          >
+                            <p className="font-bold text-foreground">{c.nombre}</p>
+                            {c.nit && (
+                              <p className="text-[10px] text-muted-foreground">NIT: {c.nit}</p>
+                            )}
+                          </li>
+                        ))}
+                      </motion.ul>
+                    )}
                   </AnimatePresence>
+                  {errors.cliente_nombre && (
+                    <p className="text-[10px] text-destructive">{errors.cliente_nombre.message}</p>
+                  )}
                 </div>
 
                 <div className="grid gap-2">
@@ -621,6 +950,8 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                     id="cliente_nit"
                     {...register("cliente_nit")}
                     placeholder="CF"
+                    readOnly
+                    className="bg-muted/30 cursor-not-allowed text-muted-foreground"
                   />
                 </div>
                 <div className="grid gap-2">
@@ -630,6 +961,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                     value={watch("cliente_telefono") || ""}
                     onChange={(val) => setValue("cliente_telefono", val, { shouldValidate: true })}
                     placeholder="1234 5678"
+                    disabled={true}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -639,6 +971,8 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
                     type="email"
                     {...register("cliente_correo")}
                     placeholder="juan@correo.com"
+                    readOnly
+                    className="bg-muted/30 cursor-not-allowed text-muted-foreground"
                   />
                   {errors.cliente_correo && (
                     <p className="text-[10px] text-destructive">
@@ -694,16 +1028,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
               </div>
             )}
             
-            {/* ── Botones de Paginación Paso 1 ── */}
-            <div className="flex justify-end pt-4">
-               <button
-                 type="button"
-                 onClick={() => setStep(2)}
-                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer"
-               >
-                 Siguiente Paso
-               </button>
-            </div>
+
             </div>
 
             {/* ======================= PASO 2 ======================= */}
@@ -922,12 +1247,12 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 md:p-6 border-t border-border/50 bg-muted/5 flex flex-wrap justify-end gap-2 md:gap-3">
+        <div className="p-4 md:p-6 border-t border-border/50 bg-muted/5 flex flex-nowrap justify-end gap-1.5 sm:gap-3 overflow-x-auto custom-scrollbar">
           {step === 2 && (
              <button
                type="button"
                onClick={() => setStep(1)}
-               className="px-4 py-2 rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors text-[10px] font-bold uppercase tracking-widest cursor-pointer"
+               className="px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors text-[10px] font-bold uppercase tracking-widest cursor-pointer whitespace-nowrap"
              >
                Paso Anterior
              </button>
@@ -935,7 +1260,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
           <button
             type="button"
             onClick={handleCancel}
-            className="px-4 py-2 rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors text-[10px] font-bold uppercase tracking-widest cursor-pointer"
+            className="px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors text-[10px] font-bold uppercase tracking-widest cursor-pointer whitespace-nowrap"
           >
             Cancelar
           </button>
@@ -943,7 +1268,7 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
             form="proyecto-form"
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
           >
             {isSubmitting ? (
               <Loader2 size={14} className="animate-spin" />
@@ -952,8 +1277,225 @@ export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
             )}
             {isEditing ? "Guardar" : "Crear"}
           </button>
+          {step === 1 && (
+             <button
+               type="button"
+               onClick={() => setStep(2)}
+               className="flex items-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer whitespace-nowrap"
+             >
+               Siguiente Paso
+             </button>
+          )}
         </div>
       </div>
+
+      {/* MODAL DETALLES DEL PROYECTO */}
+      <AnimatePresence>
+        {showDetails && localProyecto && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="fixed inset-0 z-[110] bg-background flex flex-col w-screen h-screen min-h-0 overflow-hidden text-zinc-900 dark:text-zinc-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MagicCard
+              className="w-full h-full min-h-0 flex flex-col rounded-none border-0 bg-card overflow-hidden text-zinc-900 dark:text-zinc-100"
+            >
+              {/* Header with Breadcrumbs */}
+              <div className="flex items-center p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 backdrop-blur-md sticky top-0 z-10 w-full overflow-hidden">
+                <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-base font-medium text-muted-foreground overflow-hidden whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={() => setShowDetails(false)}
+                    className="group flex items-center justify-center hover:text-foreground transition-colors cursor-pointer mr-1"
+                    title="Atrás"
+                  >
+                    <ArrowLeft className="size-5 md:size-6 transition-transform group-hover:-translate-x-1" />
+                  </button>
+
+                  <Link
+                    href="/kore"
+                    className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
+                  >
+                    <Home className="size-5 md:size-6" />
+                  </Link>
+
+                  <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+
+                  <Link
+                    href="/kore/proyectos"
+                    className="capitalize hover:text-foreground transition-colors truncate"
+                  >
+                    Gestión de Proyectos
+                  </Link>
+
+                  <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowDetails(false)}
+                    className="capitalize hover:text-foreground transition-colors truncate cursor-pointer"
+                  >
+                    Editar Proyecto
+                  </button>
+
+                  <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+
+                  <span className="capitalize text-foreground underline underline-offset-4 pointer-events-none text-xs md:text-lg font-black text-celeste-kore shrink-0">
+                    Detalle del Proyecto
+                  </span>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-4 sm:space-y-5 custom-scrollbar">
+                {/* Info General */}
+                <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <code className="text-[10px] sm:text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2.5 py-1 rounded-lg border border-celeste-kore/20">
+                      {getCode(localProyecto.id)}
+                    </code>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black uppercase tracking-wider border ${
+                      localProyecto.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
+                      localProyecto.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
+                      'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
+                    }`}>
+                      {localProyecto.estado}
+                    </span>
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{localProyecto.nombre}</h2>
+                    {localProyecto.fecha_entrega && (
+                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(localProyecto.fecha_entrega)}</span></p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Info Cliente */}
+                <div className="space-y-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
+                  <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Información del Cliente</h3>
+                  <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
+                    <p><span className="text-zinc-500 dark:text-zinc-400">Nombre:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{localProyecto.cliente_nombre || 'N/A'}</span></p>
+                    {localProyecto.cliente_nit && (
+                      <p><span className="text-zinc-500 dark:text-zinc-400">NIT:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{localProyecto.cliente_nit}</span></p>
+                    )}
+                    {localProyecto.cliente_telefono && (
+                      <p className="flex items-center gap-1.5">
+                        <span className="text-zinc-500 dark:text-zinc-400">Teléfono:</span> 
+                        <a href={`https://wa.me/${localProyecto.cliente_telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-celeste-kore hover:underline flex items-center gap-1">
+                          {formatPhoneDisplay(localProyecto.cliente_telefono)}
+                        </a>
+                      </p>
+                    )}
+                    {localProyecto.cliente_correo && (
+                      <p><span className="text-zinc-500 dark:text-zinc-400">Correo:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50 break-all">{localProyecto.cliente_correo}</span></p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Finanzas & Dona */}
+                {(() => {
+                  const precio = Number(localProyecto.precio) || 0;
+                  const mant = Number(localProyecto.mantenimiento) || 0;
+                  
+                  const getDedSum = (tipo: string) => {
+                    return (localProyecto.deducciones || [])
+                      .filter((d: any) => d.tipo.toLowerCase() === tipo.toLowerCase() || (tipo === "Vendedor" && d.tipo === "Comisión") || (tipo === "Desarrollador" && d.tipo === "Desarrollo"))
+                      .reduce((acc: number, curr: any) => acc + (precio * (Number(curr.porcentaje) || 0) / 100), 0);
+                  };
+
+                  const iva = getDedSum("IVA");
+                  const doc = getDedSum("Documentación");
+                  const vendedor = getDedSum("Vendedor");
+                  const dev = getDedSum("Desarrollador");
+                  const kore = getDedSum("Kore");
+
+                  const totalDeducciones = (localProyecto.deducciones || []).reduce((acc: number, curr: any) => acc + (precio * (Number(curr.porcentaje) || 0) / 100), 0);
+                  const restante = precio - totalDeducciones;
+
+                  const donutData = [
+                    { name: "Saldo Final", value: restante, color: "#B7494E" },
+                    { name: "Vendedor", value: vendedor, color: "#3D3C3C" },
+                    { name: "Desarrollo", value: dev, color: "#0ea5e9" },
+                    { name: "IVA", value: iva, color: "#52525b" },
+                    { name: "Doc", value: doc, color: "#a1a1aa" },
+                    { name: "Kore", value: kore, color: "#f59e0b" },
+                    { name: "Mantenimiento", value: mant, color: "#14b8a6" },
+                  ].filter(d => d.value > 0);
+
+                  return (
+                    <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
+                      <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Distribución Financiera</h3>
+                      
+                      {donutData.length > 0 ? (
+                        <div className="w-full h-[180px] sm:h-[220px] flex items-center justify-center relative">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={donutData}
+                                innerRadius="65%"
+                                outerRadius="85%"
+                                paddingAngle={4}
+                                dataKey="value"
+                                stroke="none"
+                              >
+                                {donutData.map((entry, index) => (
+                                  <Cell key={`donut-cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <div className="absolute flex flex-col items-center justify-center text-center">
+                            <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-black">Valor Total</span>
+                            <span className="text-sm sm:text-lg font-black text-zinc-950 dark:text-zinc-50">Q{precio.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 text-zinc-500 dark:text-zinc-400 text-xs">No hay datos financieros.</div>
+                      )}
+
+                      {donutData.length > 0 && (
+                        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 px-1 text-[9px] sm:text-[10px] uppercase font-black text-zinc-500 dark:text-zinc-400">
+                          {donutData.map((item, idx) => (
+                            <div key={`legend-${idx}`} className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                              <span>{item.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {(() => {
+                        const activeDeds = (localProyecto.deducciones || []).filter(
+                          (d: any) => (Number(d.porcentaje) || 0) > 0
+                        );
+                        const totalPct = activeDeds.reduce(
+                          (acc: number, d: any) => acc + (Number(d.porcentaje) || 0), 0
+                        );
+                        if (activeDeds.length === 0) return null;
+
+                        return (
+                          <FormDedListWithToggle deds={activeDeds} totalPct={totalPct} precio={precio} mant={mant} restante={restante} />
+                        );
+                      })()}
+                    </div>
+                  );
+                })()}
+              </div>
+            </MagicCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL QR */}
+      <QRProyecto
+        isOpen={!!qrProyecto}
+        proyecto={qrProyecto}
+        onClose={() => setQrProyecto(null)}
+        onSuccess={() => {}}
+      />
     </motion.div>
   );
 }

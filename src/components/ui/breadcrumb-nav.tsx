@@ -9,8 +9,8 @@ import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SEGMENT_LABELS: Record<string, string> = {
-  proyectos: "Dashboard",
-  proyecto: "Dashboard",
+  proyectos: "Gestión de Proyectos",
+  proyecto: "Gestión de Proyectos",
   resumen: "Dashboard",
   nuevo: "Nuevo Proyecto",
   editar: "Editar Proyecto",

@@ -90,7 +90,7 @@ export const AnimatedThemeToggler = ({
       )}
       {...props}
     >
-      <div className="relative size-6 md:size-7 transition-transform duration-500 ease-out group-hover:scale-125 group-hover:-rotate-90">
+      <div className="relative size-7 md:size-8 transition-transform duration-500 ease-out group-hover:scale-125 group-hover:-rotate-90">
         <AnimatePresence mode="wait" initial={false}>
           {!isDark ? (
             <motion.div

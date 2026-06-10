@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft,
   Users,
   Phone,
   Mail,
@@ -16,7 +15,9 @@ import {
   Loader2,
   Check,
   Copy,
-  Save
+  Save,
+  Plus,
+  X
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
@@ -54,6 +55,42 @@ const getCode = (id: string) => {
   return clean.slice(0, 3) + "-" + clean.slice(3, 6);
 };
 
+// Helper to format WhatsApp link from phone number
+const getWhatsAppLink = (phone: string) => {
+  const clean = phone.replace(/\D/g, "");
+  if (clean.length === 8) return `https://wa.me/502${clean}`;
+  return `https://wa.me/${clean}`;
+};
+
+const COUNTRIES = [
+  { code: "+502", flag: "🇬🇹", name: "Guatemala" },
+  { code: "+34",  flag: "🇪🇸", name: "España" },
+  { code: "+1",   flag: "🇺🇸", name: "EE.UU." },
+  { code: "+52",  flag: "🇲🇽", name: "México" },
+  { code: "+503", flag: "🇸🇻", name: "El Salvador" },
+  { code: "+504", flag: "🇭🇳", name: "Honduras" },
+  { code: "+505", flag: "🇳🇮", name: "Nicaragua" },
+  { code: "+506", flag: "🇨🇷", name: "Costa Rica" },
+  { code: "+507", flag: "🇵🇦", name: "Panamá" },
+  { code: "+57",  flag: "🇨🇴", name: "Colombia" },
+];
+
+const parsePhoneNumber = (phone: string) => {
+  if (!phone) return { countryCode: "+502", localNumber: "" };
+  const sorted = [...COUNTRIES].sort((a, b) => b.code.length - a.code.length);
+  const matched = sorted.find((c) => phone.startsWith(c.code));
+  if (matched) {
+    return {
+      countryCode: matched.code,
+      localNumber: phone.slice(matched.code.length),
+    };
+  }
+  if (phone.startsWith("+")) {
+    return { countryCode: "+502", localNumber: phone };
+  }
+  return { countryCode: "+502", localNumber: phone };
+};
+
 export default function ClientesDashboard() {
   const router = useRouter();
   const { effectiveRole } = useUserContext();
@@ -68,7 +105,7 @@ export default function ClientesDashboard() {
 
   // Form State
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [isFormExpanded, setIsFormExpanded] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     nombre: "",
     nit: "",
@@ -76,6 +113,10 @@ export default function ClientesDashboard() {
     correo: "",
   });
   const [formErrors, setFormErrors] = useState<{ nombre?: string; correo?: string }>({});
+
+  // Country Code State
+  const [selectedCountry, setSelectedCountry] = useState("+502");
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -148,11 +189,16 @@ export default function ClientesDashboard() {
     if (!validateForm()) return;
 
     setSubmitting(true);
+    const payload = {
+      ...formData,
+      telefono: selectedCountry + formData.telefono.trim(),
+    };
+
     let res: { success?: boolean; error?: string; cliente?: unknown };
     if (editingId) {
-      res = await updateCliente(editingId, formData);
+      res = await updateCliente(editingId, payload);
     } else {
-      res = await createCliente(formData);
+      res = await createCliente(payload);
     }
     setSubmitting(false);
 
@@ -178,7 +224,7 @@ export default function ClientesDashboard() {
       });
       setFormData({ nombre: "", nit: "", telefono: "", correo: "" });
       setEditingId(null);
-      setIsFormExpanded(false);
+      setIsModalOpen(false);
       getClientes()
         .then((data) => setClientes(data || []))
         .catch((err) => console.error("Error re-fetching clients:", err));
@@ -187,22 +233,24 @@ export default function ClientesDashboard() {
 
   const startEdit = (client: Cliente) => {
     setEditingId(client.id);
+    const { countryCode, localNumber } = parsePhoneNumber(client.telefono || "");
+    setSelectedCountry(countryCode);
     setFormData({
       nombre: client.nombre,
       nit: client.nit,
-      telefono: client.telefono,
+      telefono: localNumber,
       correo: client.correo,
     });
     setFormErrors({});
-    setIsFormExpanded(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsModalOpen(true);
   };
 
   const cancelEdit = () => {
     setEditingId(null);
+    setSelectedCountry("+502");
     setFormData({ nombre: "", nit: "", telefono: "", correo: "" });
     setFormErrors({});
-    setIsFormExpanded(false);
+    setIsModalOpen(false);
   };
 
   const handleDelete = async (client: Cliente) => {
@@ -260,15 +308,6 @@ export default function ClientesDashboard() {
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col gap-4">
-          {/* Back Button Link */}
-          <button
-            onClick={() => router.push("/kore/proyectos")}
-            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-celeste-kore hover:text-black dark:hover:text-white transition-colors cursor-pointer w-fit mt-4"
-          >
-            <ArrowLeft size={14} />
-            Volver a Proyectos
-          </button>
-
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-celeste-kore/10 flex items-center justify-center border border-celeste-kore/20 shrink-0">
               <Users className="text-celeste-kore size-6" />
@@ -284,162 +323,25 @@ export default function ClientesDashboard() {
           </div>
         </div>
 
-        {/* Project Creation Trigger */}
+        {/* Button to open registration modal */}
         <div className="flex items-center w-full sm:w-auto self-end sm:self-center">
           <button
-            onClick={() => router.push("/kore/proyectos/nuevo")}
+            onClick={() => {
+              setEditingId(null);
+              setSelectedCountry("+502");
+              setFormData({ nombre: "", nit: "", telefono: "", correo: "" });
+              setFormErrors({});
+              setIsModalOpen(true);
+            }}
             className="flex items-center justify-center gap-1.5 px-5 py-2.5 sm:px-7 sm:py-3.5 rounded-xl bg-celeste-kore text-black hover:opacity-95 transition-all font-black text-xs sm:text-sm w-full sm:w-auto cursor-pointer"
           >
-            Proyecto
+            Registrar Cliente
           </button>
         </div>
       </div>
 
       {/* MAIN LAYOUT */}
-      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-start">
-        {/* LEFT COLUMN: Sticky Form Card */}
-        <div className="lg:sticky lg:top-24 bg-white dark:bg-zinc-950/40 backdrop-blur-xl border border-celeste-kore/55 dark:border-white/10 rounded-2xl p-6 shadow-none dark:shadow-2xl transition-all duration-300">
-          <div
-            onClick={() => {
-              if (editingId) {
-                cancelEdit();
-              } else {
-                setIsFormExpanded(!isFormExpanded);
-              }
-            }}
-            className="flex items-center justify-between cursor-pointer select-none group/hdr"
-          >
-            <div>
-              <h3 className="text-base font-black tracking-tight text-black dark:text-white uppercase leading-none group-hover/hdr:text-celeste-kore transition-colors">
-                {editingId ? "Editar Cliente" : "Registrar Cliente"}
-              </h3>
-              <p className="text-[10px] text-muted-foreground mt-1.5 font-bold uppercase tracking-widest">
-                {editingId ? "Actualizar los datos del contacto" : "Crear un nuevo contacto en el sistema"}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-border/50 dark:border-white/10 text-muted-foreground hover:text-black dark:hover:text-white transition-colors cursor-pointer shrink-0 ml-4 animate-fade-in"
-            >
-              {isFormExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </button>
-          </div>
-
-          <AnimatePresence initial={false}>
-            {isFormExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                animate={{ height: "auto", opacity: 1, marginTop: 24 }}
-                exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <form onSubmit={handleFormSubmit} className="space-y-4">
-                  <div className="grid gap-1.5">
-                    <label htmlFor="nombre" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
-                      Nombre Completo *
-                    </label>
-                    <input
-                      id="nombre"
-                      name="nombre"
-                      type="text"
-                      placeholder="Ej. Oscar Jimenez"
-                      value={formData.nombre}
-                      onChange={handleInputChange}
-                      className={`flex h-10 w-full rounded-lg border bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 transition-all outline-none ${
-                        formErrors.nombre
-                          ? "border-destructive focus:ring-destructive/50"
-                          : "border-input dark:border-white/10 focus:ring-red-600/50"
-                      }`}
-                    />
-                    {formErrors.nombre && (
-                      <p className="text-[10px] text-destructive font-semibold">{formErrors.nombre}</p>
-                    )}
-                  </div>
-
-                  <div className="grid gap-1.5">
-                    <label htmlFor="nit" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
-                      NIT
-                    </label>
-                    <input
-                      id="nit"
-                      name="nit"
-                      type="text"
-                      placeholder="Ej. 1234567-8 ó CF"
-                      value={formData.nit}
-                      onChange={handleInputChange}
-                      className="flex h-10 w-full rounded-lg border border-input dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
-                    />
-                  </div>
-
-                  <div className="grid gap-1.5">
-                    <label htmlFor="telefono" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
-                      Teléfono de Contacto
-                    </label>
-                    <input
-                      id="telefono"
-                      name="telefono"
-                      type="text"
-                      placeholder="Ej. 42140797"
-                      value={formData.telefono}
-                      onChange={handleInputChange}
-                      className="flex h-10 w-full rounded-lg border border-input dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
-                    />
-                  </div>
-
-                  <div className="grid gap-1.5">
-                    <label htmlFor="correo" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
-                      Correo Electrónico
-                    </label>
-                    <input
-                      id="correo"
-                      name="correo"
-                      type="text"
-                      placeholder="Ej. oscar@gmail.com"
-                      value={formData.correo}
-                      onChange={handleInputChange}
-                      className={`flex h-10 w-full rounded-lg border bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 transition-all outline-none ${
-                        formErrors.correo
-                          ? "border-destructive focus:ring-destructive/50"
-                          : "border-input dark:border-white/10 focus:ring-red-600/50"
-                      }`}
-                    />
-                    {formErrors.correo && (
-                      <p className="text-[10px] text-destructive font-semibold">{formErrors.correo}</p>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    {editingId && (
-                      <button
-                        type="button"
-                        onClick={cancelEdit}
-                        className="flex-1 flex justify-center items-center h-10 rounded-lg border border-border/50 dark:border-white/10 bg-black/5 hover:bg-black/10 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-black dark:text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                    )}
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="flex-1 flex justify-center items-center gap-1.5 h-10 rounded-lg bg-celeste-kore text-black hover:bg-celeste-kore/90 font-black text-xs uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      {submitting ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Save size={14} />
-                      )}
-                      {editingId ? "Actualizar" : "Registrar"}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* RIGHT COLUMN: Search + Client List */}
-        <div className="space-y-4 w-full">
+      <div className="space-y-4 w-full max-w-5xl mx-auto">
           {/* Search bar */}
           <div className="relative w-full">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
@@ -488,25 +390,38 @@ export default function ClientesDashboard() {
                       onClick={() => toggleExpand(client.id)}
                       className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer select-none"
                     >
-                      <div className="flex items-start gap-3.5">
-                        <div className="w-9 h-9 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center shrink-0 border border-border/50 dark:border-white/10 text-black dark:text-white font-black text-sm">
-                          {client.nombre.charAt(0).toUpperCase()}
-                        </div>
+                      <div className="flex items-start">
                         <div>
                           <h3 className="text-sm font-black text-black dark:text-white hover:text-celeste-kore transition-colors">
                             {client.nombre}
                           </h3>
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                          <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-1 mt-1">
                             {client.nit && (
                               <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
                                 <span className="text-[9px] font-black text-celeste-kore/70 bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">NIT: {client.nit}</span>
                               </span>
                             )}
                             {client.telefono && (
-                              <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
-                                <Phone size={10} className="shrink-0 text-celeste-kore" />
-                                {client.telefono}
-                              </span>
+                              <a
+                                href={getWhatsAppLink(client.telefono)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-emerald-500 font-bold transition-colors cursor-pointer"
+                                title="Abrir chat de WhatsApp"
+                              >
+                                <Phone size={10} className="shrink-0 text-celeste-kore hover:text-emerald-500" />
+                                {(() => {
+                                  const parsed = parsePhoneNumber(client.telefono || "");
+                                  const matched = COUNTRIES.find((c) => c.code === parsed.countryCode);
+                                  return (
+                                    <>
+                                      <span className="text-[12px] shrink-0" title={matched?.name}>{matched?.flag || "🇬🇹"}</span>
+                                      <span>{parsed.localNumber}</span>
+                                    </>
+                                  );
+                                })()}
+                              </a>
                             )}
                             {client.correo && (
                               <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold truncate max-w-[180px] sm:max-w-none">
@@ -519,24 +434,6 @@ export default function ClientesDashboard() {
                       </div>
 
                       <div className="flex items-center justify-between sm:justify-end gap-6 border-t border-border/50 dark:border-white/5 pt-2.5 sm:pt-0 sm:border-0 shrink-0">
-                        {/* Projects Count */}
-                        <div className="text-left sm:text-right">
-                          <span className="text-[8px] uppercase tracking-wider text-muted-foreground block font-bold">Proyectos</span>
-                          <span className="text-[10px] font-black text-black dark:text-white bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded border border-border/50 dark:border-white/5">
-                            {client.proyectosCount} {client.proyectosCount === 1 ? "proyecto" : "proyectos"}
-                          </span>
-                        </div>
-
-                        {/* Total Paid */}
-                        {showInvestment && (
-                          <div className="text-right">
-                            <span className="text-[8px] uppercase tracking-wider text-muted-foreground block font-bold">Inversión</span>
-                            <span className="text-xs md:text-sm font-black text-celeste-kore">
-                              Q{client.totalPagado.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        )}
-
                         {/* Action buttons */}
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           <button
@@ -600,22 +497,9 @@ export default function ClientesDashboard() {
                                         className="border-b border-border/50 dark:border-white/5 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                                       >
                                         <td className="py-2.5 font-mono text-[10px] text-black dark:text-white">
-                                          <div className="flex items-center gap-1.5">
-                                            <span className="font-bold text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
-                                              {getCode(proj.id)}
-                                            </span>
-                                            <button
-                                              onClick={() => handleCopy(getCode(proj.id), proj.id)}
-                                              className="flex items-center justify-center p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                                              title="Copiar código"
-                                            >
-                                              {copiedId === proj.id ? (
-                                                <Check size={10} className="text-emerald-500" />
-                                              ) : (
-                                                <Copy size={10} />
-                                              )}
-                                            </button>
-                                          </div>
+                                          <span className="font-bold text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
+                                            {getCode(proj.id)}
+                                          </span>
                                         </td>
                                         <td className="py-2.5 font-semibold text-black dark:text-white">
                                           {proj.nombre}
@@ -636,6 +520,16 @@ export default function ClientesDashboard() {
                                         )}
                                       </tr>
                                     ))}
+                                    {showInvestment && (
+                                      <tr className="border-t border-border/50 dark:border-white/10 font-bold bg-black/5 dark:bg-white/5">
+                                        <td colSpan={3} className="py-3 text-right pr-4 text-[9px] font-black uppercase text-muted-foreground tracking-widest">
+                                          Total Inversión:
+                                        </td>
+                                        <td className="py-3 text-right font-black text-celeste-kore text-sm">
+                                          Q{client.totalPagado.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                                        </td>
+                                      </tr>
+                                    )}
                                   </tbody>
                                 </table>
                               </div>
@@ -650,7 +544,173 @@ export default function ClientesDashboard() {
             )}
           </div>
         </div>
-      </div>
+      {/* Client Form Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[110] bg-background/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="w-full max-w-md bg-white dark:bg-zinc-950 border border-celeste-kore/55 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/5">
+                <div>
+                  <h3 className="text-lg font-black tracking-tight text-black dark:text-white uppercase leading-none">
+                    {editingId ? "Editar Cliente" : "Registrar Cliente"}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground mt-1.5 font-bold uppercase tracking-widest">
+                    {editingId ? "Actualizar los datos del contacto" : "Crear un nuevo contacto en el sistema"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-muted-foreground hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body / Form */}
+              <form onSubmit={handleFormSubmit} className="p-6 space-y-4">
+                <div className="grid gap-1.5">
+                  <label htmlFor="nombre" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
+                    Nombre Completo *
+                  </label>
+                  <input
+                    id="nombre"
+                    name="nombre"
+                    type="text"
+                    placeholder=""
+                    value={formData.nombre}
+                    onChange={handleInputChange}
+                    className={`flex h-10 w-full rounded-lg border bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 transition-all outline-none ${
+                      formErrors.nombre
+                        ? "border-destructive focus:ring-destructive/50"
+                        : "border-input dark:border-white/10 focus:ring-red-600/50"
+                    }`}
+                  />
+                  {formErrors.nombre && (
+                    <p className="text-[10px] text-destructive font-semibold">{formErrors.nombre}</p>
+                  )}
+                </div>
+
+                <div className="grid gap-1.5">
+                  <label htmlFor="nit" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
+                    NIT
+                  </label>
+                  <input
+                    id="nit"
+                    name="nit"
+                    type="text"
+                    placeholder=""
+                    value={formData.nit}
+                    onChange={handleInputChange}
+                    className="flex h-10 w-full rounded-lg border border-input dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
+                  />
+                </div>
+
+                <div className="grid gap-1.5">
+                  <label htmlFor="telefono" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
+                    Teléfono de Contacto
+                  </label>
+                  <div className="flex gap-2 relative" onMouseLeave={() => setShowCountryDropdown(false)}>
+                    {/* Country Selector Dropdown */}
+                    <div className="relative shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                        className="flex h-10 items-center justify-between gap-1.5 rounded-lg border border-input dark:border-white/10 bg-black/5 dark:bg-zinc-900 px-3 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all cursor-pointer"
+                      >
+                        <span className="text-base">{COUNTRIES.find(c => c.code === selectedCountry)?.flag || "🇬🇹"}</span>
+                        <ChevronDown size={12} className="text-muted-foreground" />
+                      </button>
+
+                      {showCountryDropdown && (
+                        <div className="absolute left-0 mt-1 z-50 w-44 rounded-lg border border-border dark:border-white/10 bg-white dark:bg-zinc-950 shadow-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar">
+                          {COUNTRIES.map((c) => (
+                            <button
+                              key={c.code}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCountry(c.code);
+                                setShowCountryDropdown(false);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white transition-colors cursor-pointer"
+                            >
+                              <span className="text-base">{c.flag}</span>
+                              <span className="font-semibold">{c.name}</span>
+                              <span className="text-muted-foreground ml-auto">{c.code}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <input
+                      id="telefono"
+                      name="telefono"
+                      type="text"
+                      placeholder=""
+                      value={formData.telefono}
+                      onChange={handleInputChange}
+                      className="flex-1 h-10 rounded-lg border border-input dark:border-white/10 bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600/50 transition-all outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <label htmlFor="correo" className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">
+                    Correo Electrónico
+                  </label>
+                  <input
+                    id="correo"
+                    name="correo"
+                    type="text"
+                    placeholder=""
+                    value={formData.correo}
+                    onChange={handleInputChange}
+                    className={`flex h-10 w-full rounded-lg border bg-black/5 dark:bg-black/40 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 transition-all outline-none ${
+                      formErrors.correo
+                        ? "border-destructive focus:ring-destructive/50"
+                        : "border-input dark:border-white/10 focus:ring-red-600/50"
+                    }`}
+                  />
+                  {formErrors.correo && (
+                    <p className="text-[10px] text-destructive font-semibold">{formErrors.correo}</p>
+                  )}
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex gap-3 pt-4 border-t border-border/50 dark:border-white/10 mt-6 justify-end">
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="px-5 py-2.5 rounded-xl border border-border/50 dark:border-white/10 bg-black/5 hover:bg-black/10 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-black dark:text-white font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-6 py-2.5 rounded-xl bg-celeste-kore text-black hover:bg-celeste-kore/90 font-black text-xs uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {submitting ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Save size={14} />
+                    )}
+                    {editingId ? "Actualizar" : "Registrar"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

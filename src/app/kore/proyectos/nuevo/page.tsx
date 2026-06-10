@@ -17,7 +17,7 @@ export default function NuevoProyectoPage() {
   }, [effectiveRole, router]);
 
   return (
-    <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pt-28 md:p-8 md:pt-24">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pt-32 md:p-8 md:pt-24">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

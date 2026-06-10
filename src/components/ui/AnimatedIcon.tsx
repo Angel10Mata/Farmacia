@@ -40,7 +40,7 @@ export default function AnimatedIcon({
 
   return (
     <div
-      className={className}
+      className={`${className} flex items-center justify-center`}
       style={size !== undefined ? { width: size, height: size } : undefined}
     >
       {/* @ts-expect-error -- lord-icon is a custom web component */}
@@ -51,7 +51,7 @@ export default function AnimatedIcon({
         delay={delay}
         speed={speed}
         colors={colors.length > 0 ? colors.join(",") : undefined}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", display: "block" }}
       />
     </div>
   );
