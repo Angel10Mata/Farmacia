@@ -217,16 +217,32 @@ export function Dashboard() {
                         <div className="relative z-10 flex justify-center shrink-0">
                           <div className="size-14 sm:size-16 flex items-center justify-center transition-transform duration-700 ease-out md:group-hover:-translate-y-1 relative">
                             <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div 
-                              className="absolute inset-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 opacity-100 scale-100 -z-10"
+                            <motion.div 
+                              variants={{
+                                idle: { opacity: 1, scale: 1 },
+                                hover: { opacity: 1, scale: 1.08 },
+                                active: { opacity: 1, scale: 0.95 },
+                              }}
+                              transition={{ duration: 0.3 }}
+                              className="absolute inset-0 bg-white rounded-2xl border border-slate-200/80 shadow-md -z-10"
                             />
-                            <AnimatedIcon
-                              iconKey={mod.icon}
-                              target={`#${mod.id}-card`}
-                              className="size-8 sm:size-10"
-                              speed={1.5}
-                              trigger="hover"
-                            />
+                            <motion.div
+                              variants={{
+                                idle: { y: 0, scale: 1 },
+                                hover: { y: 3, scale: 1.05 },
+                                active: { y: 3, scale: 1.05 },
+                              }}
+                              transition={{ duration: 0.3 }}
+                              className="w-full h-full flex items-center justify-center"
+                            >
+                              <AnimatedIcon
+                                iconKey={mod.icon}
+                                target={`#${mod.id}-card`}
+                                className="size-8 sm:size-10"
+                                speed={1.5}
+                                trigger="hover"
+                              />
+                            </motion.div>
                           </div>
                         </div>
                         <div className="relative z-10 flex-1 flex flex-col items-start text-left space-y-1 md:transition-transform md:duration-700 md:group-hover:-translate-y-0.5">
@@ -304,16 +320,32 @@ export function Dashboard() {
                         className="size-14 sm:size-16 flex items-center justify-center relative"
                       >
                         <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div 
-                          className="absolute inset-[-6px] bg-white rounded-2xl border border-slate-200/80 shadow-md transition-all duration-500 -z-10 opacity-100 scale-100"
+                        <motion.div 
+                          variants={{
+                            idle: { opacity: 1, scale: 1 },
+                            hover: { opacity: 1, scale: 1.08 },
+                            active: { opacity: 1, scale: 0.95 },
+                          }}
+                          transition={{ duration: 0.3 }}
+                          className="absolute inset-0 bg-white rounded-2xl border border-slate-200/80 shadow-md -z-10"
                         />
-                        <AnimatedIcon
-                          iconKey={mod.icon}
-                          target={`#${mod.id}-card`}
-                          className="size-8 sm:size-10"
-                          speed={1.5}
-                          trigger="hover"
-                        />
+                        <motion.div
+                          variants={{
+                            idle: { y: 0, scale: 1 },
+                            hover: { y: 3, scale: 1.05 },
+                            active: { y: 3, scale: 1.05 },
+                          }}
+                          transition={{ duration: 0.3 }}
+                          className="w-full h-full flex items-center justify-center"
+                        >
+                          <AnimatedIcon
+                            iconKey={mod.icon}
+                            target={`#${mod.id}-card`}
+                            className="size-8 sm:size-10"
+                            speed={1.5}
+                            trigger="hover"
+                          />
+                        </motion.div>
                       </motion.div>
                     </div>
                     <div className="relative z-10 flex-1 flex flex-col items-start space-y-1 text-left">
