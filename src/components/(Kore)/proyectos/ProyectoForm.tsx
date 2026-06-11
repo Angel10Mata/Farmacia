@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   Home,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Swal from "sweetalert2";
@@ -29,11 +30,11 @@ import {
   TIPOS_DEDUCCION,
   TipoDeduccion,
 } from "./lib/schemas";
-import { createProyecto, updateProyecto, deleteProyecto } from "@/app/kore/proyectos/actions";
+import { createProyecto, updateProyecto, deleteProyecto, getProyectos } from "@/app/kore/proyectos/actions";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { KorePhoneInput } from "@/components/ui/KorePhoneInput";
 import { useTheme } from "next-themes";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
@@ -46,6 +47,7 @@ interface ProyectoFormProps {
 }
 
 // ── Small shared components ──────────────────────────────────────────────────
+
 
 const Label = ({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) => (
   <label
@@ -442,11 +444,71 @@ function FormDedListWithToggle({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function ProyectoForm({ proyecto }: ProyectoFormProps) {
-  const isEditing = !!proyecto;
+export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormProps) {
+  const params = useParams();
+  const paramId = params?.id as string | undefined;
+
+  // Internal state for fetched proyecto when editing via URL param
+  const [proyecto, setProyecto] = useState<any | null>(proyectoProp ?? null);
+  const [loadingProyecto, setLoadingProyecto] = useState(!!paramId && !proyectoProp);
+  const [notFound, setNotFound] = useState(false);
+
+  const isEditing = !!(proyecto || paramId);
   const { effectiveRole } = useUserContext();
   const isDeveloper = effectiveRole === "proyectos";
   const router = useRouter();
+
+  // Role guard
+  useEffect(() => {
+    if (!["super", "admin", "proyectos"].includes(effectiveRole)) {
+      router.replace("/kore");
+    }
+  }, [effectiveRole, router]);
+
+  // Fetch project by ID from URL when no prop is passed
+  useEffect(() => {
+    if (!paramId || proyectoProp) return;
+    let active = true;
+    setLoadingProyecto(true);
+    getProyectos()
+      .then((data) => {
+        if (!active) return;
+        const found = data.find((p: any) => p.id === paramId);
+        if (found) {
+          setProyecto(found);
+        } else {
+          setNotFound(true);
+        }
+      })
+      .catch(() => { if (active) setNotFound(true); })
+      .finally(() => { if (active) setLoadingProyecto(false); });
+    return () => { active = false; };
+  }, [paramId, proyectoProp]);
+
+  // Loading state
+  if (loadingProyecto) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
+        <div className="flex flex-col items-center gap-4 text-muted-foreground">
+          <RefreshCw size={32} className="animate-spin text-celeste-kore" />
+          <p className="text-sm font-bold uppercase tracking-widest">Cargando proyecto…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not found state
+  if (notFound) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
+        <div className="text-center space-y-3">
+          <p className="text-lg font-black text-foreground">Proyecto no encontrado</p>
+          <p className="text-sm text-muted-foreground">El proyecto que buscas no existe o fue eliminado.</p>
+        </div>
+      </div>
+    );
+  }
+
   const supabase = createClient();
   const [qrProyecto, setQrProyecto] = useState<any | null>(null);
   const { theme } = useTheme();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Briefcase,
@@ -9,10 +9,11 @@ import {
   Trash2,
   ChevronDown,
   ArrowLeft,
+  RefreshCw,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
-import { deleteProyecto } from "@/app/kore/proyectos/actions";
+import { deleteProyecto, getProyectos } from "@/app/kore/proyectos/actions";
 import Swal from "sweetalert2";
 import { useTheme } from "next-themes";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
@@ -20,7 +21,7 @@ import QRProyecto from "./QRProyecto";
 import { MagicCard } from "@/components/ui/magic-card";
 
 interface ProyectoDetalleProps {
-  proyecto: any;
+  proyecto?: any;
 }
 
 const DASH_TIPO_STYLE: Record<string, string> = {
@@ -215,12 +216,70 @@ function DetailDedListWithToggle({
   );
 }
 
-export default function ProyectoDetalle({ proyecto }: ProyectoDetalleProps) {
+export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDetalleProps) {
+  const params = useParams();
+  const paramId = params?.id as string | undefined;
+
+  const [proyecto, setProyecto] = useState<any | null>(proyectoProp ?? null);
+  const [loadingProyecto, setLoadingProyecto] = useState(!!paramId && !proyectoProp);
+  const [notFound, setNotFound] = useState(false);
+
   const { effectiveRole } = useUserContext();
   const isDeveloper = effectiveRole === "proyectos";
   const router = useRouter();
   const { theme } = useTheme();
   const [qrProyecto, setQrProyecto] = useState<any | null>(null);
+
+  // Role guard
+  useEffect(() => {
+    if (!["super", "admin", "proyectos"].includes(effectiveRole)) {
+      router.replace("/kore");
+    }
+  }, [effectiveRole, router]);
+
+  // Fetch project by ID from URL when no prop is passed
+  useEffect(() => {
+    if (!paramId || proyectoProp) return;
+    let active = true;
+    setLoadingProyecto(true);
+    getProyectos()
+      .then((data) => {
+        if (!active) return;
+        const found = data.find((p: any) => p.id === paramId);
+        if (found) {
+          setProyecto(found);
+        } else {
+          setNotFound(true);
+        }
+      })
+      .catch(() => { if (active) setNotFound(true); })
+      .finally(() => { if (active) setLoadingProyecto(false); });
+    return () => { active = false; };
+  }, [paramId, proyectoProp]);
+
+  // Loading state
+  if (loadingProyecto) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
+        <div className="flex flex-col items-center gap-4 text-muted-foreground">
+          <RefreshCw size={32} className="animate-spin text-celeste-kore" />
+          <p className="text-sm font-bold uppercase tracking-widest">Cargando proyecto…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not found state
+  if (notFound || !proyecto) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
+        <div className="text-center space-y-3">
+          <p className="text-lg font-black text-foreground">Proyecto no encontrado</p>
+          <p className="text-sm text-muted-foreground">El proyecto que buscas no existe o fue eliminado.</p>
+        </div>
+      </div>
+    );
+  }
 
   const getCode = (id: string) => {
     if (!id) return "";

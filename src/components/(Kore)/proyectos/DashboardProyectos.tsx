@@ -43,6 +43,7 @@ import QRProyecto from "./QRProyecto";
 import { QrCode, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { MagicCard } from "@/components/ui/magic-card";
+import { useUserContext } from "@/components/(base)/providers/UserProvider";
 
 
 // TypeScript declaration for the Lordicon web component
@@ -254,14 +255,17 @@ function DedListWithToggle({
   );
 }
 
-interface DashboardProyectosProps {
-  role: string;
-}
-
-export default function DashboardProyectos({ role }: DashboardProyectosProps) {
+export default function DashboardProyectos() {
   const router = useRouter();
   const { theme } = useTheme();
-  const isAdmin = ["super", "admin"].includes(role);
+  const { effectiveRole } = useUserContext();
+  const isAdmin = ["super", "admin"].includes(effectiveRole);
+
+  useEffect(() => {
+    if (!["super", "admin", "proyectos"].includes(effectiveRole)) {
+      router.replace("/kore");
+    }
+  }, [effectiveRole, router]);
 
   const [chartTab, setChartTab] = useState<"MES" | "AÑO" | "RANGO">("MES");
   const [dateRange, setDateRange] = useState({
