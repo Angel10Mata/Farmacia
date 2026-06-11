@@ -14,6 +14,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   resumen: "Dashboard",
   nuevo: "Nuevo Proyecto",
   editar: "Editar Proyecto",
+  detalle: "Detalle del Proyecto",
   clientes: "Clientes",
 };
 
@@ -35,9 +36,9 @@ export function BreadcrumbNav() {
   const parentPath =
     segments.length > 1 ? `/${segments.slice(0, -1).join("/")}` : "/kore";
 
-  // Para "editar", el back debe ir a /kore/proyectos (lista)
-  const isEditPage = rawSegments.includes("editar");
-  const backHref = isEditPage
+  // Para "editar" o "detalle", el back debe ir a /kore/proyectos (lista)
+  const isEditOrDetailPage = rawSegments.includes("editar") || rawSegments.includes("detalle");
+  const backHref = isEditOrDetailPage
     ? "/kore/proyectos"
     : isClientes
     ? "/kore/proyectos"

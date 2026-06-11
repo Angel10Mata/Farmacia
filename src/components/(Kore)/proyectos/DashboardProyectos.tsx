@@ -276,7 +276,6 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
   const [showList, setShowList] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [qrProyecto, setQrProyecto] = useState<any | null>(null);
-  const [detalleProyecto, setDetalleProyecto] = useState<any | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -835,7 +834,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                           return (
                             <tr
                               key={p.id}
-                              onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
+                              onClick={() => router.push(`/kore/proyectos/detalle/${p.id}`)}
                               className="group border-y border-border/50 dark:border-white/5 bg-card/20 hover:bg-card/40 cursor-pointer transition-all duration-300"
                             >
                               <td className="py-3 px-4 rounded-l-xl border-y border-l border-border group-hover:border-celeste-kore/20 transition-all duration-300">
@@ -951,7 +950,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
                         <div 
                           key={p.id} 
                           className="rounded-lg border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-none dark:shadow-md hover:border-celeste-kore/70 transition-all duration-300 cursor-pointer"
-                          onClick={() => router.push(`/kore/proyectos/editar/${p.id}`)}
+                          onClick={() => router.push(`/kore/proyectos/detalle/${p.id}`)}
                         >
                           {/* Top row: Code & State */}
                           <div className="flex items-center justify-between gap-2">
@@ -1319,229 +1318,7 @@ export default function DashboardProyectos({ role }: DashboardProyectosProps) {
         </div>
       )}
 
-      <AnimatePresence>
-        {detalleProyecto && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="fixed inset-0 z-[110] bg-background flex flex-col w-screen h-screen min-h-0 overflow-hidden text-zinc-900 dark:text-zinc-100"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MagicCard
-              className="w-full h-full min-h-0 flex flex-col rounded-none border-0 bg-card overflow-hidden text-zinc-900 dark:text-zinc-100"
-            >
-              {/* Header with Breadcrumbs */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/40 backdrop-blur-md sticky top-0 z-10 w-full overflow-hidden gap-4">
-                <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-medium text-muted-foreground overflow-hidden whitespace-nowrap flex-1">
-                  <button
-                    type="button"
-                    onClick={() => setDetalleProyecto(null)}
-                    className="group flex items-center justify-center hover:text-foreground transition-colors cursor-pointer mr-1"
-                    title="Atrás"
-                  >
-                    <ArrowLeft className="size-5 md:size-6 transition-transform group-hover:-translate-x-1" />
-                  </button>
 
-                  <Link
-                    href="/kore"
-                    className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
-                  >
-                    <Home className="size-5 md:size-6" />
-                  </Link>
-
-                  <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
-
-                  <button
-                    type="button"
-                    onClick={() => setDetalleProyecto(null)}
-                    className="capitalize hover:text-foreground transition-colors truncate cursor-pointer"
-                  >
-                    Gestión de Proyectos
-                  </button>
-
-                  <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
-
-                  <span className="capitalize text-foreground underline underline-offset-4 pointer-events-none text-xs md:text-base font-black text-celeste-kore shrink-0">
-                    Detalle del Proyecto
-                  </span>
-                </div>
-
-                {isAdmin && (
-                  <div className="flex items-center gap-2 border-l border-zinc-200 dark:border-zinc-800 pl-4 shrink-0">
-                    <button
-                      onClick={() => {
-                        setQrProyecto(detalleProyecto);
-                      }}
-                      className="flex items-center justify-center p-2 bg-muted/50 hover:bg-[#B7494E]/20 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors cursor-pointer"
-                      title="Ver QR"
-                    >
-                      <QrCode size={16} />
-                    </button>
-                    <button 
-                      onClick={() => router.push(`/kore/proyectos/editar/${detalleProyecto.id}`)}
-                      className="flex items-center justify-center p-2 bg-muted/50 hover:bg-celeste-kore/20 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
-                      title="Editar Proyecto"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button 
-                      onClick={async () => {
-                        const success = await handleDelete(detalleProyecto.id);
-                        if (success) {
-                          setDetalleProyecto(null);
-                        }
-                      }}
-                      className="flex items-center justify-center p-2 bg-muted/50 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-lg transition-colors cursor-pointer"
-                      title="Eliminar Proyecto"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-4 sm:space-y-5 custom-scrollbar">
-                {/* Info General */}
-                <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <code className="text-[10px] sm:text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2.5 py-1 rounded-lg border border-celeste-kore/20">
-                      {getCode(detalleProyecto.id)}
-                    </code>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black uppercase tracking-wider border ${
-                      detalleProyecto.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
-                      detalleProyecto.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
-                      'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
-                    }`}>
-                      {detalleProyecto.estado}
-                    </span>
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{detalleProyecto.nombre}</h2>
-                    {detalleProyecto.fecha_entrega && (
-                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(detalleProyecto.fecha_entrega)}</span></p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Info Cliente */}
-                <div className="space-y-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
-                  <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Información del Cliente</h3>
-                  <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
-                    <p><span className="text-zinc-500 dark:text-zinc-400">Nombre:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{detalleProyecto.cliente_nombre || 'N/A'}</span></p>
-                    {detalleProyecto.cliente_telefono && (
-                      <p className="flex items-center gap-1.5">
-                        <span className="text-zinc-500 dark:text-zinc-400">Teléfono:</span> 
-                        <a href={`https://wa.me/${detalleProyecto.cliente_telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-celeste-kore hover:underline flex items-center gap-1">
-                          {formatPhoneDisplay(detalleProyecto.cliente_telefono)}
-                        </a>
-                      </p>
-                    )}
-                    {detalleProyecto.cliente_correo && (
-                      <p><span className="text-zinc-500 dark:text-zinc-400">Correo:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50 break-all">{detalleProyecto.cliente_correo}</span></p>
-                    )}
-                  </div>
-                </div>
-
-
-                {/* Finanzas & Dona */}
-                {(() => {
-                  const precio = Number(detalleProyecto.precio) || 0;
-                  const mant = Number(detalleProyecto.mantenimiento) || 0;
-                  
-                  const getDedSum = (tipo: string) => {
-                    return (detalleProyecto.deducciones || [])
-                      .filter((d: any) => d.tipo.toLowerCase() === tipo.toLowerCase() || (tipo === "Vendedor" && d.tipo === "Comisión") || (tipo === "Desarrollador" && d.tipo === "Desarrollo"))
-                      .reduce((acc: number, curr: any) => acc + (precio * (Number(curr.porcentaje) || 0) / 100), 0);
-                  };
-
-                  const iva = getDedSum("IVA");
-                  const doc = getDedSum("Documentación");
-                  const vendedor = getDedSum("Vendedor");
-                  const dev = getDedSum("Desarrollador");
-                  const kore = getDedSum("Kore");
-
-                  const totalDeducciones = (detalleProyecto.deducciones || []).reduce((acc: number, curr: any) => acc + (precio * (Number(curr.porcentaje) || 0) / 100), 0);
-                  const restante = precio - totalDeducciones;
-
-                  const donutData = [
-                    { name: "Saldo Final", value: restante, color: "#B7494E" },
-                    { name: "Vendedor", value: vendedor, color: "#3D3C3C" },
-                    { name: "Desarrollo", value: dev, color: "#0ea5e9" },
-                    { name: "IVA", value: iva, color: "#52525b" },
-                    { name: "Doc", value: doc, color: "#a1a1aa" },
-                    { name: "Kore", value: kore, color: "#f59e0b" },
-                    { name: "Mantenimiento", value: mant, color: "#14b8a6" },
-                  ].filter(d => d.value > 0);
-
-                  return (
-                    <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
-                      <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Distribución Financiera</h3>
-                      
-                      {/* Donut Chart */}
-                      {donutData.length > 0 ? (
-                        <div className="w-full h-[180px] sm:h-[220px] flex items-center justify-center relative">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={donutData}
-                                innerRadius="65%"
-                                outerRadius="85%"
-                                paddingAngle={4}
-                                dataKey="value"
-                                stroke="none"
-                              >
-                                {donutData.map((entry, index) => (
-                                  <Cell key={`donut-cell-${index}`} fill={entry.color} />
-                                ))}
-                              </Pie>
-                            </PieChart>
-                          </ResponsiveContainer>
-                          <div className="absolute flex flex-col items-center justify-center text-center">
-                            <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-black">Valor Total</span>
-                            <span className="text-sm sm:text-lg font-black text-zinc-950 dark:text-zinc-50">Q{precio.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 text-zinc-500 dark:text-zinc-400 text-xs">No hay datos financieros.</div>
-                      )}
-
-                      {/* Donut Legend */}
-                      {donutData.length > 0 && (
-                        <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 px-1 text-[9px] sm:text-[10px] uppercase font-black text-zinc-500 dark:text-zinc-400">
-                          {donutData.map((item, idx) => (
-                            <div key={`legend-${idx}`} className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                              <span>{item.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Deducibles en acordeón — mismo estilo que el formulario */}
-                      {(() => {
-                        const activeDeds = (detalleProyecto.deducciones || []).filter(
-                          (d: any) => (Number(d.porcentaje) || 0) > 0
-                        );
-                        const totalPct = activeDeds.reduce(
-                          (acc: number, d: any) => acc + (Number(d.porcentaje) || 0), 0
-                        );
-                        if (activeDeds.length === 0) return null;
-
-                        return (
-                          <DedListWithToggle deds={activeDeds} totalPct={totalPct} precio={precio} mant={mant} restante={restante} />
-                        );
-                      })()}
-                    </div>
-                  );
-                })()}
-              </div>
-            </MagicCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <QRProyecto
         isOpen={!!qrProyecto}
