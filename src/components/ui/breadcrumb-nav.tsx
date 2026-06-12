@@ -5,18 +5,11 @@ import Link from "next/link";
 import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
-const isDynamicId = (seg: string): boolean => {
-  if (!seg) return false;
-  // 1. UUID estándar (con o sin guiones, 32 o 36 caracteres hex)
-  if (/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?-?[0-9a-f]{12}$/i.test(seg)) return true;
-  // 2. Formato de código corto (e.g. 056-AC7)
-  if (/^[0-9a-z]{3}-[0-9a-z]{3}$/i.test(seg)) return true;
-  // 3. Secuencia numérica pura (e.g. IDs incrementales en BD)
-  if (/^\d+$/.test(seg)) return true;
-  // 4. Hashes y ObjectIds (cadenas hexadecimales de 20+ caracteres)
-  if (/^[0-9a-f]{20,}$/i.test(seg)) return true;
-  return false;
-};
+/**
+ * Segmentos "terminales": cualquier cosa que venga DESPUÉS de estas palabras
+ * en la URL es un ID dinámico y debe ignorarse completamente.
+ */
+const TERMINAL_SEGMENTS = new Set(["detalle", "editar", "nuevo"]);
 
 const SEGMENT_LABELS: Record<string, string> = {
   kore: "Kore",
@@ -43,16 +36,26 @@ export function BreadcrumbNav() {
 
   const rawSegments = pathname.split("/").filter((item) => item !== "");
 
-  // Filtramos UUIDs y otros IDs dinámicos
-  const segments = isClientes
-    ? ["kore", "resumen", "clientes"]
-    : rawSegments.filter((seg) => !isDynamicId(seg));
+  // ── Filtrado por POSICIÓN (robusto, independiente del formato del ID) ──────
+  // 1. Encontrar el índice del primer segmento terminal (detalle, editar, nuevo)
+  // 2. Conservar solo los segmentos hasta ese terminal inclusive, descartar todo lo que venga después
+  let segments: string[];
+  if (isClientes) {
+    segments = ["kore", "resumen", "clientes"];
+  } else {
+    const terminalIdx = rawSegments.findIndex((seg) => TERMINAL_SEGMENTS.has(seg));
+    if (terminalIdx >= 0) {
+      // Cortar en el segmento terminal (inclusive), descartar el resto (IDs)
+      segments = rawSegments.slice(0, terminalIdx + 1);
+    } else {
+      segments = rawSegments;
+    }
+  }
 
+  // ── Navegación hacia atrás ────────────────────────────────────────────────
+  const isEditOrDetailPage = rawSegments.includes("editar") || rawSegments.includes("detalle");
   const parentPath =
     segments.length > 1 ? `/${segments.slice(0, -1).join("/")}` : "/kore";
-
-  // Para "editar" o "detalle", el back debe ir a /kore/proyectos (lista)
-  const isEditOrDetailPage = rawSegments.includes("editar") || rawSegments.includes("detalle");
   const backHref = isEditOrDetailPage
     ? "/kore/proyectos"
     : isClientes
@@ -91,7 +94,7 @@ export function BreadcrumbNav() {
           <AnimatePresence mode="popLayout" initial={false}>
             {segments.map((segment, index) => {
               const label = getSegmentLabel(segment);
-              // Si el segmento no tiene etiqueta conocida, lo omitimos por completo
+              // Omitir segmentos sin etiqueta conocida (por si queda algún residuo)
               if (!label) return null;
 
               const href = isClientes

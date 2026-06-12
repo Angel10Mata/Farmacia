@@ -10,18 +10,10 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const isDynamicId = (seg: string): boolean => {
-  if (!seg) return false;
-  // 1. UUID estándar (con o sin guiones, 32 o 36 caracteres hex)
-  if (/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?-?[0-9a-f]{12}$/i.test(seg)) return true;
-  // 2. Formato de código corto (e.g. 056-AC7)
-  if (/^[0-9a-z]{3}-[0-9a-z]{3}$/i.test(seg)) return true;
-  // 3. Secuencia numérica pura (e.g. IDs incrementales en BD)
-  if (/^\d+$/.test(seg)) return true;
-  // 4. Hashes y ObjectIds (cadenas hexadecimales de 20+ caracteres)
-  if (/^[0-9a-f]{20,}$/i.test(seg)) return true;
-  return false;
-};
+/**
+ * Segmentos "terminales": todo lo que venga DESPUÉS se descarta (son IDs).
+ */
+const TERMINAL_SEGMENTS = new Set(["detalle", "editar", "nuevo"]);
 
 const SEGMENT_LABELS: Record<string, string> = {
   kore: "Kore",
@@ -57,7 +49,9 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
   const canvasRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname() || "";
   const rawSegments = pathname.split("/").filter((item) => item !== "");
-  const segments = rawSegments.filter((seg) => !isDynamicId(seg));
+  // Filtrado por posición: cortar en el primer segmento terminal (inclusive)
+  const terminalIdx = rawSegments.findIndex((seg) => TERMINAL_SEGMENTS.has(seg));
+  const segments = terminalIdx >= 0 ? rawSegments.slice(0, terminalIdx + 1) : rawSegments;
 
   const getSegmentLabel = (segment: string): string | null =>
     SEGMENT_LABELS[segment] ?? null;
