@@ -143,21 +143,20 @@ export function Dashboard() {
                         </span>
                       </button>
                       <motion.div
-                        initial={{ opacity: isMobile ? 1 : 0, y: isMobile ? 0 : 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          duration: isMobile ? 0 : 0.4,
-                          delay: isMobile ? 0 : 0.15,
-                          ease: "easeOut",
+                        variants={{
+                          idle: { y: 0 },
+                          hover: { y: -18 },
+                          active: { y: -18 },
                         }}
+                        transition={{ duration: 0.3 }}
                         className="relative z-10 w-full h-full flex flex-row justify-center items-center gap-3 px-6"
                       >
                         <button
                           onClick={() => setIsProfileOpen(true)}
-                          className="flex-1 flex flex-col items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-center h-fit"
+                          className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left h-fit"
                         >
                           <UserIcon className="size-4 shrink-0 text-white" />
-                          <div className="flex flex-col items-center">
+                          <div>
                             <p className="text-xs font-bold text-white leading-none">
                               Mi Perfil
                             </p>
@@ -168,10 +167,12 @@ export function Dashboard() {
                         </button>
                         <button
                           onClick={() => setIsPasskeysOpen(true)}
-                          className="flex-1 flex flex-col items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-center h-fit"
+                          className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left h-fit"
                         >
-                          <Fingerprint className="size-4 shrink-0 text-white" />
-                          <div className="flex flex-col items-center">
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <Fingerprint className="size-4 text-white" />
+                          </div>
+                          <div>
                             <p className="text-xs font-bold text-white leading-none">
                               Ingreso Seguro
                             </p>
