@@ -143,12 +143,13 @@ export function Dashboard() {
                         </span>
                       </button>
                       <motion.div
-                        variants={{
-                          idle: { y: 0 },
-                          hover: { y: -18 },
-                          active: { y: -18 },
+                        initial={{ opacity: isMobile ? 1 : 0, y: isMobile ? -18 : 15 - 18 }}
+                        animate={{ opacity: 1, y: -18 }}
+                        transition={{
+                          duration: isMobile ? 0 : 0.4,
+                          delay: isMobile ? 0 : 0.15,
+                          ease: "easeOut",
                         }}
-                        transition={{ duration: 0.3 }}
                         className="relative z-10 w-full h-full flex flex-row justify-center items-center gap-3 px-6"
                       >
                         <button
