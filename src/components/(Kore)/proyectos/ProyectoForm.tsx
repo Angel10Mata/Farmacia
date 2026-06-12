@@ -444,6 +444,12 @@ function FormDedListWithToggle({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
+const getCode = (id: string) => {
+  if (!id) return "";
+  const clean = id.replace(/-/g, "").slice(0, 6).toUpperCase();
+  return clean.slice(0, 3) + "-" + clean.slice(3, 6);
+};
+
 export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormProps) {
   const params = useParams();
   const paramId = params?.id as string | undefined;
@@ -473,7 +479,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
     getProyectos()
       .then((data) => {
         if (!active) return;
-        const found = data.find((p: any) => p.id === paramId);
+        const found = data.find((p: any) => p.id === paramId || getCode(p.id) === paramId);
         if (found) {
           setProyecto(found);
         } else {
@@ -490,11 +496,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
   const [qrProyecto, setQrProyecto] = useState<any | null>(null);
   const { theme } = useTheme();
 
-  const getCode = (id: string) => {
-    if (!id) return "";
-    const clean = id.replace(/-/g, "").slice(0, 6).toUpperCase();
-    return clean.slice(0, 3) + "-" + clean.slice(3, 6);
-  };
+
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "";
@@ -803,7 +805,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
         color: "#fff",
       });
       if (isEditing) {
-        router.push(`/kore/proyectos/detalle/${proyecto.id}`);
+        router.push(`/kore/proyectos/detalle/${getCode(proyecto.id)}`);
       } else {
         router.push("/kore/proyectos");
       }
@@ -846,7 +848,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => router.push(`/kore/proyectos/detalle/${proyecto.id}`)}
+                onClick={() => router.push(`/kore/proyectos/detalle/${getCode(proyecto.id)}`)}
                 className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-celeste-kore/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
                 title="Ver Detalles"
               >

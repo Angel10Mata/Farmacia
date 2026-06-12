@@ -210,6 +210,12 @@ function DetailDedListWithToggle({
   );
 }
 
+const getCode = (id: string) => {
+  if (!id) return "";
+  const clean = id.replace(/-/g, "").slice(0, 6).toUpperCase();
+  return clean.slice(0, 3) + "-" + clean.slice(3, 6);
+};
+
 export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDetalleProps) {
   const params = useParams();
   const paramId = params?.id as string | undefined;
@@ -239,7 +245,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
     getProyectos()
       .then((data) => {
         if (!active) return;
-        const found = data.find((p: any) => p.id === paramId);
+        const found = data.find((p: any) => p.id === paramId || getCode(p.id) === paramId);
         if (found) {
           setProyecto(found);
         } else {
@@ -275,11 +281,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
     );
   }
 
-  const getCode = (id: string) => {
-    if (!id) return "";
-    const clean = id.replace(/-/g, "").slice(0, 6).toUpperCase();
-    return clean.slice(0, 3) + "-" + clean.slice(3, 6);
-  };
+
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "";
@@ -394,7 +396,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
               </button>
               <button
                 type="button"
-                onClick={() => router.push(`/kore/proyectos/editar/${proyecto.id}`)}
+                onClick={() => router.push(`/kore/proyectos/editar/${getCode(proyecto.id)}`)}
                 className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
               >
                 EDITAR

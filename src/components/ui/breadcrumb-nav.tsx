@@ -5,8 +5,8 @@ import Link from "next/link";
 import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
-// Regex para detectar UUIDs o IDs largos (más de 10 chars sin guion de separador de palabra)
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Regex para detectar UUIDs o IDs cortos de proyectos (e.g. 056-AC7)
+const UUID_REGEX = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{3}-[0-9a-f]{3})$/i;
 
 const SEGMENT_LABELS: Record<string, string> = {
   proyectos: "Gestión de Proyectos",
