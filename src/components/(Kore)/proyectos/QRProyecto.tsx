@@ -59,8 +59,8 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
   const rawSegments = pathname.split("/").filter((item) => item !== "");
   const segments = rawSegments.filter((seg) => !isDynamicId(seg));
 
-  const getSegmentLabel = (segment: string) =>
-    SEGMENT_LABELS[segment] ?? segment.replace(/-/g, " ");
+  const getSegmentLabel = (segment: string): string | null =>
+    SEGMENT_LABELS[segment] ?? null;
   const { theme } = useTheme();
   
   // Estados para credenciales y URL de acceso manuales
@@ -234,8 +234,11 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
               </Link>
 
               {segments.map((segment, index) => {
-                const isLastPageSegment = index === segments.length - 1;
                 const label = getSegmentLabel(segment);
+                // Omitir segmentos sin etiqueta conocida (IDs no filtrados, etc.)
+                if (!label) return null;
+
+                const isLastPageSegment = index === segments.length - 1;
 
                 if (isLastPageSegment) {
                   return (

@@ -59,8 +59,8 @@ export function BreadcrumbNav() {
     ? "/kore/proyectos"
     : parentPath;
 
-  const getSegmentLabel = (segment: string) =>
-    SEGMENT_LABELS[segment] ?? segment.replace(/-/g, " ");
+  const getSegmentLabel = (segment: string): string | null =>
+    SEGMENT_LABELS[segment] ?? null;
 
   return (
     <LayoutGroup id="breadcrumb">
@@ -90,7 +90,9 @@ export function BreadcrumbNav() {
         <div className="flex items-center gap-1 overflow-hidden mask-gradient">
           <AnimatePresence mode="popLayout" initial={false}>
             {segments.map((segment, index) => {
-
+              const label = getSegmentLabel(segment);
+              // Si el segmento no tiene etiqueta conocida, lo omitimos por completo
+              if (!label) return null;
 
               const href = isClientes
                 ? segment === "resumen"
@@ -128,7 +130,7 @@ export function BreadcrumbNav() {
                         : ""
                     }`}
                   >
-                    {getSegmentLabel(segment)}
+                    {label}
                   </Link>
                 </motion.div>
               );
