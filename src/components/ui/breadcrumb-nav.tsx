@@ -5,16 +5,27 @@ import Link from "next/link";
 import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
-// Regex para detectar UUIDs o IDs cortos de proyectos (e.g. 056-AC7)
-const UUID_REGEX = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{3}-[0-9a-f]{3})$/i;
+const isDynamicId = (seg: string): boolean => {
+  if (!seg) return false;
+  // 1. UUID estándar (con o sin guiones, 32 o 36 caracteres hex)
+  if (/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?-?[0-9a-f]{12}$/i.test(seg)) return true;
+  // 2. Formato de código corto (e.g. 056-AC7)
+  if (/^[0-9a-z]{3}-[0-9a-z]{3}$/i.test(seg)) return true;
+  // 3. Secuencia numérica pura (e.g. IDs incrementales en BD)
+  if (/^\d+$/.test(seg)) return true;
+  // 4. Hashes y ObjectIds (cadenas hexadecimales de 20+ caracteres)
+  if (/^[0-9a-f]{20,}$/i.test(seg)) return true;
+  return false;
+};
 
 const SEGMENT_LABELS: Record<string, string> = {
-  proyectos: "Gestión de Proyectos",
-  proyecto: "Gestión de Proyectos",
+  kore: "Kore",
+  proyectos: "Proyectos",
+  proyecto: "Proyectos",
   resumen: "Dashboard",
-  nuevo: "Nuevo Proyecto",
-  editar: "Editar Proyecto",
-  detalle: "Detalle del Proyecto",
+  nuevo: "Nuevo",
+  editar: "Editar",
+  detalle: "Detalle",
   clientes: "Clientes",
   admin: "Administración",
   configuraciones: "Configuraciones",
@@ -32,10 +43,10 @@ export function BreadcrumbNav() {
 
   const rawSegments = pathname.split("/").filter((item) => item !== "");
 
-  // Filtramos UUIDs — el segmento "editar" ya contiene toda la info necesaria
+  // Filtramos UUIDs y otros IDs dinámicos
   const segments = isClientes
     ? ["kore", "resumen", "clientes"]
-    : rawSegments.filter((seg) => !UUID_REGEX.test(seg));
+    : rawSegments.filter((seg) => !isDynamicId(seg));
 
   const parentPath =
     segments.length > 1 ? `/${segments.slice(0, -1).join("/")}` : "/kore";
@@ -79,7 +90,7 @@ export function BreadcrumbNav() {
         <div className="flex items-center gap-1 overflow-hidden mask-gradient">
           <AnimatePresence mode="popLayout" initial={false}>
             {segments.map((segment, index) => {
-              if (segment === "kore") return null;
+
 
               const href = isClientes
                 ? segment === "resumen"
