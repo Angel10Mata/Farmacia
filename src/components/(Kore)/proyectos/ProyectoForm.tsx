@@ -485,30 +485,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
     return () => { active = false; };
   }, [paramId, proyectoProp]);
 
-  // Loading state
-  if (loadingProyecto) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
-        <div className="flex flex-col items-center gap-4 text-muted-foreground">
-          <RefreshCw size={32} className="animate-spin text-celeste-kore" />
-          <p className="text-sm font-bold uppercase tracking-widest">Cargando proyecto…</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Not found state
-  if (notFound) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
-        <div className="text-center space-y-3">
-          <p className="text-lg font-black text-foreground">Proyecto no encontrado</p>
-          <p className="text-sm text-muted-foreground">El proyecto que buscas no existe o fue eliminado.</p>
-        </div>
-      </div>
-    );
-  }
-
+  // ── All remaining hooks must be declared before any early return ──
   const supabase = createClient();
   const [qrProyecto, setQrProyecto] = useState<any | null>(null);
   const { theme } = useTheme();
@@ -763,6 +740,29 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
     }
     setUserSearchQuery("");
   }, [proyecto, reset]);
+
+  // ── Early returns — after ALL hooks ──
+  if (loadingProyecto) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
+        <div className="flex flex-col items-center gap-4 text-muted-foreground">
+          <RefreshCw size={32} className="animate-spin text-celeste-kore" />
+          <p className="text-sm font-bold uppercase tracking-widest">Cargando proyecto…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4 pt-32 md:p-8 md:pt-24">
+        <div className="text-center space-y-3">
+          <p className="text-lg font-black text-foreground">Proyecto no encontrado</p>
+          <p className="text-sm text-muted-foreground">El proyecto que buscas no existe o fue eliminado.</p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Submit ──
   const onSubmit = async (data: ProyectoFormValues) => {
