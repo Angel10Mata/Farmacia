@@ -820,7 +820,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="w-full max-w-3xl mx-auto"
+      className="w-full max-w-3xl mx-auto px-4 pt-32 pb-16 md:px-0 md:pt-24"
     >
       <title>{isEditing ? `Editar Proyecto: ${proyecto?.nombre || ""} | KORE BMS` : "Nuevo Proyecto | KORE BMS"}</title>
 

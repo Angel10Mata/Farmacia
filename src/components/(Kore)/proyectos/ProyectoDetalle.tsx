@@ -375,7 +375,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
   ].filter(d => d.value > 0);
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-4">
+    <div className="w-full max-w-3xl mx-auto space-y-4 px-4 pt-32 pb-16 md:px-0 md:pt-24">
       {/* Dynamic Browser Tab Title */}
       <title>{`Detalle de Proyecto: ${proyecto.nombre} | KORE BMS`}</title>
 

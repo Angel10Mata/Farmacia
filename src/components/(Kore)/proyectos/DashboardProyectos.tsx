@@ -712,7 +712,7 @@ export default function DashboardProyectos() {
   };
 
   return (
-    <div className="w-full flex flex-col gap-4 sm:gap-6 text-foreground pt-2 sm:pt-4 relative">
+    <div className="w-full max-w-7xl mx-auto flex flex-col gap-4 sm:gap-6 text-foreground px-4 pt-32 pb-16 md:px-8 md:pt-24 relative">
       {/* Decorative Background Glows */}
       <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-celeste-kore/10 rounded-full blur-[120px] pointer-events-none -z-10 animate-pulse" />
       <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-azul-kore/5 rounded-full blur-[100px] pointer-events-none -z-10" />
