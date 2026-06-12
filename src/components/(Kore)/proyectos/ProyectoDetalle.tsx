@@ -3,12 +3,7 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Briefcase,
-  QrCode,
-  Edit,
-  Trash2,
   ChevronDown,
-  ArrowLeft,
   RefreshCw,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
@@ -375,63 +370,57 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
   ].filter(d => d.value > 0);
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-4 px-4 pt-32 pb-16 md:px-0 md:pt-24">
+    <div className="w-full max-w-3xl mx-auto space-y-6 px-4 pt-32 pb-16 md:px-0 md:pt-24">
       {/* Dynamic Browser Tab Title */}
       <title>{`Detalle de Proyecto: ${proyecto.nombre} | KORE BMS`}</title>
 
-      <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
-        {/* Title bar */}
-        <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/5 gap-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push("/kore/proyectos")}
-              className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 flex items-center justify-center border border-black/10 dark:border-white/10 shrink-0 cursor-pointer"
-            >
-              <ArrowLeft size={20} className="text-celeste-kore" />
-            </button>
-            <div>
-              <h1 className="text-xl font-black tracking-tight text-foreground uppercase">
-                Detalle del Proyecto
-              </h1>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                Información financiera y general del proyecto
-              </p>
-            </div>
-          </div>
+      {/* HEADER SECTION */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-4xl font-black tracking-tight mt-0.5 sm:mt-1 leading-none uppercase">
+            DETALLE DEL <br className="hidden sm:block" />
+            <span className="text-celeste-kore">PROYECTO</span>
+          </h1>
+        </div>
 
-          {/* Action buttons (only when user is admin/super) */}
+        <div className="flex items-stretch gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => router.push("/kore/proyectos")}
+            className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-black dark:text-white transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
+          >
+            VOLVER
+          </button>
           {!isDeveloper && (
-            <div className="flex items-center gap-2">
+            <>
               <button
                 type="button"
                 onClick={() => setQrProyecto(proyecto)}
-                className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-[#B7494E]/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors cursor-pointer"
-                title="Ver QR"
+                className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-black dark:text-white transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
               >
-                <QrCode size={16} />
+                VER QR
               </button>
               <button
                 type="button"
                 onClick={() => router.push(`/kore/proyectos/editar/${proyecto.id}`)}
-                className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-celeste-kore/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
-                title="Editar Proyecto"
+                className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
               >
-                <Edit size={16} />
+                EDITAR
               </button>
               <button
                 type="button"
                 onClick={handleDeleteProyecto}
-                className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-red-500 rounded-lg transition-colors cursor-pointer"
-                title="Eliminar Proyecto"
+                className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-500 transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
               >
-                <Trash2 size={16} />
+                ELIMINAR
               </button>
-            </div>
+            </>
           )}
         </div>
+      </div>
 
+      <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
         {/* Content */}
-        <MagicCard className="w-full rounded-none border-0 bg-transparent text-zinc-900 dark:text-zinc-100 p-6 space-y-5">
+        <MagicCard className="w-full rounded-2xl border-0 bg-transparent text-zinc-900 dark:text-zinc-100 p-6 space-y-5">
           {/* Info General */}
           <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
             <div className="flex items-center justify-between flex-wrap gap-2">
