@@ -13,7 +13,6 @@ import Swal from "sweetalert2";
 import { useTheme } from "next-themes";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import QRProyecto from "./QRProyecto";
-import { MagicCard } from "@/components/ui/magic-card";
 
 interface ProyectoDetalleProps {
   proyecto?: any;
@@ -418,110 +417,105 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
         </div>
       </div>
 
-      <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
-        {/* Content */}
-        <MagicCard className="w-full rounded-2xl border-0 bg-transparent text-zinc-900 dark:text-zinc-100 p-6 space-y-5">
-          {/* Info General */}
-          <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <code className="text-[10px] sm:text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2.5 py-1 rounded-lg border border-celeste-kore/20">
-                {getCode(proyecto.id)}
-              </code>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black uppercase tracking-wider border ${
-                proyecto.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
-                proyecto.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
-                'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
-              }`}>
-                {proyecto.estado}
-              </span>
-            </div>
-            <div>
-              <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{proyecto.nombre}</h2>
-              {proyecto.fecha_entrega && (
-                <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(proyecto.fecha_entrega)}</span></p>
-              )}
+      {/* Info General */}
+      <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 p-5 sm:p-6 space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <code className="text-[10px] sm:text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2.5 py-1 rounded-lg border border-celeste-kore/20">
+            {getCode(proyecto.id)}
+          </code>
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black uppercase tracking-wider border ${
+            proyecto.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
+            proyecto.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
+            'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
+          }`}>
+            {proyecto.estado}
+          </span>
+        </div>
+        <div>
+          <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{proyecto.nombre}</h2>
+          {proyecto.fecha_entrega && (
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(proyecto.fecha_entrega)}</span></p>
+          )}
+        </div>
+      </div>
+
+      {/* Info Cliente */}
+      <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 p-5 sm:p-6 space-y-2.5">
+        <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Información del Cliente</h3>
+        <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
+          <p><span className="text-zinc-500 dark:text-zinc-400">Nombre:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{proyecto.cliente_nombre || 'N/A'}</span></p>
+          {proyecto.cliente_nit && (
+            <p><span className="text-zinc-500 dark:text-zinc-400">NIT:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{proyecto.cliente_nit}</span></p>
+          )}
+          {proyecto.cliente_telefono && (
+            <p className="flex items-center gap-1.5">
+              <span className="text-zinc-500 dark:text-zinc-400">Teléfono:</span> 
+              <a href={`https://wa.me/${proyecto.cliente_telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-celeste-kore hover:underline flex items-center gap-1">
+                {formatPhoneDisplay(proyecto.cliente_telefono)}
+              </a>
+            </p>
+          )}
+          {proyecto.cliente_correo && (
+            <p><span className="text-zinc-500 dark:text-zinc-400">Correo:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50 break-all">{proyecto.cliente_correo}</span></p>
+          )}
+        </div>
+      </div>
+
+      {/* Finanzas & Dona */}
+      <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 p-5 sm:p-6 space-y-3">
+        <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Distribución Financiera</h3>
+        
+        {donutData.length > 0 ? (
+          <div className="w-full h-[180px] sm:h-[220px] flex items-center justify-center relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={donutData}
+                  innerRadius="65%"
+                  outerRadius="85%"
+                  paddingAngle={4}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {donutData.map((entry, index) => (
+                    <Cell key={`donut-cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute flex flex-col items-center justify-center text-center">
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-black">Valor Total</span>
+              <span className="text-sm sm:text-lg font-black text-zinc-950 dark:text-zinc-50">Q{precio.toLocaleString()}</span>
             </div>
           </div>
+        ) : (
+          <div className="text-center py-6 text-zinc-500 dark:text-zinc-400 text-xs">No hay datos financieros.</div>
+        )}
 
-          {/* Info Cliente */}
-          <div className="space-y-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
-            <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Información del Cliente</h3>
-            <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
-              <p><span className="text-zinc-500 dark:text-zinc-400">Nombre:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{proyecto.cliente_nombre || 'N/A'}</span></p>
-              {proyecto.cliente_nit && (
-                <p><span className="text-zinc-500 dark:text-zinc-400">NIT:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50">{proyecto.cliente_nit}</span></p>
-              )}
-              {proyecto.cliente_telefono && (
-                <p className="flex items-center gap-1.5">
-                  <span className="text-zinc-500 dark:text-zinc-400">Teléfono:</span> 
-                  <a href={`https://wa.me/${proyecto.cliente_telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-celeste-kore hover:underline flex items-center gap-1">
-                    {formatPhoneDisplay(proyecto.cliente_telefono)}
-                  </a>
-                </p>
-              )}
-              {proyecto.cliente_correo && (
-                <p><span className="text-zinc-500 dark:text-zinc-400">Correo:</span> <span className="font-bold text-zinc-950 dark:text-zinc-50 break-all">{proyecto.cliente_correo}</span></p>
-              )}
-            </div>
-          </div>
-
-          {/* Finanzas & Dona */}
-          <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 rounded-2xl shadow-none dark:shadow-sm">
-            <h3 className="text-[10px] sm:text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-800/80 pb-1.5">Distribución Financiera</h3>
-            
-            {donutData.length > 0 ? (
-              <div className="w-full h-[180px] sm:h-[220px] flex items-center justify-center relative">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={donutData}
-                      innerRadius="65%"
-                      outerRadius="85%"
-                      paddingAngle={4}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {donutData.map((entry, index) => (
-                        <Cell key={`donut-cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute flex flex-col items-center justify-center text-center">
-                  <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-black">Valor Total</span>
-                  <span className="text-sm sm:text-lg font-black text-zinc-950 dark:text-zinc-50">Q{precio.toLocaleString()}</span>
-                </div>
+        {donutData.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 px-1 text-[9px] sm:text-[10px] uppercase font-black text-zinc-500 dark:text-zinc-400">
+            {donutData.map((item, idx) => (
+              <div key={`legend-${idx}`} className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                <span>{item.name}</span>
               </div>
-            ) : (
-              <div className="text-center py-6 text-zinc-500 dark:text-zinc-400 text-xs">No hay datos financieros.</div>
-            )}
-
-            {donutData.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 px-1 text-[9px] sm:text-[10px] uppercase font-black text-zinc-500 dark:text-zinc-400">
-                {donutData.map((item, idx) => (
-                  <div key={`legend-${idx}`} className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span>{item.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {(() => {
-              const activeDeds = (proyecto.deducciones || []).filter(
-                (d: any) => (Number(d.porcentaje) || 0) > 0
-              );
-              const totalPct = activeDeds.reduce(
-                (acc: number, d: any) => acc + (Number(d.porcentaje) || 0), 0
-              );
-              if (activeDeds.length === 0) return null;
-
-              return (
-                <DetailDedListWithToggle deds={activeDeds} totalPct={totalPct} precio={precio} mant={mant} restante={restante} />
-              );
-            })()}
+            ))}
           </div>
-        </MagicCard>
+        )}
+
+        {(() => {
+          const activeDeds = (proyecto.deducciones || []).filter(
+            (d: any) => (Number(d.porcentaje) || 0) > 0
+          );
+          const totalPct = activeDeds.reduce(
+            (acc: number, d: any) => acc + (Number(d.porcentaje) || 0), 0
+          );
+          if (activeDeds.length === 0) return null;
+
+          return (
+            <DetailDedListWithToggle deds={activeDeds} totalPct={totalPct} precio={precio} mant={mant} restante={restante} />
+          );
+        })()}
       </div>
 
       {/* MODAL QR */}
