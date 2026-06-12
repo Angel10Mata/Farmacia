@@ -8,6 +8,23 @@ import Swal from "sweetalert2";
 import { updateProyectoOtrosCampos } from "@/app/kore/proyectos/actions";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const SEGMENT_LABELS: Record<string, string> = {
+  proyectos: "Gestión de Proyectos",
+  proyecto: "Gestión de Proyectos",
+  resumen: "Dashboard",
+  nuevo: "Nuevo Proyecto",
+  editar: "Editar Proyecto",
+  detalle: "Detalle del Proyecto",
+  clientes: "Clientes",
+  admin: "Administración",
+  configuraciones: "Configuraciones",
+  dispositivos: "Dispositivos de Acceso",
+  usuarios: "Gestión de Usuarios",
+};
 
 interface QRProyectoProps {
   proyecto: {
@@ -26,6 +43,12 @@ interface QRProyectoProps {
 
 export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRProyectoProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname() || "";
+  const rawSegments = pathname.split("/").filter((item) => item !== "");
+  const segments = rawSegments.filter((seg) => !UUID_REGEX.test(seg));
+
+  const getSegmentLabel = (segment: string) =>
+    SEGMENT_LABELS[segment] ?? segment.replace(/-/g, " ");
   const { theme } = useTheme();
   
   // Estados para credenciales y URL de acceso manuales
@@ -198,29 +221,46 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
                 <Home className="size-5 md:size-6" />
               </Link>
 
-              <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+              {segments.map((segment, index) => {
+                if (segment === "kore") return null;
 
-              <Link
-                href="/kore/proyectos"
-                className="capitalize hover:text-foreground transition-colors truncate"
-              >
-                Gestión de Proyectos
-              </Link>
+                const isLastPageSegment = index === segments.length - 1;
+                const label = getSegmentLabel(segment);
 
-              <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+                if (isLastPageSegment) {
+                  return (
+                    <div key={segment} className="flex items-center gap-1.5 md:gap-2 shrink-0">
+                      <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="capitalize hover:text-foreground transition-colors truncate cursor-pointer"
+                      >
+                        {label}
+                      </button>
+                    </div>
+                  );
+                }
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="capitalize hover:text-foreground transition-colors truncate cursor-pointer"
-              >
-                Editar Proyecto
-              </button>
+                const href = `/${segments.slice(0, index + 1).join("/")}`;
+
+                return (
+                  <div key={href} className="flex items-center gap-1.5 md:gap-2 shrink-0">
+                    <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+                    <Link
+                      href={href}
+                      className="capitalize hover:text-foreground transition-colors truncate"
+                    >
+                      {label}
+                    </Link>
+                  </div>
+                );
+              })}
 
               <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
 
               <span className="capitalize text-foreground underline underline-offset-4 pointer-events-none text-xs md:text-lg font-black text-celeste-kore shrink-0">
-                QR del Proyecto ({proyecto.nombre})
+                QR del Proyecto
               </span>
             </div>
           </div>

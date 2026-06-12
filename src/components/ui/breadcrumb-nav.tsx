@@ -16,6 +16,10 @@ const SEGMENT_LABELS: Record<string, string> = {
   editar: "Editar Proyecto",
   detalle: "Detalle del Proyecto",
   clientes: "Clientes",
+  admin: "Administración",
+  configuraciones: "Configuraciones",
+  dispositivos: "Dispositivos de Acceso",
+  usuarios: "Gestión de Usuarios",
 };
 
 export function BreadcrumbNav() {
