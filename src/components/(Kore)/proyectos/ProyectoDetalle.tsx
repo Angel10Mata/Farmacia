@@ -383,12 +383,6 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
         </div>
 
         <div className="flex items-stretch gap-2 w-full sm:w-auto">
-          <button
-            onClick={() => router.push("/kore/proyectos")}
-            className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-black dark:text-white transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
-          >
-            VOLVER
-          </button>
           {!isDeveloper && (
             <>
               <button
