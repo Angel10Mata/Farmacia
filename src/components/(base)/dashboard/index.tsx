@@ -150,14 +150,14 @@ export function Dashboard() {
                           delay: isMobile ? 0 : 0.15,
                           ease: "easeOut",
                         }}
-                        className="relative z-10 w-full h-[calc(100%-36px)] flex flex-row justify-center items-center gap-3 px-6"
+                        className="relative z-10 w-full h-full flex flex-row justify-center items-center gap-3 px-6"
                       >
                         <button
                           onClick={() => setIsProfileOpen(true)}
-                          className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left h-fit"
+                          className="flex-1 flex flex-col items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-center h-fit"
                         >
                           <UserIcon className="size-4 shrink-0 text-white" />
-                          <div>
+                          <div className="flex flex-col items-center">
                             <p className="text-xs font-bold text-white leading-none">
                               Mi Perfil
                             </p>
@@ -168,12 +168,10 @@ export function Dashboard() {
                         </button>
                         <button
                           onClick={() => setIsPasskeysOpen(true)}
-                          className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-left h-fit"
+                          className="flex-1 flex flex-col items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/30 bg-white/15 hover:bg-white/25 transition-all cursor-pointer text-center h-fit"
                         >
-                          <div className="flex items-center gap-0.5 shrink-0">
-                            <Fingerprint className="size-4 text-white" />
-                          </div>
-                          <div>
+                          <Fingerprint className="size-4 shrink-0 text-white" />
+                          <div className="flex flex-col items-center">
                             <p className="text-xs font-bold text-white leading-none">
                               Ingreso Seguro
                             </p>
@@ -208,7 +206,7 @@ export function Dashboard() {
                         </span>
                       </div>
                       <div
-                        className="w-full h-[calc(100%-36px)] flex flex-row justify-start items-center px-6 gap-4 relative z-10"
+                        className="w-full h-full flex flex-row justify-start items-center px-6 gap-4 relative z-10"
                       >
                         <div className="relative z-10 flex justify-center shrink-0">
                           <div className="size-14 sm:size-16 flex items-center justify-center relative">
@@ -238,10 +236,10 @@ export function Dashboard() {
                         <motion.div
                           variants={{
                             idle: { y: 0 },
-                            hover: { y: isMobile ? 0 : -18 },
-                            active: { y: isMobile ? 0 : -18 },
+                            hover: { y: -18 },
+                            active: { y: -18 },
                           }}
-                          transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                          transition={{ duration: 0.3 }}
                           className="relative z-10 flex-1 flex flex-col items-start text-left space-y-1"
                         >
                           <h3 className="text-base sm:text-lg font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words md:transition-colors md:duration-500">
@@ -295,7 +293,7 @@ export function Dashboard() {
                     </motion.span>
                   </div>
                   <motion.div
-                    className="w-full flex relative z-10 h-[calc(100%-36px)] flex-row items-center justify-start px-6 gap-4"
+                    className="w-full flex relative z-10 h-full flex-row items-center justify-start px-6 gap-4"
                     variants={{
                       idle: { opacity: 1 },
                       hover: { opacity: 1 },
@@ -335,10 +333,10 @@ export function Dashboard() {
                     <motion.div
                       variants={{
                         idle: { y: 0 },
-                        hover: { y: isMobile ? 0 : -18 },
-                        active: { y: isMobile ? 0 : -18 },
+                        hover: { y: -18 },
+                        active: { y: -18 },
                       }}
-                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                      transition={{ duration: 0.3 }}
                       className="relative z-10 flex-1 flex flex-col items-start space-y-1 text-left"
                     >
                       <h3 className="text-base sm:text-lg font-black tracking-tighter uppercase leading-none w-full break-words md:transition-colors md:duration-500">
