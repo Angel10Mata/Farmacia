@@ -20,6 +20,8 @@ import {
   Home,
   ChevronRight,
   RefreshCw,
+  MoreVertical,
+  Edit2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Swal from "sweetalert2";
@@ -136,7 +138,7 @@ function DeduccionRow({
   field,
   idx,
   style,
-  userName,
+  users,
   register,
   onRemove,
   forceOpen,
@@ -144,14 +146,16 @@ function DeduccionRow({
   field: any;
   idx: number;
   style: { pill: string; dot: string };
-  userName: string | null;
+  users: any[] | undefined;
   register: any;
   onRemove: () => void;
   forceOpen: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const hasDetails = !!(userName || (field.tipo !== "IVA" && field.descripcion));
-  const isOpen = forceOpen || open;
+  const [showMenu, setShowMenu] = useState(false);
+  
+  const canExpand = field.tipo !== "IVA";
+  const isOpen = forceOpen || (canExpand && open);
 
   return (
     <motion.div
@@ -162,13 +166,13 @@ function DeduccionRow({
       layout
       className="rounded-xl border border-border/30 bg-muted/10 overflow-hidden group hover:border-border/50 transition-all"
     >
-      {/* Fila 1: Etiqueta + % + Eliminar (siempre visible, clickable para expandir) */}
+      {/* Fila 1: Etiqueta + % + Acciones (siempre visible, clickable para expandir) */}
       <div
         className={cn(
           "flex items-center gap-2 px-3 py-2.5",
-          hasDetails && "cursor-pointer"
+          canExpand && "cursor-pointer"
         )}
-        onClick={() => hasDetails && setOpen((o) => !o)}
+        onClick={() => canExpand && setOpen((o) => !o)}
       >
         {/* Pill */}
         <span
@@ -198,8 +202,8 @@ function DeduccionRow({
           <span className="text-[10px] font-bold text-muted-foreground">%</span>
         </div>
 
-        {/* Chevron (si tiene detalles) */}
-        {hasDetails ? (
+        {/* Chevron para indicar que es expandible */}
+        {canExpand && (
           <ChevronDown
             size={12}
             className={cn(
@@ -207,27 +211,60 @@ function DeduccionRow({
               isOpen && "rotate-180"
             )}
           />
-        ) : (
-          <ChevronDown
-            size={12}
-            className="text-transparent shrink-0 pointer-events-none select-none"
-          />
         )}
 
-        {/* Eliminar */}
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="flex items-center justify-center p-1 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-all cursor-pointer shrink-0"
-          title="Eliminar"
-        >
-          <Trash2 size={12} />
-        </button>
+        {/* Botón de Acciones */}
+        <div className="relative ml-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => setShowMenu(!showMenu)}
+            className="flex items-center justify-center p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground/30 hover:text-foreground transition-all cursor-pointer shrink-0"
+            title="Acciones"
+          >
+            <MoreVertical size={14} />
+          </button>
+          
+          {showMenu && (
+            <>
+              {/* Overlay transparente para cerrar al hacer clic afuera */}
+              <div 
+                className="fixed inset-0 z-40 cursor-default" 
+                onClick={() => setShowMenu(false)}
+              />
+              <div className="absolute right-0 top-full mt-1 z-50 bg-background dark:bg-zinc-950 border border-border dark:border-white/10 rounded-xl shadow-2xl p-1 w-32 flex flex-col gap-0.5">
+                {canExpand && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(!open);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-foreground hover:bg-celeste-kore/10 hover:text-celeste-kore text-left transition-colors cursor-pointer"
+                  >
+                    <Edit2 size={12} />
+                    {open ? "Colapsar" : "Editar"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRemove();
+                    setShowMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-500/10 text-left transition-colors cursor-pointer"
+                >
+                  <Trash2 size={12} />
+                  Eliminar
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Filas colapsables: Asignado a + Descripción */}
+      {/* Filas colapsables para edición directa */}
       <AnimatePresence initial={false}>
-        {isOpen && hasDetails && (
+        {isOpen && canExpand && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -235,18 +272,39 @@ function DeduccionRow({
             transition={{ duration: 0.16 }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-2.5 pt-0 space-y-0.5 border-t border-border/20">
-              {userName && (
-                <p className="text-[11px] text-foreground/60 pt-1.5">
-                  <span className="font-semibold text-foreground/50">Asignado a:</span>{" "}
-                  <span className="font-bold text-celeste-kore">{userName}</span>
-                </p>
+            <div className="px-3 pb-3 pt-2.5 space-y-3 border-t border-border/20 bg-muted/5 flex flex-col gap-2">
+              {/* Asignar Usuario */}
+              {["Vendedor", "Desarrollador", "Documentación"].includes(field.tipo) && (
+                <div className="flex flex-col gap-1.5 text-left" onClick={(e) => e.stopPropagation()}>
+                  <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider">
+                    Asignado a:
+                  </label>
+                  <select
+                    {...register(`deducciones.${idx}.usuario_id`)}
+                    className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-celeste-kore/50 outline-none transition-all cursor-pointer"
+                  >
+                    <option value="">Sin asignar</option>
+                    {users?.map((u: any) => (
+                      <option key={u.id} value={u.id}>
+                        {u.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
-              {field.tipo !== "IVA" && field.descripcion && (
-                <p className="text-[11px] text-muted-foreground leading-snug">
-                  {field.descripcion}
-                </p>
-              )}
+
+              {/* Descripción */}
+              <div className="flex flex-col gap-1.5 text-left" onClick={(e) => e.stopPropagation()}>
+                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider">
+                  Descripción:
+                </label>
+                <textarea
+                  {...register(`deducciones.${idx}.descripcion`)}
+                  placeholder="Detalles opcionales..."
+                  rows={2}
+                  className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-celeste-kore/50 outline-none transition-all resize-y"
+                />
+              </div>
             </div>
           </motion.div>
         )}
@@ -1113,7 +1171,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                               field={field}
                               idx={idx}
                               style={style}
-                              userName={userName}
+                              users={users}
                               register={register}
                               onRemove={() => remove(idx)}
                               forceOpen={allDedExpanded}
