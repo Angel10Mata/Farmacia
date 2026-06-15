@@ -176,7 +176,7 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           onClick={onClose}
-          className="fixed inset-0 z-[95] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 text-zinc-900 dark:text-zinc-100 overflow-y-auto custom-scrollbar pt-20"
+          className="fixed inset-0 z-[95] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 text-zinc-900 dark:text-zinc-100 overflow-hidden pt-20"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -184,7 +184,7 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-background border border-border dark:border-white/10 rounded-2xl w-full max-w-md p-6 relative shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto custom-scrollbar"
+            className="bg-background border border-border dark:border-white/10 rounded-2xl w-full max-w-md p-6 relative shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto overflow-x-hidden custom-scrollbar"
           >
             {/* Close Button */}
             <button
@@ -206,7 +206,7 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
             </div>
 
             {/* QR Content */}
-            <div className="flex-1 overflow-y-auto flex flex-col items-center gap-5 custom-scrollbar w-full">
+            <div className="flex-1 flex flex-col items-center gap-5 w-full">
               {/* QR Code */}
               <div
                 ref={canvasRef}
