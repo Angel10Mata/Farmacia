@@ -805,7 +805,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
         color: "#fff",
       });
       if (isEditing) {
-        router.push(`/kore/proyectos/detalle/${getCode(proyecto.id)}`);
+        router.push(`/kore/proyectos/ver/${getCode(proyecto.id)}`);
       } else {
         router.push("/kore/proyectos");
       }

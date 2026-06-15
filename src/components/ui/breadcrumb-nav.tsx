@@ -12,7 +12,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   resumen: "Dashboard",
   nuevo: "Nuevo",
   editar: "Editar",
-  detalle: "Ver",
+  ver: "Ver",
   clientes: "Clientes",
   admin: "Administración",
   configuraciones: "Configuraciones",
@@ -58,10 +58,10 @@ export function BreadcrumbNav() {
   // ── Navegación hacia atrás (botón flecha izquierda) ────────────────────────
   let backHref = "/kore";
   if (rawSegments.includes("editar")) {
-    const detalleIdx = rawSegments.indexOf("detalle");
+    const detalleIdx = rawSegments.indexOf("ver");
     const id = detalleIdx >= 0 && detalleIdx + 1 < rawSegments.length ? rawSegments[detalleIdx + 1] : "";
-    backHref = id ? `/kore/proyectos/detalle/${id}` : "/kore/proyectos";
-  } else if (rawSegments.includes("detalle")) {
+    backHref = id ? `/kore/proyectos/ver/${id}` : "/kore/proyectos";
+  } else if (rawSegments.includes("ver")) {
     backHref = "/kore/proyectos";
   } else if (isClientes) {
     backHref = "/kore/proyectos";

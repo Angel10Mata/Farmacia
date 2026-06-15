@@ -838,7 +838,7 @@ export default function DashboardProyectos() {
                           return (
                             <tr
                               key={p.id}
-                              onClick={() => router.push(`/kore/proyectos/detalle/${getCode(p.id)}`)}
+                              onClick={() => router.push(`/kore/proyectos/ver/${getCode(p.id)}`)}
                               className="group border-y border-border/50 dark:border-white/5 bg-card/20 hover:bg-card/40 cursor-pointer transition-all duration-300"
                             >
                               <td className="py-3 px-4 rounded-l-xl border-y border-l border-border group-hover:border-celeste-kore/20 transition-all duration-300">
@@ -954,7 +954,7 @@ export default function DashboardProyectos() {
                         <div 
                           key={p.id} 
                           className="rounded-lg border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-none dark:shadow-md hover:border-celeste-kore/70 transition-all duration-300 cursor-pointer"
-                          onClick={() => router.push(`/kore/proyectos/detalle/${getCode(p.id)}`)}
+                          onClick={() => router.push(`/kore/proyectos/ver/${getCode(p.id)}`)}
                         >
                           {/* Top row: Code & State */}
                           <div className="flex items-center justify-between gap-2">
