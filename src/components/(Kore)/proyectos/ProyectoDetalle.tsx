@@ -396,7 +396,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
               </button>
               <button
                 type="button"
-                onClick={() => router.push(`/kore/proyectos/editar/${getCode(proyecto.id)}`)}
+                onClick={() => router.push(`/kore/proyectos/detalle/${getCode(proyecto.id)}/editar`)}
                 className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
               >
                 EDITAR

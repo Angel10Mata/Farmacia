@@ -70,7 +70,7 @@ export function MagicCard({
 
   return (
     <div
-      className={cn("group relative rounded-[inherit]", className)}
+      className={cn("group relative rounded-[inherit] bg-background", className)}
       onPointerMove={handlePointerMove}
       onPointerLeave={reset}
       onPointerEnter={reset}
@@ -89,7 +89,7 @@ export function MagicCard({
         }}
       />
 
-      <div className="bg-background absolute inset-px rounded-[inherit]" />
+      <div className="absolute inset-px rounded-[inherit] bg-inherit" />
       <div className="relative z-10 h-full min-h-0 w-full flex flex-col">{children}</div>
     </div>
   );

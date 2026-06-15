@@ -110,7 +110,7 @@ export function Dashboard() {
             }}
           >
             {mod.id === "perfil" ? (
-              <div className="group flex flex-col border border-red-500 dark:border-red-500/50 overflow-hidden h-full w-full rounded-2xl bg-white dark:bg-zinc-900/40 backdrop-blur-md md:transition-colors md:duration-500 hover:border-red-600 dark:hover:border-red-500 hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-red-500/10">
+              <div className="group flex flex-col border border-red-500 dark:border-red-500/50 overflow-hidden h-full w-full rounded-2xl bg-white dark:bg-black backdrop-blur-md md:transition-colors md:duration-500 hover:border-red-600 dark:hover:border-red-500 hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-red-500/10">
                 <AnimatePresence mode="wait">
                   {expandedPerfil ? (
                     <motion.div
@@ -263,7 +263,7 @@ export function Dashboard() {
             ) : (
               <div
                 onClick={() => handleCardClick(mod.id, mod.href)}
-                className="group flex flex-col border border-red-500 dark:border-red-500/50 overflow-hidden h-full w-full rounded-2xl transition-colors duration-500 cursor-pointer bg-white dark:bg-zinc-900/40 backdrop-blur-md hover:border-red-600 dark:hover:border-red-500 hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-red-500/10"
+                className="group flex flex-col border border-red-500 dark:border-red-500/50 overflow-hidden h-full w-full rounded-2xl transition-colors duration-500 cursor-pointer bg-white dark:bg-black backdrop-blur-md hover:border-red-600 dark:hover:border-red-500 hover:shadow-lg hover:shadow-red-600/10 dark:hover:shadow-red-500/10"
                 style={{
                   borderColor: isActive ? "#ef4444" : undefined,
                 }}

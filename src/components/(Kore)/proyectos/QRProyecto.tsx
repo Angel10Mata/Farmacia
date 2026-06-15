@@ -2,33 +2,11 @@
 
 import { useRef, useState, useEffect } from "react";
 import { QRCode } from "react-qrcode-logo";
-import { X, Download, QrCode, ChevronLeft, ArrowLeft, Home, ChevronRight } from "lucide-react";
+import { X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
 import { updateProyectoOtrosCampos } from "@/app/kore/proyectos/actions";
 import { useTheme } from "next-themes";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-/**
- * Segmentos "terminales": todo lo que venga DESPUÉS se descarta (son IDs).
- */
-const TERMINAL_SEGMENTS = new Set(["detalle", "editar", "nuevo"]);
-
-const SEGMENT_LABELS: Record<string, string> = {
-  kore: "Kore",
-  proyectos: "Proyectos",
-  proyecto: "Proyectos",
-  resumen: "Dashboard",
-  nuevo: "Nuevo",
-  editar: "Editar",
-  detalle: "Detalle",
-  clientes: "Clientes",
-  admin: "Administración",
-  configuraciones: "Configuraciones",
-  dispositivos: "Dispositivos de Acceso",
-  usuarios: "Gestión de Usuarios",
-};
 
 interface QRProyectoProps {
   proyecto: {
@@ -47,14 +25,6 @@ interface QRProyectoProps {
 
 export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRProyectoProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname() || "";
-  const rawSegments = pathname.split("/").filter((item) => item !== "");
-  // Filtrado por posición: cortar en el primer segmento terminal (inclusive)
-  const terminalIdx = rawSegments.findIndex((seg) => TERMINAL_SEGMENTS.has(seg));
-  const segments = terminalIdx >= 0 ? rawSegments.slice(0, terminalIdx + 1) : rawSegments;
-
-  const getSegmentLabel = (segment: string): string | null =>
-    SEGMENT_LABELS[segment] ?? null;
   const { theme } = useTheme();
   
   // Estados para credenciales y URL de acceso manuales
@@ -201,178 +171,142 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 30 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          onClick={(e) => e.stopPropagation()}
-          className="fixed inset-0 z-[110] bg-background flex flex-col w-screen h-screen min-h-0 overflow-hidden text-zinc-900 dark:text-zinc-100"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+          className="fixed inset-0 z-[95] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 text-zinc-900 dark:text-zinc-100 overflow-y-auto custom-scrollbar pt-20"
         >
-          {/* Header with Breadcrumbs */}
-          <div className="flex items-center p-4 sm:p-5 border-b border-border dark:border-white/10 bg-muted/5 shrink-0 w-full overflow-hidden">
-            <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-base font-medium text-muted-foreground overflow-hidden whitespace-nowrap">
-              <button
-                type="button"
-                onClick={onClose}
-                className="group flex items-center justify-center hover:text-foreground transition-colors cursor-pointer mr-1"
-                title="Atrás"
-              >
-                <ArrowLeft className="size-5 md:size-6 transition-transform group-hover:-translate-x-1" />
-              </button>
-
-              <Link
-                href="/kore"
-                className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
-              >
-                <Home className="size-5 md:size-6" />
-              </Link>
-
-              {segments.map((segment, index) => {
-                const label = getSegmentLabel(segment);
-                // Omitir segmentos sin etiqueta conocida (IDs no filtrados, etc.)
-                if (!label) return null;
-
-                const isLastPageSegment = index === segments.length - 1;
-
-                if (isLastPageSegment) {
-                  return (
-                    <div key={segment} className="flex items-center gap-1.5 md:gap-2 shrink-0">
-                      <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
-                      <button
-                        type="button"
-                        onClick={onClose}
-                        className="capitalize hover:text-foreground transition-colors truncate cursor-pointer"
-                      >
-                        {label}
-                      </button>
-                    </div>
-                  );
-                }
-
-                const href = `/${segments.slice(0, index + 1).join("/")}`;
-
-                return (
-                  <div key={href} className="flex items-center gap-1.5 md:gap-2 shrink-0">
-                    <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
-                    <Link
-                      href={href}
-                      className="capitalize hover:text-foreground transition-colors truncate"
-                    >
-                      {label}
-                    </Link>
-                  </div>
-                );
-              })}
-
-              <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
-
-              <span className="capitalize text-foreground underline underline-offset-4 pointer-events-none text-xs md:text-lg font-black text-celeste-kore shrink-0">
-                QR del Proyecto
-              </span>
-            </div>
-          </div>
-
-          {/* QR Content */}
-          <div className="flex-1 overflow-y-auto flex flex-col items-center px-6 py-6 gap-5 custom-scrollbar max-w-lg mx-auto w-full">
-            {/* QR Code */}
-            <div
-              ref={canvasRef}
-              className="p-6 bg-white rounded-2xl shrink-0 border border-zinc-200/80 shadow-md"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-background border border-border dark:border-white/10 rounded-2xl w-full max-w-md p-6 relative shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto custom-scrollbar"
+          >
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+              title="Cerrar"
             >
-              <QRCode
-                value={qrValue}
-                size={280}
-                bgColor="#ffffff"
-                fgColor="#09090b"
-                ecLevel="H"
-                qrStyle="dots"
-                logoImage="/kore/kore.png"
-                logoWidth={96}
-                logoHeight={54}
-                logoPadding={5}
-                logoPaddingStyle="square"
-                removeQrCodeBehindLogo={true}
-                eyeRadius={10}
-              />
+              <X className="size-5" />
+            </button>
+
+            {/* Title / Header of the Modal */}
+            <div className="flex flex-col gap-1 pr-6 pb-2 border-b border-border dark:border-white/10">
+              <h3 className="text-lg font-black uppercase tracking-tight text-celeste-kore">
+                Código QR
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Escanea para acceder a los detalles del proyecto o configura las credenciales.
+              </p>
             </div>
 
-            {/* Formulario de Configuración de Acceso manual */}
-            <div className="w-full flex flex-col gap-2.5 bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 rounded-2xl p-4 shrink-0">
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#B7494E]">
-                Configurar Acceso Cliente
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col gap-1 text-left">
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Usuario</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: cliente12"
-                    value={usuarioAcceso}
-                    onChange={(e) => setUsuarioAcceso(e.target.value)}
-                    className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
-                  />
-                </div>
-                <div className="flex flex-col gap-1 text-left">
-                  <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Contraseña</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: 123456"
-                    value={passAcceso}
-                    onChange={(e) => setPassAcceso(e.target.value)}
-                    className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1 text-left">
-                <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">URL de Acceso</label>
-                <input
-                  type="text"
-                  placeholder="URL de entrada"
-                  value={urlAcceso}
-                  onChange={(e) => setUrlAcceso(e.target.value)}
-                  className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
+            {/* QR Content */}
+            <div className="flex-1 overflow-y-auto flex flex-col items-center gap-5 custom-scrollbar w-full">
+              {/* QR Code */}
+              <div
+                ref={canvasRef}
+                className="p-6 bg-white rounded-2xl shrink-0 border border-zinc-200/80 shadow-md"
+              >
+                <QRCode
+                  value={qrValue}
+                  size={280}
+                  bgColor="#ffffff"
+                  fgColor="#09090b"
+                  ecLevel="H"
+                  qrStyle="dots"
+                  logoImage="/kore/kore.png"
+                  logoWidth={96}
+                  logoHeight={54}
+                  logoPadding={5}
+                  logoPaddingStyle="square"
+                  removeQrCodeBehindLogo={true}
+                  eyeRadius={10}
                 />
               </div>
+
+              {/* Formulario de Configuración de Acceso manual */}
+              <div className="w-full flex flex-col gap-2.5 bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 rounded-2xl p-4 shrink-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#B7494E]">
+                  Configurar Acceso Cliente
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1 text-left">
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Usuario</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: cliente12"
+                      value={usuarioAcceso}
+                      onChange={(e) => setUsuarioAcceso(e.target.value)}
+                      className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 text-left">
+                    <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Contraseña</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: 123456"
+                      value={passAcceso}
+                      onChange={(e) => setPassAcceso(e.target.value)}
+                      className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1 text-left">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">URL de Acceso</label>
+                  <input
+                    type="text"
+                    placeholder="URL de entrada"
+                    value={urlAcceso}
+                    onChange={(e) => setUrlAcceso(e.target.value)}
+                    className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
+                  />
+                </div>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="mt-1.5 w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-[#B7494E]/10 hover:bg-[#B7494E]/20 text-[#B7494E] font-black text-[10px] tracking-widest uppercase border border-[#B7494E]/20 hover:border-[#B7494E]/30 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                >
+                  {saving ? "Guardando..." : "Guardar Credenciales"}
+                </button>
+              </div>
+
+              {/* Info Cards */}
+              <div className="w-full grid grid-cols-1 gap-2 shrink-0">
+                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Código</span>
+                  <code className="text-xs font-mono font-bold text-[#B7494E] bg-[#B7494E]/10 px-2 py-0.5 rounded border border-[#B7494E]/20">
+                    {shortCode}
+                  </code>
+                </div>
+                <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Cliente</span>
+                  <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.cliente_nombre || "N/A"}</span>
+                </div>
+                <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Vendedor</span>
+                  <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.vendedor_nombre || "N/A"}</span>
+                </div>
+                <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Desarrollador</span>
+                  <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.desarrollador_nombre || "N/A"}</span>
+                </div>
+              </div>
+
+              {/* Download Button */}
               <button
-                onClick={handleSave}
-                disabled={saving}
-                className="mt-1.5 w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-[#B7494E]/10 hover:bg-[#B7494E]/20 text-[#B7494E] font-black text-[10px] tracking-widest uppercase border border-[#B7494E]/20 hover:border-[#B7494E]/30 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                onClick={handleDownload}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-sm tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-[#B7494E]/20 cursor-pointer shrink-0"
               >
-                {saving ? "Guardando..." : "Guardar Credenciales"}
+                <Download size={16} />
+                DESCARGAR QR
               </button>
             </div>
-
-            {/* Info Cards */}
-            <div className="w-full grid grid-cols-1 gap-2 shrink-0">
-              <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Código</span>
-                <code className="text-xs font-mono font-bold text-[#B7494E] bg-[#B7494E]/10 px-2 py-0.5 rounded border border-[#B7494E]/20">
-                  {shortCode}
-                </code>
-              </div>
-              <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Cliente</span>
-                <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.cliente_nombre || "N/A"}</span>
-              </div>
-              <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Vendedor</span>
-                <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.vendedor_nombre || "N/A"}</span>
-              </div>
-              <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Desarrollador</span>
-                <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.desarrollador_nombre || "N/A"}</span>
-              </div>
-            </div>
-
-            {/* Download Button */}
-            <button
-              onClick={handleDownload}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#B7494E] hover:bg-[#B7494E]/90 text-white font-black text-sm tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-[#B7494E]/20 cursor-pointer shrink-0"
-            >
-              <Download size={16} />
-              DESCARGAR QR
-            </button>
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

@@ -841,38 +841,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                 {isEditing ? "Modificando información" : "Registro de datos"}
               </p>
             </div>
-          </div>
-
-          {/* Action buttons (only when editing and user is admin/super) */}
-          {isEditing && !isDeveloper && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => router.push(`/kore/proyectos/detalle/${getCode(proyecto.id)}`)}
-                className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-celeste-kore/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-celeste-kore rounded-lg transition-colors cursor-pointer"
-                title="Ver Detalles"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setQrProyecto(proyecto)}
-                className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-[#B7494E]/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-[#B7494E] rounded-lg transition-colors cursor-pointer"
-                title="Ver QR"
-              >
-                <QrCode size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="flex items-center justify-center p-2.5 bg-black/5 dark:bg-white/5 hover:bg-red-500/20 border border-border/50 dark:border-white/5 text-muted-foreground hover:text-red-500 rounded-lg transition-colors cursor-pointer"
-                title="Eliminar Proyecto"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          )}
-        </div>
+          </div>        </div>
 
         {/* Form body */}
         <div className="p-6">
@@ -1312,7 +1281,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
             )}
             {isEditing ? "Guardar" : "Crear"}
           </button>
-          {step === 1 && (
+          {step === 1 && !isDeveloper && (
              <button
                type="button"
                onClick={() => setStep(2)}
