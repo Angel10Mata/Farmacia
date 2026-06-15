@@ -204,7 +204,10 @@ function DeduccionRow({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
       layout
-      className="rounded-xl border border-border/30 bg-muted/10 overflow-hidden group hover:border-border/50 transition-all"
+      className={cn(
+        "rounded-xl border border-border/30 bg-muted/10 group hover:border-border/50 transition-all relative",
+        showMenu ? "z-30" : "z-10"
+      )}
     >
       {/* Fila 1: Etiqueta + % + Acciones (siempre visible, clickable para expandir) */}
       <div
@@ -243,7 +246,7 @@ function DeduccionRow({
         </div>
 
         {/* Chevron para indicar que es expandible */}
-        {canExpand && (
+        {canExpand ? (
           <ChevronDown
             size={12}
             className={cn(
@@ -251,6 +254,8 @@ function DeduccionRow({
               isOpen && "rotate-180"
             )}
           />
+        ) : (
+          <div className="w-3 h-3 shrink-0" />
         )}
 
         {/* Botón de Acciones */}
@@ -271,20 +276,7 @@ function DeduccionRow({
                 className="fixed inset-0 z-40 cursor-default" 
                 onClick={() => setShowMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-1 z-50 bg-background dark:bg-zinc-950 border border-border dark:border-white/10 rounded-xl shadow-2xl p-1 w-32 flex flex-col gap-0.5">
-                {canExpand && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(!open);
-                      setShowMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-foreground hover:bg-celeste-kore/10 hover:text-celeste-kore text-left transition-colors cursor-pointer"
-                  >
-                    <Edit2 size={12} />
-                    {open ? "Colapsar" : "Editar"}
-                  </button>
-                )}
+              <div className="absolute right-0 top-full mt-1 z-50 bg-background dark:bg-zinc-950 border border-border dark:border-white/10 rounded-xl shadow-2xl p-1 w-24 flex flex-col gap-0.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -312,7 +304,7 @@ function DeduccionRow({
             transition={{ duration: 0.16 }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-3 pt-2.5 space-y-3 border-t border-border/20 bg-muted/5 flex flex-col gap-2">
+            <div className="px-3 pb-3 pt-2.5 space-y-3 border-t border-border/20 bg-muted/5 flex flex-col gap-2 rounded-b-xl">
               {/* Asignar Usuario (Autocomplete) */}
               {["Vendedor", "Desarrollador", "Documentación"].includes(field.tipo) && (
                 <div className="flex flex-col gap-1.5 text-left relative" onClick={(e) => e.stopPropagation()}>
@@ -321,7 +313,7 @@ function DeduccionRow({
                   </label>
                   <input
                     type="text"
-                    placeholder="Escribe al menos 2 letras para buscar..."
+                    placeholder="Buscar..."
                     value={searchQuery}
                     onChange={handleSearchChange}
                     onFocus={() => {
