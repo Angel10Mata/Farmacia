@@ -401,13 +401,6 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
               >
                 EDITAR
               </button>
-              <button
-                type="button"
-                onClick={handleDeleteProyecto}
-                className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-500 transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
-              >
-                ELIMINAR
-              </button>
             </>
           )}
         </div>
@@ -518,6 +511,19 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
           })()}
         </div>
       </div>
+
+      {/* BOTON ELIMINAR PROYECTO HASTA ABAJO */}
+      {!isDeveloper && (
+        <div className="flex justify-end pt-4">
+          <button
+            type="button"
+            onClick={handleDeleteProyecto}
+            className="w-full sm:w-auto flex items-center justify-center px-6 py-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-500 transition-all font-black text-sm whitespace-nowrap cursor-pointer uppercase hover:opacity-95"
+          >
+            ELIMINAR PROYECTO
+          </button>
+        </div>
+      )}
 
       {/* MODAL QR */}
       <QRProyecto
