@@ -139,6 +139,7 @@ function DeduccionRow({
   idx,
   style,
   users,
+  setValue,
   register,
   onRemove,
   forceOpen,
@@ -147,6 +148,7 @@ function DeduccionRow({
   idx: number;
   style: { pill: string; dot: string };
   users: any[] | undefined;
+  setValue: any;
   register: any;
   onRemove: () => void;
   forceOpen: boolean;
@@ -154,8 +156,46 @@ function DeduccionRow({
   const [open, setOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   
+  // Autocomplete state
+  const currentUserId = field.usuario_id || "";
+  const initialUserName = users?.find((u: any) => u.id === currentUserId)?.nombre || "";
+  const [searchQuery, setSearchQuery] = useState(initialUserName);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Sync searchQuery when users list loads or field initial state changes
+  useEffect(() => {
+    if (users && field.usuario_id) {
+      const user = users.find((u: any) => u.id === field.usuario_id);
+      if (user) {
+        setSearchQuery(user.nombre || "");
+      }
+    }
+  }, [users, field.usuario_id]);
+
   const canExpand = field.tipo !== "IVA";
   const isOpen = forceOpen || (canExpand && open);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowSuggestions(value.trim().length >= 2);
+    if (value.trim() === "") {
+      setValue(`deducciones.${idx}.usuario_id`, "");
+    }
+  };
+
+  const filteredSuggestions = useMemo(() => {
+    if (searchQuery.trim().length < 2) return [];
+    return (users || []).filter((u: any) =>
+      u.nombre?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [users, searchQuery]);
+
+  const handleSelectUser = (u: any) => {
+    setValue(`deducciones.${idx}.usuario_id`, u.id);
+    setSearchQuery(u.nombre || "");
+    setShowSuggestions(false);
+  };
 
   return (
     <motion.div
@@ -273,23 +313,57 @@ function DeduccionRow({
             className="overflow-hidden"
           >
             <div className="px-3 pb-3 pt-2.5 space-y-3 border-t border-border/20 bg-muted/5 flex flex-col gap-2">
-              {/* Asignar Usuario */}
+              {/* Asignar Usuario (Autocomplete) */}
               {["Vendedor", "Desarrollador", "Documentación"].includes(field.tipo) && (
-                <div className="flex flex-col gap-1.5 text-left" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col gap-1.5 text-left relative" onClick={(e) => e.stopPropagation()}>
                   <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider">
                     Asignado a:
                   </label>
-                  <select
-                    {...register(`deducciones.${idx}.usuario_id`)}
-                    className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-celeste-kore/50 outline-none transition-all cursor-pointer"
-                  >
-                    <option value="">Sin asignar</option>
-                    {users?.map((u: any) => (
-                      <option key={u.id} value={u.id}>
-                        {u.nombre}
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    placeholder="Escribe al menos 2 letras para buscar..."
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onFocus={() => {
+                      if (searchQuery.trim().length >= 2) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-celeste-kore/50 outline-none transition-all"
+                  />
+                  
+                  {/* Campo oculto para react-hook-form */}
+                  <input type="hidden" {...register(`deducciones.${idx}.usuario_id`)} />
+
+                  {/* Suggestions List */}
+                  <AnimatePresence>
+                    {showSuggestions && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40 cursor-default" 
+                          onClick={() => setShowSuggestions(false)}
+                        />
+                        <ul className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden max-h-48 overflow-y-auto">
+                          {filteredSuggestions.map((u: any) => (
+                            <li
+                              key={u.id}
+                              onClick={() => handleSelectUser(u)}
+                              className="flex flex-col px-3 py-2 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group text-left"
+                            >
+                              <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">
+                                {u.nombre || "Sin nombre"}
+                              </span>
+                            </li>
+                          ))}
+                          {filteredSuggestions.length === 0 && (
+                            <li className="px-3 py-2 text-xs text-muted-foreground italic text-left">
+                              No se encontraron resultados
+                            </li>
+                          )}
+                        </ul>
+                      </>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
 
@@ -1172,6 +1246,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                               idx={idx}
                               style={style}
                               users={users}
+                              setValue={setValue}
                               register={register}
                               onRemove={() => remove(idx)}
                               forceOpen={allDedExpanded}
