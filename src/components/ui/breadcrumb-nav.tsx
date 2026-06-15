@@ -12,7 +12,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   resumen: "Dashboard",
   nuevo: "Nuevo",
   editar: "Editar",
-  detalle: "Detalle",
+  detalle: "Ver",
   clientes: "Clientes",
   admin: "Administración",
   configuraciones: "Configuraciones",
