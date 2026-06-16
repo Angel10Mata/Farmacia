@@ -3,3 +3,19 @@ Prohibido explicar, resumir o describir cambios aplicados en los archivos.
 Solo confirme la ejecución.
 No incluya comentarios internos.
 Verifique tipado estricto de TypeScript.
+
+cada componente debe de estar encarpetado
+
+/nombredelcomponente
+    /lib
+        actions.ts (aqui van todas las server actions)
+        zod.ts (aqui van todos los esquemas y verificaciones)
+        hooks.ts (aqui van todos los hooks personalizados)
+        utils.ts (aqui van todas las funciones de utilidad)
+    /forms
+        form1.tsx (aqui van todos los modal que se utilicen para datos)
+
+    nombrecomponenteprincipal.tsx (este es el componente principal)
+
+
+        

@@ -25,8 +25,8 @@ import {
   getClientes,
   createCliente,
   updateCliente,
-  deleteCliente
-} from "@/app/kore/clientes/actions";
+  deleteCliente,
+} from "@/components/(Kore)/clientes/lib/actions";
 
 interface ClienteProyecto {
   id: string;

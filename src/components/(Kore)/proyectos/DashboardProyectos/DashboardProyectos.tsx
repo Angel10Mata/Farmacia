@@ -21,7 +21,8 @@ import {
   ChevronRight,
   X,
   ArrowLeft,
-  Home
+  Home,
+  Wrench,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -35,11 +36,11 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { getProyectos, deleteProyecto } from "@/app/kore/proyectos/actions";
+import { getProyectos, deleteProyecto } from "@/components/(Kore)/proyectos/lib/actions";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import QRProyecto from "./QRProyecto";
+import QRProyecto from "../QRProyecto/QRProyecto";
 import { QrCode, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { MagicCard } from "@/components/ui/magic-card";
@@ -326,9 +327,13 @@ export default function DashboardProyectos() {
     const now = new Date();
     const fechaReporte = now.toLocaleDateString("es-GT", { day: "2-digit", month: "long", year: "numeric" });
 
-    // ── Fondo header ──
-    doc.setFillColor(18, 18, 20);
-    doc.rect(0, 0, pageW, 38, "F");
+    // ── Top border strip ──
+    doc.setFillColor(183, 73, 78);
+    doc.rect(0, 0, pageW, 4, "F");
+
+    // ── Fondo header (Light) ──
+    doc.setFillColor(248, 250, 252);
+    doc.rect(0, 4, pageW, 34, "F");
 
     // ── Título KORE ──
     doc.setTextColor(183, 73, 78);
@@ -336,18 +341,18 @@ export default function DashboardProyectos() {
     doc.setFont("helvetica", "bold");
     doc.text("KORE", 14, 16);
 
-    doc.setTextColor(161, 161, 170);
+    doc.setTextColor(100, 116, 139);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.text("SISTEMA INTEGRAL DE GESTIÓN", 14, 22);
 
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(15, 23, 42);
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("REPORTE DE PROYECTOS", 14, 32);
 
     // ── Fecha ──
-    doc.setTextColor(161, 161, 170);
+    doc.setTextColor(100, 116, 139);
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.text(`Generado: ${fechaReporte}`, pageW - 14, 32, { align: "right" });
@@ -364,9 +369,9 @@ export default function DashboardProyectos() {
 
     const cards = [
       { label: "TOTAL PROYECTOS", value: String(summary.count), color: [183, 73, 78] as [number, number, number] },
-      { label: "INGRESOS TOTALES", value: `Q${summary.totalPrecio.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [61, 60, 60] as [number, number, number] },
-      { label: "COMISIONES", value: `Q${totalComisiones.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [61, 60, 60] as [number, number, number] },
-      { label: "IVA TOTAL", value: `Q${totalIva.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [61, 60, 60] as [number, number, number] },
+      { label: "INGRESOS TOTALES", value: `Q${summary.totalPrecio.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [71, 85, 105] as [number, number, number] },
+      { label: "COMISIONES", value: `Q${totalComisiones.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [71, 85, 105] as [number, number, number] },
+      { label: "IVA TOTAL", value: `Q${totalIva.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [71, 85, 105] as [number, number, number] },
       { label: "MANT. MENSUAL", value: `Q${summary.totalMantenimiento.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, color: [183, 73, 78] as [number, number, number] },
     ];
 
@@ -374,16 +379,16 @@ export default function DashboardProyectos() {
     cards.forEach((card, i) => {
       const x = 14 + i * (cardW + 4);
       const y = 44;
-      doc.setFillColor(30, 30, 32);
+      doc.setFillColor(255, 255, 255);
       doc.roundedRect(x, y, cardW, 22, 3, 3, "F");
       doc.setDrawColor(...card.color);
-      doc.setLineWidth(0.5);
+      doc.setLineWidth(0.3);
       doc.roundedRect(x, y, cardW, 22, 3, 3, "S");
       doc.setTextColor(...card.color);
       doc.setFontSize(6);
       doc.setFont("helvetica", "bold");
       doc.text(card.label, x + cardW / 2, y + 7, { align: "center" });
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(15, 23, 42);
       doc.setFontSize(10);
       doc.text(card.value, x + cardW / 2, y + 16, { align: "center" });
     });
@@ -423,10 +428,10 @@ export default function DashboardProyectos() {
       styles: {
         fontSize: 7,
         cellPadding: 3,
-        textColor: [220, 220, 220],
-        fillColor: [24, 24, 27],
-        lineColor: [50, 50, 55],
-        lineWidth: 0.2,
+        textColor: [51, 65, 85],
+        fillColor: [255, 255, 255],
+        lineColor: [226, 232, 240],
+        lineWidth: 0.1,
       },
       headStyles: {
         fillColor: [183, 73, 78],
@@ -435,7 +440,7 @@ export default function DashboardProyectos() {
         fontSize: 7,
         halign: "center",
       },
-      alternateRowStyles: { fillColor: [30, 30, 32] },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
       columnStyles: {
         0: { halign: "center", fontStyle: "bold", textColor: [183, 73, 78] },
         5: { halign: "center" },
@@ -448,9 +453,12 @@ export default function DashboardProyectos() {
       },
       didDrawPage: (data) => {
         const pageH = doc.internal.pageSize.getHeight();
-        doc.setFillColor(18, 18, 20);
+        doc.setFillColor(248, 250, 252);
         doc.rect(0, pageH - 10, pageW, 10, "F");
-        doc.setTextColor(100, 100, 110);
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.1);
+        doc.line(0, pageH - 10, pageW, pageH - 10);
+        doc.setTextColor(100, 116, 139);
         doc.setFontSize(6);
         doc.text(`© ${now.getFullYear()} Kore — Reporte generado el ${fechaReporte}`, 14, pageH - 3);
         doc.text(`Pág. ${data.pageNumber}`, pageW - 14, pageH - 3, { align: "right" });
@@ -461,15 +469,15 @@ export default function DashboardProyectos() {
   };
 
   const handleDelete = async (id: string): Promise<boolean> => {
-    const isDark = theme === 'dark';
+    const isDark = typeof window !== "undefined" && document.documentElement.classList.contains("dark");
     const result = await Swal.fire({
-      title: '¿Eliminar proyecto?',
+      title: 'Eliminar Proyecto',
       text: "Esta acción no se puede deshacer.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
-      cancelButtonColor: isDark ? '#27272a' : '#e4e4e7',
-      confirmButtonText: 'Sí, eliminar',
+      cancelButtonColor: isDark ? '#27272a' : '#71717a',
+      confirmButtonText: 'Eliminar Proyecto',
       cancelButtonText: 'Cancelar',
       background: isDark ? '#18181b' : '#ffffff',
       color: isDark ? '#ffffff' : '#000000',
@@ -731,15 +739,20 @@ export default function DashboardProyectos() {
             onClick={() => router.push("/kore/clientes")}
             className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-black dark:text-white transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer"
           >
-            <Users size={14} className="sm:w-[18px] sm:h-[18px] text-celeste-kore" />
             CLIENTES
+          </button>
+          <button 
+            onClick={() => router.push("/kore/proyectos/mantenimiento")}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-black dark:text-white transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer"
+          >
+            MANTENIMIENTO
           </button>
           <button 
             onClick={() => router.push("/kore/proyectos/nuevo")}
             className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:bg-celeste-kore border border-transparent transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer"
           >
             <Plus size={14} className="sm:w-[18px] sm:h-[18px]" />
-            NUEVO PROYECTO
+            NUEVO
           </button>
         </div>
       </div>
@@ -784,7 +797,7 @@ export default function DashboardProyectos() {
                   className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg border border-border/50 bg-card hover:bg-muted/50 hover:border-celeste-kore/30 transition-all text-xs font-bold shadow-sm group whitespace-nowrap"
                 >
                   <Download size={14} className="text-celeste-kore group-hover:scale-110 transition-transform" />
-                  <span className="uppercase tracking-widest text-[9px]">Exportar</span>
+                  <span className="uppercase tracking-widest text-[9px]">Exportar PDF</span>
                 </button>
               </motion.div>
             </div>
@@ -838,7 +851,10 @@ export default function DashboardProyectos() {
                           return (
                             <tr
                               key={p.id}
-                              onClick={() => router.push(`/kore/proyectos/ver/${getCode(p.id)}`)}
+                              onClick={() => {
+                                sessionStorage.setItem('selectedProyectoId', p.id);
+                                router.push('/kore/proyectos/ver');
+                              }}
                               className="group border-y border-border/50 dark:border-white/5 bg-card/20 hover:bg-card/40 cursor-pointer transition-all duration-300"
                             >
                               <td className="py-3 px-4 rounded-l-xl border-y border-l border-border group-hover:border-celeste-kore/20 transition-all duration-300">
@@ -953,31 +969,41 @@ export default function DashboardProyectos() {
                       return (
                         <div 
                           key={p.id} 
-                          className="rounded-lg border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex flex-col gap-1.5 shadow-none dark:shadow-md hover:border-celeste-kore/70 transition-all duration-300 cursor-pointer"
-                          onClick={() => router.push(`/kore/proyectos/ver/${getCode(p.id)}`)}
+                          className="rounded-lg border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-lg p-2.5 flex items-center justify-between gap-3 shadow-none dark:shadow-md hover:border-celeste-kore/70 transition-all duration-300 cursor-pointer group"
+                          onClick={() => {
+                          sessionStorage.setItem('selectedProyectoId', p.id);
+                          router.push('/kore/proyectos/ver');
+                        }}
                         >
-                          {/* Top row: Code & State */}
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1 min-w-0">
-                              <code className="text-[8px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1 py-0.5 rounded border border-celeste-kore/20 shrink-0">
-                                {getCode(p.id)}
-                              </code>
-                              <span className={`inline-flex items-center px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border shrink-0 ${
-                                p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
-                                p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
-                                'bg-azul-kore/10 text-azul-kore border-azul-kore/20'
-                              }`}>
-                                {p.estado}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Info row */}
-                          <div className="min-w-0">
+                          {/* Left: Project Name and Client */}
+                          <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-[11px] text-foreground truncate tracking-tight">{p.nombre}</h4>
                             <p className="text-[8px] text-muted-foreground mt-0.5 truncate">
                               Cliente: <span className="font-semibold text-foreground/80">{p.cliente_nombre || 'Sin cliente'}</span>
                             </p>
+                          </div>
+
+                          {/* Right: Code, State & Arrow/Ver */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Code and State stacked vertically */}
+                            <div className="flex flex-col items-end gap-1">
+                              <code className="text-[7px] font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-1 py-0.5 rounded border border-celeste-kore/20 shrink-0">
+                                {getCode(p.id)}
+                              </code>
+                              <span className={`inline-flex items-center px-1 py-0.5 rounded text-[6px] font-black uppercase tracking-wider border shrink-0 ${
+                                p.estado === 'En Progreso' ? 'bg-celeste-kore/10 text-celeste-kore border-celeste-kore/20' :
+                                p.estado === 'Finalizados' ? 'bg-muted text-muted-foreground border-border' :
+                                'bg-azul-kore/10 text-azul-kore border-azul-kore/20 shadow-sm'
+                              }`}>
+                                {p.estado}
+                              </span>
+                            </div>
+
+                            {/* Arrow & "ver" */}
+                            <div className="flex flex-col items-center justify-center text-muted-foreground/50 group-hover:text-celeste-kore transition-colors pl-1.5 border-l border-border/40 min-w-[24px]">
+                              <ChevronRight size={12} className="translate-x-0 group-hover:translate-x-0.5 transition-transform" />
+                              <span className="text-[6px] font-bold uppercase tracking-widest mt-0.5">ver</span>
+                            </div>
                           </div>
                         </div>
                       );

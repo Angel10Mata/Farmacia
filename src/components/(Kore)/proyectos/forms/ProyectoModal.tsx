@@ -12,8 +12,11 @@ import {
   ProyectoFormValues,
   TIPOS_DEDUCCION,
   TipoDeduccion,
-} from "./lib/schemas";
-import { createProyecto, updateProyecto } from "@/app/kore/proyectos/actions";
+} from "../lib/zod";
+import {
+  createProyecto,
+  updateProyecto,
+} from "@/components/(Kore)/proyectos/lib/actions";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";

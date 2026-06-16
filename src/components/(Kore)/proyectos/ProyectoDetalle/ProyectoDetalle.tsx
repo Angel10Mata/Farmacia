@@ -6,13 +6,13 @@ import {
   ChevronDown,
   RefreshCw,
 } from "lucide-react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
-import { deleteProyecto, getProyectos } from "@/app/kore/proyectos/actions";
+import { deleteProyecto, getProyectos } from "@/components/(Kore)/proyectos/lib/actions";
 import Swal from "sweetalert2";
 import { useTheme } from "next-themes";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import QRProyecto from "./QRProyecto";
+
 
 interface ProyectoDetalleProps {
   proyecto?: any;
@@ -217,8 +217,18 @@ const getCode = (id: string) => {
 };
 
 export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDetalleProps) {
-  const params = useParams();
-  const paramId = params?.id as string | undefined;
+  const [paramId, setParamId] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (proyectoProp) return;
+    const id = sessionStorage.getItem('selectedProyectoId');
+    if (id) {
+      setParamId(id);
+    } else {
+      router.replace('/kore/proyectos');
+    }
+  }, [router, proyectoProp]);
 
   const [proyecto, setProyecto] = useState<any | null>(proyectoProp ?? null);
   const [loadingProyecto, setLoadingProyecto] = useState(!!paramId && !proyectoProp);
@@ -226,9 +236,8 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
 
   const { effectiveRole } = useUserContext();
   const isDeveloper = effectiveRole === "proyectos";
-  const router = useRouter();
-  const { theme } = useTheme();
-  const [qrProyecto, setQrProyecto] = useState<any | null>(null);
+  const { resolvedTheme } = useTheme();
+  const [showRiskZone, setShowRiskZone] = useState(false);
 
   // Role guard
   useEffect(() => {
@@ -302,18 +311,43 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
   };
 
   const handleDeleteProyecto = async () => {
-    const isDark = theme === "dark";
+    const isDark = typeof window !== "undefined" && document.documentElement.classList.contains("dark");
+    let timerInterval: any;
     const result = await Swal.fire({
-      title: "¿Eliminar proyecto?",
-      text: "Esta acción no se puede deshacer.",
+      title: "Eliminar Proyecto",
+      html: 'Esta acción no se puede deshacer.<br/><br/>El botón se habilitará en <b class="text-red-500 font-bold">7</b> segundos.',
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
-      cancelButtonColor: isDark ? "#27272a" : "#e4e4e7",
-      confirmButtonText: "Sí, eliminar",
+      cancelButtonColor: isDark ? "#27272a" : "#71717a",
+      confirmButtonText: "Eliminar Proyecto (7)",
       cancelButtonText: "Cancelar",
-      background: isDark ? "#18181b" : "#ffffff",
+      background: isDark ? "#09090b" : "#ffffff",
       color: isDark ? "#ffffff" : "#000000",
+      didOpen: () => {
+        Swal.disableButtons();
+        const b = Swal.getHtmlContainer()?.querySelector('b');
+        let secondsLeft = 7;
+        if (b) b.textContent = String(secondsLeft);
+        timerInterval = setInterval(() => {
+          secondsLeft--;
+          if (b) b.textContent = String(secondsLeft);
+          const confirmBtn = Swal.getConfirmButton();
+          if (confirmBtn) {
+            confirmBtn.textContent = `Eliminar Proyecto (${secondsLeft})`;
+          }
+          if (secondsLeft <= 0) {
+            clearInterval(timerInterval);
+            Swal.enableButtons();
+            if (confirmBtn) {
+              confirmBtn.textContent = "Eliminar Proyecto";
+            }
+          }
+        }, 1000);
+      },
+      willClose: () => {
+        clearInterval(timerInterval);
+      }
     });
 
     if (result.isConfirmed) {
@@ -323,7 +357,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
           icon: "error",
           title: "Error",
           text: res.error,
-          background: isDark ? "#18181b" : "#ffffff",
+          background: isDark ? "#09090b" : "#ffffff",
           color: isDark ? "#ffffff" : "#000000",
         });
       } else {
@@ -334,7 +368,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
           position: "top-end",
           showConfirmButton: false,
           timer: 3000,
-          background: isDark ? "#18181b" : "#ffffff",
+          background: isDark ? "#09090b" : "#ffffff",
           color: isDark ? "#ffffff" : "#000000",
         });
         router.push("/kore/proyectos");
@@ -389,14 +423,20 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
             <>
               <button
                 type="button"
-                onClick={() => setQrProyecto(proyecto)}
+                onClick={() => {
+                  if(proyecto.id) sessionStorage.setItem('selectedProyectoId', proyecto.id);
+                  router.push(`/kore/proyectos/ver/qr`);
+                }}
                 className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-black dark:text-white transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
               >
                 VER QR
               </button>
               <button
                 type="button"
-                onClick={() => router.push(`/kore/proyectos/ver/${getCode(proyecto.id)}/editar`)}
+                onClick={() => {
+                  if(proyecto.id) sessionStorage.setItem('selectedProyectoId', proyecto.id);
+                  router.push(`/kore/proyectos/ver/editar`);
+                }}
                 className="flex-1 sm:flex-none flex items-center justify-center px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer uppercase"
               >
                 EDITAR
@@ -410,8 +450,14 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
         {/* Left Column */}
         <div className="space-y-6">
           {/* Info General */}
-          <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 p-5 sm:p-6 space-y-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 p-5 sm:p-6 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{proyecto.nombre}</h2>
+              {proyecto.fecha_entrega && (
+                <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(proyecto.fecha_entrega)}</span></p>
+              )}
+            </div>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
               <code className="text-[10px] sm:text-xs font-mono font-bold text-celeste-kore bg-celeste-kore/10 px-2.5 py-1 rounded-lg border border-celeste-kore/20">
                 {getCode(proyecto.id)}
               </code>
@@ -422,12 +468,6 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
               }`}>
                 {proyecto.estado}
               </span>
-            </div>
-            <div>
-              <h2 className="text-base sm:text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">{proyecto.nombre}</h2>
-              {proyecto.fecha_entrega && (
-                <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">Entrega: <span className="font-semibold text-zinc-900 dark:text-zinc-100">{formatDate(proyecto.fecha_entrega)}</span></p>
-              )}
             </div>
           </div>
 
@@ -512,26 +552,55 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
         </div>
       </div>
 
-      {/* BOTON ELIMINAR PROYECTO HASTA ABAJO */}
+      {/* ZONA DE RIESGO ACORDEON */}
       {!isDeveloper && (
-        <div className="flex justify-end pt-4">
+        <div className="rounded-2xl border border-red-500/30 dark:border-red-950/40 bg-red-500/5 backdrop-blur-xl overflow-hidden mt-6">
           <button
             type="button"
-            onClick={handleDeleteProyecto}
-            className="w-full sm:w-auto flex items-center justify-center px-6 py-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-500 transition-all font-black text-sm whitespace-nowrap cursor-pointer uppercase hover:opacity-95"
+            onClick={() => setShowRiskZone(!showRiskZone)}
+            className="w-full flex items-center justify-between p-4 sm:p-5 text-left text-red-500 hover:bg-red-500/10 dark:hover:bg-red-950/20 transition-all duration-200 cursor-pointer font-black text-xs sm:text-sm uppercase tracking-widest"
           >
-            ELIMINAR PROYECTO
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span>Zona de Riesgo</span>
+            </div>
+            <ChevronDown
+              size={16}
+              className={`transition-transform duration-200 text-red-500 ${
+                showRiskZone ? "rotate-180" : ""
+              }`}
+            />
           </button>
+
+          <AnimatePresence initial={false}>
+            {showRiskZone && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+              >
+                <div className="p-4 sm:p-6 border-t border-red-500/20 dark:border-red-950/20 bg-red-500/[0.02] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="text-xs font-black text-foreground uppercase">Eliminar este proyecto</h4>
+                    <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase tracking-wide">
+                      Una vez que elimines un proyecto, no podrás recuperar sus datos ni la distribución financiera asignada.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDeleteProyecto}
+                    className="w-full sm:w-auto flex items-center justify-center px-6 py-3.5 rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all font-black text-xs uppercase tracking-widest whitespace-nowrap cursor-pointer active:scale-95 shadow-lg shadow-red-500/20"
+                  >
+                    ELIMINAR
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
-      {/* MODAL QR */}
-      <QRProyecto
-        isOpen={!!qrProyecto}
-        proyecto={qrProyecto}
-        onClose={() => setQrProyecto(null)}
-        onSuccess={() => {}}
-      />
     </div>
   );
 }

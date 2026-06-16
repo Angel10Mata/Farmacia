@@ -5,7 +5,7 @@ import { QRCode } from "react-qrcode-logo";
 import { X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
-import { updateProyectoOtrosCampos } from "@/app/kore/proyectos/actions";
+import { updateProyectoOtrosCampos } from "@/components/(Kore)/proyectos/lib/actions";
 import { useTheme } from "next-themes";
 
 interface QRProyectoProps {
@@ -239,20 +239,20 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
                     <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Usuario</label>
                     <input
                       type="text"
-                      placeholder="Ej: cliente12"
+                      placeholder=""
                       value={usuarioAcceso}
                       onChange={(e) => setUsuarioAcceso(e.target.value)}
-                      className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
+                      className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all"
                     />
                   </div>
                   <div className="flex flex-col gap-1 text-left">
                     <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Contraseña</label>
                     <input
                       type="text"
-                      placeholder="Ej: 123456"
+                      placeholder=""
                       value={passAcceso}
                       onChange={(e) => setPassAcceso(e.target.value)}
-                      className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
+                      className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -260,10 +260,10 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
                   <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">URL de Acceso</label>
                   <input
                     type="text"
-                    placeholder="URL de entrada"
+                    placeholder=""
                     value={urlAcceso}
                     onChange={(e) => setUrlAcceso(e.target.value)}
-                    className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all placeholder:text-muted-foreground/30"
+                    className="w-full bg-background dark:bg-zinc-900 border border-border dark:border-white/10 rounded-xl px-3 py-2 text-xs text-foreground dark:text-white focus:border-[#B7494E]/50 outline-none transition-all"
                   />
                 </div>
                 <button
@@ -286,14 +286,6 @@ export default function QRProyecto({ proyecto, isOpen, onClose, onSuccess }: QRP
                 <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Cliente</span>
                   <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.cliente_nombre || "N/A"}</span>
-                </div>
-                <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Vendedor</span>
-                  <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.vendedor_nombre || "N/A"}</span>
-                </div>
-                <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Desarrollador</span>
-                  <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">{proyecto.desarrollador_nombre || "N/A"}</span>
                 </div>
               </div>
 

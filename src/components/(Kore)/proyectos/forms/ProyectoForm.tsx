@@ -31,16 +31,16 @@ import {
   ProyectoFormValues,
   TIPOS_DEDUCCION,
   TipoDeduccion,
-} from "./lib/schemas";
-import { createProyecto, updateProyecto, deleteProyecto, getProyectos } from "@/app/kore/proyectos/actions";
+} from "@/components/(Kore)/proyectos/lib/zod";
+import { createProyecto, updateProyecto, deleteProyecto, getProyectos } from "@/components/(Kore)/proyectos/lib/actions";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { KorePhoneInput } from "@/components/ui/KorePhoneInput";
 import { useTheme } from "next-themes";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import QRProyecto from "./QRProyecto";
+import QRProyecto from "../QRProyecto/QRProyecto";
 import { MagicCard } from "@/components/ui/magic-card";
 
 
@@ -575,18 +575,30 @@ const getCode = (id: string) => {
 };
 
 export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormProps) {
-  const params = useParams();
-  const paramId = params?.id as string | undefined;
+  const pathname = usePathname();
+  const isEditRoute = pathname?.includes('/editar');
+
+  const [paramId, setParamId] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (proyectoProp || !isEditRoute) return;
+    const id = sessionStorage.getItem('selectedProyectoId');
+    if (id) {
+      setParamId(id);
+    } else {
+      router.replace('/kore/proyectos');
+    }
+  }, [router, proyectoProp, isEditRoute]);
 
   // Internal state for fetched proyecto when editing via URL param
   const [proyecto, setProyecto] = useState<any | null>(proyectoProp ?? null);
-  const [loadingProyecto, setLoadingProyecto] = useState(!!paramId && !proyectoProp);
+  const [loadingProyecto, setLoadingProyecto] = useState(isEditRoute && !proyectoProp);
   const [notFound, setNotFound] = useState(false);
 
-  const isEditing = !!(proyecto || paramId);
+  const isEditing = !!(proyecto || paramId || isEditRoute);
   const { effectiveRole } = useUserContext();
   const isDeveloper = effectiveRole === "proyectos";
-  const router = useRouter();
 
   // Role guard
   useEffect(() => {
@@ -642,15 +654,15 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
 
   const handleDelete = async () => {
     if (!proyecto) return;
-    const isDark = theme === 'dark';
+    const isDark = typeof window !== "undefined" && document.documentElement.classList.contains("dark");
     const result = await Swal.fire({
-      title: '¿Eliminar proyecto?',
+      title: 'Eliminar Proyecto',
       text: "Esta acción no se puede deshacer.",
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ef4444',
-      cancelButtonColor: isDark ? '#27272a' : '#e4e4e7',
-      confirmButtonText: 'Sí, eliminar',
+      cancelButtonColor: isDark ? '#27272a' : '#71717a',
+      confirmButtonText: 'Eliminar Proyecto',
       cancelButtonText: 'Cancelar',
       background: isDark ? '#18181b' : '#ffffff',
       color: isDark ? '#ffffff' : '#000000',

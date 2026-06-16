@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { ProyectoFormValues, DeduccionItem } from "@/components/(Kore)/proyectos/lib/schemas";
+import { ProyectoFormValues, DeduccionItem } from "@/components/(Kore)/proyectos/lib/zod";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers internos
@@ -190,7 +190,10 @@ export async function getProyectos() {
       mantenimiento_categoria: mantDeds[0]?.descripcion ?? null,
       mantenimiento_fecha: null,
       resto_desarrollo:    null,
-      otros_campos:        null,
+      otros_campos:        p.otros_campos,
+      // Nuevos campos de mantenimiento
+      mantenimiento_activo:       p.mantenimiento_activo ?? false,
+      mantenimiento_fecha_cobro:  p.mantenimiento_fecha_cobro ?? null,
     };
   });
 }
@@ -343,5 +346,101 @@ export async function updateProyectoOtrosCampos(id: string, otrosCampos: any) {
   }
 
   revalidatePath("/kore/proyectos");
+  return { success: true };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UPDATE mantenimiento_activo + mantenimiento_fecha_cobro
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function updateMantenimientoProyecto(
+  id: string,
+  activo: boolean,
+  fechaCobro: string | null
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("proyectos")
+    .update({
+      mantenimiento_activo: activo,
+      mantenimiento_fecha_cobro: fechaCobro || null,
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error updating mantenimiento:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/kore/proyectos");
+  revalidatePath("/kore/proyectos/mantenimiento");
+  return { success: true };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET Historial de Mantenimientos
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getMantenimientoHistorial(proyectoId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("pro_mantenimientos")
+    .select("*")
+    .eq("proyecto_id", proyectoId)
+    .order("fecha_pago", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching mantenimiento historial:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGISTRAR Pago de Mantenimiento
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function registrarPagoMantenimiento(
+  proyectoId: string,
+  montoCobrado: number,
+  fechaPago: string,
+  periodoPagado: string,
+  descripcion: string,
+  proximaFechaCobro: string | null
+) {
+  const supabase = await createClient();
+  
+  // 1. Insertar el registro del pago
+  const { error: insertError } = await supabase
+    .from("pro_mantenimientos")
+    .insert([{
+      proyecto_id: proyectoId,
+      monto_cobrado: montoCobrado,
+      fecha_pago: fechaPago,
+      periodo_pagado: periodoPagado,
+      descripcion: descripcion
+    }]);
+
+  if (insertError) {
+    console.error("Error inserting pago mantenimiento:", insertError);
+    return { error: insertError.message };
+  }
+
+  // 2. Actualizar la próxima fecha de cobro en el proyecto (si se proporciona)
+  if (proximaFechaCobro) {
+    const { error: updateError } = await supabase
+      .from("proyectos")
+      .update({ mantenimiento_fecha_cobro: proximaFechaCobro })
+      .eq("id", proyectoId);
+
+    if (updateError) {
+      console.error("Error updating proxima fecha cobro:", updateError);
+      // No devolvemos error general porque el pago sí se registró
+    }
+  }
+
+  revalidatePath("/kore/proyectos");
+  revalidatePath("/kore/proyectos/mantenimiento");
   return { success: true };
 }
