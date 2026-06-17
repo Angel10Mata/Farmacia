@@ -713,7 +713,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
       cliente_correo: "",
       fecha_entrega: "",
       precio: 0,
-      mantenimiento: 0,
+      mantenimiento_activo: false,
       estado: "En Progreso",
       vendedor_id: "",
       deducciones: [],
@@ -870,7 +870,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
         cliente_correo:   proyecto.cliente_correo   || "",
         fecha_entrega:    proyecto.fecha_entrega    || "",
         precio:           proyecto.precio           || 0,
-        mantenimiento:    proyecto.mantenimiento    || 0,
+        mantenimiento_activo: proyecto.mantenimiento_activo || false,
         estado:           proyecto.estado           || "En Progreso",
         vendedor_id:      proyecto.vendedor_id      || "",
         deducciones:      proyecto.deducciones      || [],
@@ -941,7 +941,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
         color: "#fff",
       });
       if (isEditing) {
-        router.push(`/kore/proyectos/ver/${getCode(proyecto.id)}`);
+        router.push(`/kore/proyectos/ver`);
       } else {
         router.push("/kore/proyectos");
       }
@@ -1153,14 +1153,18 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                     )}
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="mantenimiento">Mantenimiento (Q/mes)</Label>
-                    <Input
-                      id="mantenimiento"
-                      type="number"
-                      step="0.01"
-                      inputMode="decimal"
-                      {...register("mantenimiento", { valueAsNumber: true })}
-                    />
+                    <Label htmlFor="mantenimiento_activo">¿Aplica Mantenimiento?</Label>
+                    <div className="flex items-center space-x-3 pt-2">
+                      <input
+                        id="mantenimiento_activo"
+                        type="checkbox"
+                        {...register("mantenimiento_activo")}
+                        className="h-5 w-5 rounded border-gray-300 text-celeste-kore focus:ring-celeste-kore cursor-pointer accent-celeste-kore"
+                      />
+                      <Label htmlFor="mantenimiento_activo" className="text-xs text-muted-foreground cursor-pointer">
+                        Activar sección de mantenimiento
+                      </Label>
+                    </div>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="fecha_entrega">Fecha de Entrega</Label>

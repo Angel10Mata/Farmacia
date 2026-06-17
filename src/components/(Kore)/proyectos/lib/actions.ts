@@ -183,7 +183,7 @@ export async function getProyectos() {
       porcentaje_iva:     sumPct(ivaDeds),
       aplica_doc:         docDeds.length > 0,
       porcentaje_doc:     sumPct(docDeds),
-      aplica_mantenimiento: mantDeds.length > 0,
+      aplica_mantenimiento: mantDeds.length > 0 || (p.otros_campos?.mantenimiento_activo === true),
       monto_mantenimiento:  sumPct(mantDeds),
       aplica_desarrollo:    desarrolloDeds.length > 0,
       porcentaje_desarrollo: sumPct(desarrolloDeds),
@@ -191,9 +191,10 @@ export async function getProyectos() {
       mantenimiento_fecha: null,
       resto_desarrollo:    null,
       otros_campos:        p.otros_campos,
-      // Nuevos campos de mantenimiento
-      mantenimiento_activo:       p.mantenimiento_activo ?? false,
-      mantenimiento_fecha_cobro:  p.mantenimiento_fecha_cobro ?? null,
+      // Nuevos campos de mantenimiento (almacenados en otros_campos por falta de columna en BD)
+      mantenimiento_activo:       p.otros_campos?.mantenimiento_activo ?? false,
+      mantenimiento_fecha_cobro:  p.otros_campos?.mantenimiento_fecha_cobro ?? null,
+      monto_mensual_fijo:         p.otros_campos?.monto_mensual_fijo ?? null,
     };
   });
 }
@@ -218,6 +219,7 @@ export async function createProyecto(data: ProyectoFormValues) {
       cliente_id:    clienteId,
       created_by:    user?.id ?? null,
       activo:        true,
+      otros_campos:  { mantenimiento_activo: data.mantenimiento_activo ?? false },
     }])
     .select("id")
     .single();
@@ -228,15 +230,6 @@ export async function createProyecto(data: ProyectoFormValues) {
   }
 
   const deducciones = buildDeducciones(data.deducciones || [], proyecto.id);
-  if (data.mantenimiento && data.mantenimiento > 0) {
-    deducciones.push({
-      proyecto_id: proyecto.id,
-      tipo: "Mantenimiento",
-      porcentaje: Number(data.mantenimiento),
-      descripcion: null,
-      usuario_id: null,
-    });
-  }
   
   if (deducciones.length > 0) {
     const { error: dedError } = await supabase
@@ -269,6 +262,12 @@ export async function updateProyecto(id: string, data: Partial<ProyectoFormValue
   if (data.estado    !== undefined) patch.estado        = data.estado;
   if (clienteId      !== undefined) patch.cliente_id    = clienteId;
 
+  if (data.mantenimiento_activo !== undefined) {
+    const { data: currentProyecto } = await supabase.from("proyectos").select("otros_campos").eq("id", id).single();
+    const otrosCampos = currentProyecto?.otros_campos || {};
+    patch.otros_campos = { ...otrosCampos, mantenimiento_activo: data.mantenimiento_activo };
+  }
+
   if (Object.keys(patch).length > 0) {
     const { error } = await supabase.from("proyectos").update(patch).eq("id", id);
     if (error) {
@@ -290,15 +289,6 @@ export async function updateProyecto(id: string, data: Partial<ProyectoFormValue
     }
 
     const deducciones = buildDeducciones(data.deducciones || [], id);
-    if (data.mantenimiento && data.mantenimiento > 0) {
-      deducciones.push({
-        proyecto_id: id,
-        tipo: "Mantenimiento",
-        porcentaje: Number(data.mantenimiento),
-        descripcion: null,
-        usuario_id: null,
-      });
-    }
 
     if (deducciones.length > 0) {
       const { error: dedError } = await supabase
@@ -359,12 +349,18 @@ export async function updateMantenimientoProyecto(
   fechaCobro: string | null
 ) {
   const supabase = await createClient();
+
+  const { data: currentProyecto } = await supabase.from("proyectos").select("otros_campos").eq("id", id).single();
+  const otrosCampos = currentProyecto?.otros_campos || {};
+  const updatedOtrosCampos = {
+    ...otrosCampos,
+    mantenimiento_activo: activo,
+    mantenimiento_fecha_cobro: fechaCobro || null,
+  };
+
   const { error } = await supabase
     .from("proyectos")
-    .update({
-      mantenimiento_activo: activo,
-      mantenimiento_fecha_cobro: fechaCobro || null,
-    })
+    .update({ otros_campos: updatedOtrosCampos })
     .eq("id", id);
 
   if (error) {
@@ -427,16 +423,40 @@ export async function registrarPagoMantenimiento(
     return { error: insertError.message };
   }
 
-  // 2. Actualizar la próxima fecha de cobro en el proyecto (si se proporciona)
+  // 2. Actualizar la próxima fecha de cobro y la mensualidad fija (si aplica)
+  const { data: currentProyecto } = await supabase.from("proyectos").select("otros_campos").eq("id", proyectoId).single();
+  const otrosCampos = currentProyecto?.otros_campos || {};
+  const updatedOtrosCampos = { ...otrosCampos };
+  let needsUpdate = false;
+
   if (proximaFechaCobro) {
+    updatedOtrosCampos.mantenimiento_fecha_cobro = proximaFechaCobro;
+    needsUpdate = true;
+  }
+
+  // Si no hay monto_mensual_fijo, revisamos si tiene porcentaje de mantenimiento
+  if (!otrosCampos.monto_mensual_fijo && montoCobrado > 0) {
+    const { data: mantDeds } = await supabase
+      .from("pro_deducciones")
+      .select("id")
+      .eq("proyecto_id", proyectoId)
+      .in("tipo", ["Mantenimiento", "mantenimiento"]);
+      
+    if (!mantDeds || mantDeds.length === 0) {
+      // El proyecto no tiene mensualidad configurada, el primer pago establece el monto fijo
+      updatedOtrosCampos.monto_mensual_fijo = montoCobrado;
+      needsUpdate = true;
+    }
+  }
+
+  if (needsUpdate) {
     const { error: updateError } = await supabase
       .from("proyectos")
-      .update({ mantenimiento_fecha_cobro: proximaFechaCobro })
+      .update({ otros_campos: updatedOtrosCampos })
       .eq("id", proyectoId);
 
     if (updateError) {
-      console.error("Error updating proxima fecha cobro:", updateError);
-      // No devolvemos error general porque el pago sí se registró
+      console.error("Error updating proyecto otros_campos:", updateError);
     }
   }
 

@@ -22,6 +22,7 @@ import {
 
 // Components
 import { PagoMantenimientoModal } from "@/components/(Kore)/proyectos/forms/PagoMantenimientoModal";
+import { HistorialMantenimientoModal } from "@/components/(Kore)/proyectos/forms/HistorialMantenimientoModal";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { useTheme } from "next-themes";
 import Swal from "sweetalert2";
@@ -80,7 +81,8 @@ export default function MantenimientoProyectos() {
   // Editing state per row: id → "date-input string"
   const [editingDate, setEditingDate] = useState<Record<string, string>>({});
   // Modal state
-  const [pagoModalProyecto, setPagoModalProyecto] = useState<any>(null);
+  const [pagoModalProyecto, setPagoModalProyecto] = useState<any | null>(null);
+  const [historialModalProyecto, setHistorialModalProyecto] = useState<any | null>(null);
 
   // Role guard
   useEffect(() => {
@@ -187,39 +189,20 @@ export default function MantenimientoProyectos() {
             Proyectos con cobro mensual activo
           </p>
         </div>
-        <div className="flex items-stretch gap-2 w-full sm:w-auto">
-          <button
-            onClick={() => router.push("/kore/proyectos")}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-black dark:text-white transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer"
-          >
-            <ArrowLeft size={14} className="sm:w-[18px] sm:h-[18px] text-celeste-kore" />
-            PROYECTOS
-          </button>
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-black dark:text-white transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={`sm:w-[18px] sm:h-[18px] ${loading ? "animate-spin" : ""}`} />
-            ACTUALIZAR
-          </button>
-        </div>
+
       </div>
 
 
 
       {/* ── TABLE ──────────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
+      <div className="rounded-2xl border border-red-500/20 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
         <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-border/50">
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <Wrench size={16} className="text-amber-400" />
+          <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
+            <Wrench size={16} className="text-red-500" />
           </div>
           <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-foreground/90">
             Proyectos con Mantenimiento
           </h3>
-          <span className="ml-auto text-[9px] font-bold px-2 py-1 rounded-full bg-muted/30 text-muted-foreground uppercase tracking-widest">
-            {activeProyectos.length} proyecto{activeProyectos.length !== 1 ? "s" : ""}
-          </span>
         </div>
 
         {loading ? (
@@ -239,23 +222,21 @@ export default function MantenimientoProyectos() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
+            <table className="w-full">
               <thead>
                 <tr className="border-b border-border/40">
-                  <th className="text-left px-4 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Proyecto</th>
-                  <th className="text-left px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Cliente</th>
-                  <th className="text-right px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Monto</th>
-                  <th className="text-center px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Activo</th>
-                  <th className="text-left px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Fecha Cobro</th>
-                  <th className="text-center px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Días</th>
-                  <th className="text-right px-4 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Acción</th>
+                  <th className="text-left px-2 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[35%] sm:w-[30%]">Proyecto</th>
+                  <th className="hidden sm:table-cell text-left px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground sm:w-[25%]">Cliente</th>
+                  <th className="text-right px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[25%] sm:w-[15%]">Monto</th>
+                  <th className="text-right px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[30%] sm:w-[20%]">Fecha Cobro</th>
+                  <th className="text-right px-2 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[10%]">Acción</th>
                 </tr>
               </thead>
               <tbody>
                 <AnimatePresence>
                   {activeProyectos.map((p, idx) => {
                     const pct = Number(p.monto_mantenimiento) || Number(p.mantenimiento) || 0;
-                    const montoMensual = (Number(p.precio) || 0) * pct / 100;
+                    const montoMensual = p.monto_mensual_fijo ? Number(p.monto_mensual_fijo) : ((Number(p.precio) || 0) * pct / 100);
                     const days = getDaysUntil(p.mantenimiento_fecha_cobro);
                     const isEditing = p.id in editingDate;
                     const isSaving = saving === p.id;
@@ -267,13 +248,14 @@ export default function MantenimientoProyectos() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         transition={{ delay: idx * 0.03 }}
-                        className="border-b border-border/20 last:border-0 hover:bg-muted/10 transition-colors group"
+                        className="border-b border-border/20 last:border-0 hover:bg-muted/10 transition-colors group cursor-pointer"
+                        onClick={() => setHistorialModalProyecto(p)}
                       >
                         {/* Project */}
-                        <td className="px-4 sm:px-6 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 rounded-lg bg-amber-500/10 shrink-0">
-                              <Wrench size={12} className="text-amber-400" />
+                        <td className="px-2 sm:px-6 py-3.5">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            <div className="p-1.5 rounded-lg bg-red-500/10 shrink-0">
+                              <Wrench size={12} className="text-red-500" />
                             </div>
                             <div>
                               <p className="text-xs font-bold text-foreground leading-none">{p.nombre}</p>
@@ -283,50 +265,36 @@ export default function MantenimientoProyectos() {
                         </td>
 
                         {/* Client */}
-                        <td className="px-4 py-3.5">
+                        <td className="hidden sm:table-cell px-2 sm:px-4 py-3.5">
                           <p className="text-xs font-medium text-foreground/80">{p.cliente_nombre || "—"}</p>
                         </td>
 
                         {/* Amount */}
-                        <td className="px-4 py-3.5 text-right">
+                        <td className="px-2 sm:px-4 py-3.5 text-right">
                           <div>
                             <p className="text-xs font-bold text-emerald-400">{formatMoney(montoMensual)}</p>
-                            <p className="text-[9px] text-muted-foreground">{pct}% mensual</p>
+                            <p className="text-[9px] text-muted-foreground">
+                              {p.monto_mensual_fijo ? "Monto Fijo" : `${pct}% mensual`}
+                            </p>
                           </div>
                         </td>
 
-                        {/* Toggle */}
-                        <td className="px-4 py-3.5 text-center">
-                          <button
-                            onClick={() => handleToggle(p)}
-                            disabled={isSaving}
-                            className="flex items-center justify-center mx-auto transition-all hover:scale-110 active:scale-95 disabled:opacity-50 cursor-pointer"
-                            title={p.mantenimiento_activo ? "Desactivar mantenimiento" : "Activar mantenimiento"}
-                          >
-                            {isSaving ? (
-                              <RefreshCw size={22} className="text-amber-400 animate-spin" />
-                            ) : p.mantenimiento_activo ? (
-                              <ToggleRight size={28} className="text-emerald-400" />
-                            ) : (
-                              <ToggleLeft size={28} className="text-muted-foreground/40" />
-                            )}
-                          </button>
-                        </td>
 
                         {/* Date input */}
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-1.5">
+                        <td className="px-2 sm:px-4 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
                             <input
                               type="date"
                               value={isEditing ? editingDate[p.id] : toInputDate(p.mantenimiento_fecha_cobro)}
                               onChange={e => setEditingDate(prev => ({ ...prev, [p.id]: e.target.value }))}
-                              className="text-xs bg-muted/20 border border-border/50 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400/30 text-foreground w-[130px]"
+                              onClick={e => e.stopPropagation()}
+                              className="text-[10px] sm:text-xs bg-muted/20 border border-border/50 rounded-lg px-1 sm:px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-500/30 text-foreground w-[105px] sm:w-[130px]"
                             />
                             {isEditing && (
                               <button
-                                onClick={() => handleSaveDate(p)}
+                                onClick={(e) => { e.stopPropagation(); handleSaveDate(p); }}
                                 disabled={isSaving}
-                                className="px-2 py-1 rounded-lg bg-amber-400/20 hover:bg-amber-400/30 text-amber-400 text-[10px] font-bold border border-amber-400/20 cursor-pointer transition-all disabled:opacity-50"
+                                className="px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-500 text-[10px] font-bold border border-red-500/20 cursor-pointer transition-all disabled:opacity-50"
                               >
                                 OK
                               </button>
@@ -334,30 +302,16 @@ export default function MantenimientoProyectos() {
                           </div>
                         </td>
 
-                        {/* Days chip */}
-                        <td className="px-4 py-3.5 text-center">
-                          {p.mantenimiento_activo ? <DaysChip days={days} /> : (
-                            <span className="text-[10px] text-muted-foreground/40 font-medium">Inactivo</span>
-                          )}
-                        </td>
+
 
                         {/* Acciones */}
-                        <td className="px-4 sm:px-6 py-3.5 text-right">
+                        <td className="px-2 sm:px-6 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={() => setPagoModalProyecto(p)}
-                              className="flex items-center gap-1 text-[10px] font-bold text-amber-400 hover:text-amber-500 transition-colors cursor-pointer bg-amber-400/10 hover:bg-amber-400/20 px-2 py-1 rounded-md"
+                              onClick={(e) => { e.stopPropagation(); setPagoModalProyecto(p); }}
+                              className="flex items-center gap-1 text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors cursor-pointer bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-md"
                             >
                               <DollarSign size={12} /> PAGO
-                            </button>
-                            <button
-                              onClick={() => {
-                              sessionStorage.setItem('selectedProyectoId', p.id);
-                              router.push('/kore/proyectos/ver');
-                            }}
-                              className="flex items-center gap-1 text-[10px] font-bold text-celeste-kore hover:text-celeste-kore/80 transition-colors cursor-pointer"
-                            >
-                              VER <ChevronRight size={12} />
                             </button>
                           </div>
                         </td>
@@ -380,6 +334,15 @@ export default function MantenimientoProyectos() {
               setPagoModalProyecto(null);
               fetchData();
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {historialModalProyecto && (
+          <HistorialMantenimientoModal
+            proyecto={historialModalProyecto}
+            onClose={() => setHistorialModalProyecto(null)}
           />
         )}
       </AnimatePresence>
