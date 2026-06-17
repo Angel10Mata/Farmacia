@@ -69,20 +69,30 @@ export function PagoMantenimientoModal({ proyecto, onClose, onSuccess }: PagoMan
     setLoading(true);
     
     // Add time component to dates for timestamptz
-    const fechaPagoIso = new Date(formData.fecha_pago + "T12:00:00").toISOString();
+    let fechaPagoIso = new Date().toISOString();
+    try {
+      const parsedPagoDate = new Date(formData.fecha_pago + "T12:00:00");
+      if (!isNaN(parsedPagoDate.getTime())) {
+        fechaPagoIso = parsedPagoDate.toISOString();
+      }
+    } catch {}
     
     // Auto-advance proxima_fecha_cobro by 1 month
     let proximaFechaIso = null;
-    if (proyecto.mantenimiento_fecha_cobro) {
-      const d = new Date(proyecto.mantenimiento_fecha_cobro);
-      // Ensure we don't mess up timezone, just add a month
-      d.setUTCMonth(d.getUTCMonth() + 1);
-      proximaFechaIso = d.toISOString();
-    } else {
-      const d = new Date(formData.fecha_pago + "T12:00:00");
-      d.setUTCMonth(d.getUTCMonth() + 1);
-      proximaFechaIso = d.toISOString();
-    }
+    try {
+      const parsedCobroDate = proyecto.mantenimiento_fecha_cobro ? new Date(proyecto.mantenimiento_fecha_cobro) : null;
+      if (parsedCobroDate && !isNaN(parsedCobroDate.getTime())) {
+        parsedCobroDate.setUTCMonth(parsedCobroDate.getUTCMonth() + 1);
+        proximaFechaIso = parsedCobroDate.toISOString();
+      } else {
+        const d = new Date(formData.fecha_pago + "T12:00:00");
+        if (!isNaN(d.getTime())) {
+          d.setUTCMonth(d.getUTCMonth() + 1);
+          proximaFechaIso = d.toISOString();
+        }
+      }
+    } catch {}
+
 
     const res = await registrarPagoMantenimiento(
       proyecto.id,

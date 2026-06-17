@@ -31,17 +31,27 @@ import Swal from "sweetalert2";
 
 function getDaysUntil(dateStr: string | null): number | null {
   if (!dateStr) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr);
-  target.setHours(0, 0, 0, 0);
-  return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    if (isNaN(target.getTime())) return null;
+    target.setHours(0, 0, 0, 0);
+    return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  } catch {
+    return null;
+  }
 }
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" });
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return "—";
+  }
 }
 
 function formatMoney(val: number): string {
@@ -168,8 +178,13 @@ export default function MantenimientoProyectos() {
   // For the date input default value
   function toInputDate(dateStr: string | null): string {
     if (!dateStr) return "";
-    const d = new Date(dateStr);
-    return d.toISOString().split("T")[0];
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "";
+      return d.toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
   }
 
   return (
