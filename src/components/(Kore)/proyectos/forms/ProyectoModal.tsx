@@ -163,6 +163,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
       cliente_correo: "",
       fecha_entrega: "",
       precio: 0,
+      monto_mensual_fijo: 0,
       estado: "En Progreso",
       vendedor_id: "",
       deducciones: [],
@@ -281,6 +282,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
           cliente_correo:   proyecto.cliente_correo   || "",
           fecha_entrega:    proyecto.fecha_entrega     || "",
           precio:           proyecto.precio            || 0,
+          monto_mensual_fijo: proyecto.monto_mensual_fijo || 0,
           estado:           proyecto.estado            || "En Progreso",
           vendedor_id:      proyecto.vendedor_id       || "",
           deducciones:      proyecto.deducciones       || [],
@@ -289,7 +291,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
         reset({
           nombre: "", cliente_nombre: "", cliente_nit: "",
           cliente_telefono: "", cliente_correo: "",
-          fecha_entrega: "", precio: 0, estado: "En Progreso",
+          fecha_entrega: "", precio: 0, monto_mensual_fijo: 0, estado: "En Progreso",
           vendedor_id: "",
           deducciones: [],
         });

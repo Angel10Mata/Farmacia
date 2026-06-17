@@ -713,7 +713,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
       cliente_correo: "",
       fecha_entrega: "",
       precio: 0,
-      mantenimiento_activo: false,
+      monto_mensual_fijo: 0,
       estado: "En Progreso",
       vendedor_id: "",
       deducciones: [],
@@ -870,7 +870,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
         cliente_correo:   proyecto.cliente_correo   || "",
         fecha_entrega:    proyecto.fecha_entrega    || "",
         precio:           proyecto.precio           || 0,
-        mantenimiento_activo: proyecto.mantenimiento_activo || false,
+        monto_mensual_fijo: proyecto.monto_mensual_fijo || 0,
         estado:           proyecto.estado           || "En Progreso",
         vendedor_id:      proyecto.vendedor_id      || "",
         deducciones:      proyecto.deducciones      || [],
@@ -1153,17 +1153,20 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                     )}
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="mantenimiento_activo">¿Aplica Mantenimiento?</Label>
-                    <div className="flex items-center space-x-3 pt-2">
-                      <input
-                        id="mantenimiento_activo"
-                        type="checkbox"
-                        {...register("mantenimiento_activo")}
-                        className="h-5 w-5 rounded border-gray-300 text-celeste-kore focus:ring-celeste-kore cursor-pointer accent-celeste-kore"
+                    <Label htmlFor="monto_mensual_fijo">Mantenimiento (Q)</Label>
+                    <div className="relative pt-1">
+                      <Input
+                        id="monto_mensual_fijo"
+                        type="number"
+                        step="0.01"
+                        inputMode="decimal"
+                        placeholder="Ej. 150.00"
+                        {...register("monto_mensual_fijo", { valueAsNumber: true })}
+                        className={errors.monto_mensual_fijo ? "border-destructive" : ""}
                       />
-                      <Label htmlFor="mantenimiento_activo" className="text-xs text-muted-foreground cursor-pointer">
-                        Activar sección de mantenimiento
-                      </Label>
+                      {errors.monto_mensual_fijo && (
+                        <p className="text-[10px] text-destructive mt-1">{errors.monto_mensual_fijo.message as string}</p>
+                      )}
                     </div>
                   </div>
                   <div className="grid gap-2">

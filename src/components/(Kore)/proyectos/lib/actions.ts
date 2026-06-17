@@ -219,7 +219,10 @@ export async function createProyecto(data: ProyectoFormValues) {
       cliente_id:    clienteId,
       created_by:    user?.id ?? null,
       activo:        true,
-      otros_campos:  { mantenimiento_activo: data.mantenimiento_activo ?? false },
+      otros_campos:  { 
+        mantenimiento_activo: (data.monto_mensual_fijo && data.monto_mensual_fijo > 0) ? true : false,
+        monto_mensual_fijo: data.monto_mensual_fijo || 0
+      },
     }])
     .select("id")
     .single();
@@ -262,10 +265,14 @@ export async function updateProyecto(id: string, data: Partial<ProyectoFormValue
   if (data.estado    !== undefined) patch.estado        = data.estado;
   if (clienteId      !== undefined) patch.cliente_id    = clienteId;
 
-  if (data.mantenimiento_activo !== undefined) {
+  if (data.monto_mensual_fijo !== undefined) {
     const { data: currentProyecto } = await supabase.from("proyectos").select("otros_campos").eq("id", id).single();
     const otrosCampos = currentProyecto?.otros_campos || {};
-    patch.otros_campos = { ...otrosCampos, mantenimiento_activo: data.mantenimiento_activo };
+    patch.otros_campos = { 
+      ...otrosCampos, 
+      mantenimiento_activo: (data.monto_mensual_fijo && data.monto_mensual_fijo > 0) ? true : false,
+      monto_mensual_fijo: data.monto_mensual_fijo || 0
+    };
   }
 
   if (Object.keys(patch).length > 0) {
