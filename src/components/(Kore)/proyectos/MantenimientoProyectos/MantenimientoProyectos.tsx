@@ -84,6 +84,7 @@ export default function MantenimientoProyectos() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const { effectiveRole } = useUserContext();
+  const isDeveloper = effectiveRole === "proyectos";
 
   const [proyectos, setProyectos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,10 +242,12 @@ export default function MantenimientoProyectos() {
               <thead>
                 <tr className="border-b border-border/40">
                   <th className="text-left px-2 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[35%] sm:w-[30%]">Proyecto</th>
-                  <th className="hidden sm:table-cell text-left px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground sm:w-[25%]">Cliente</th>
+                  <th className="text-left px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground sm:w-[25%]">Cliente</th>
                   <th className="text-right px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[25%] sm:w-[15%]">Monto</th>
                   <th className="text-right px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[30%] sm:w-[20%]">Fecha Cobro</th>
-                  <th className="text-right px-2 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[10%]">Acción</th>
+                  {!isDeveloper && (
+                    <th className="text-right px-2 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[10%]">Acción</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -280,8 +283,18 @@ export default function MantenimientoProyectos() {
                         </td>
 
                         {/* Client */}
-                        <td className="hidden sm:table-cell px-2 sm:px-4 py-3.5">
-                          <p className="text-xs font-medium text-foreground/80">{p.cliente_nombre || "—"}</p>
+                        <td className="px-2 sm:px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+                          <p className="text-xs font-bold text-foreground/80 leading-none">{p.cliente_nombre || "—"}</p>
+                          {p.cliente_telefono && (
+                            <a
+                              href={`https://wa.me/${p.cliente_telefono.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-celeste-kore hover:underline font-semibold block mt-1"
+                            >
+                              {p.cliente_telefono}
+                            </a>
+                          )}
                         </td>
 
                         {/* Amount */}
@@ -297,39 +310,46 @@ export default function MantenimientoProyectos() {
 
                         {/* Date input */}
                         <td className="px-2 sm:px-4 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <input
-                              type="date"
-                              value={isEditing ? editingDate[p.id] : toInputDate(p.mantenimiento_fecha_cobro)}
-                              onChange={e => setEditingDate(prev => ({ ...prev, [p.id]: e.target.value }))}
-                              onClick={e => e.stopPropagation()}
-                              className="text-[10px] sm:text-xs bg-muted/20 border border-border/50 rounded-lg px-1 sm:px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-500/30 text-foreground w-[105px] sm:w-[130px]"
-                            />
-                            {isEditing && (
+                          {isDeveloper ? (
+                            <span className="text-xs font-semibold text-foreground/80">
+                              {formatDate(p.mantenimiento_fecha_cobro)}
+                            </span>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <input
+                                type="date"
+                                value={isEditing ? editingDate[p.id] : toInputDate(p.mantenimiento_fecha_cobro)}
+                                onChange={e => setEditingDate(prev => ({ ...prev, [p.id]: e.target.value }))}
+                                onClick={e => e.stopPropagation()}
+                                className="text-[10px] sm:text-xs bg-muted/20 border border-border/50 rounded-lg px-1 sm:px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-500/30 text-foreground w-[105px] sm:w-[130px]"
+                              />
+                              {isEditing && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleSaveDate(p); }}
+                                  disabled={isSaving}
+                                  className="px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-500 text-[10px] font-bold border border-red-500/20 cursor-pointer transition-all disabled:opacity-50"
+                                >
+                                  OK
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+
+
+
+                        {!isDeveloper && (
+                          <td className="px-2 sm:px-6 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-2">
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleSaveDate(p); }}
-                                disabled={isSaving}
-                                className="px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-500 text-[10px] font-bold border border-red-500/20 cursor-pointer transition-all disabled:opacity-50"
+                                onClick={(e) => { e.stopPropagation(); setPagoModalProyecto(p); }}
+                                className="flex items-center gap-1 text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors cursor-pointer bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-md"
                               >
-                                OK
+                                <DollarSign size={12} /> PAGO
                               </button>
-                            )}
-                          </div>
-                        </td>
-
-
-
-                        {/* Acciones */}
-                        <td className="px-2 sm:px-6 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setPagoModalProyecto(p); }}
-                              className="flex items-center gap-1 text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors cursor-pointer bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-md"
-                            >
-                              <DollarSign size={12} /> PAGO
-                            </button>
-                          </div>
-                        </td>
+                            </div>
+                          </td>
+                        )}
                       </motion.tr>
                     );
                   })}

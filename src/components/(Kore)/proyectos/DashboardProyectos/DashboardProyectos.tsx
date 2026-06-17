@@ -400,8 +400,7 @@ export default function DashboardProyectos() {
       const desarrollo = p.aplica_desarrollo ? precio * (Number(p.porcentaje_desarrollo) || 0) / 100 : 0;
       const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
       const docPct = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
-      const mant = p.aplica_mantenimiento ? Number(p.monto_mantenimiento) || 0 : 0;
-      const restante = precio - comision - desarrollo - iva - docPct + mant;
+      const restante = precio - comision - desarrollo - iva - docPct;
       const code = p.id.replace(/-/g, "").slice(0, 6).toUpperCase();
       const shortCode = code.slice(0, 3) + "-" + code.slice(3, 6);
       return [
@@ -415,14 +414,13 @@ export default function DashboardProyectos() {
         comision > 0 ? `Q${comision.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
         desarrollo > 0 ? `Q${desarrollo.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
         iva > 0 ? `Q${iva.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
-        mant > 0 ? `Q${mant.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—",
         `Q${restante.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
       ];
     });
 
     autoTable(doc, {
       startY: 72,
-      head: [["Código", "Proyecto", "Cliente", "Vendedor", "Dev", "Estado", "Precio", "Comisión", "Desarrollo", "IVA", "Mant.", "Saldo Final"]],
+      head: [["Código", "Proyecto", "Cliente", "Vendedor", "Dev", "Estado", "Precio", "Comisión", "Desarrollo", "IVA", "Saldo Final"]],
       body: tableRows,
       theme: "grid",
       styles: {
@@ -833,7 +831,6 @@ export default function DashboardProyectos() {
                           <th className="pb-2 px-2 font-black text-right">Desarrollo</th>
                           <th className="pb-2 px-2 font-black text-right">IVA</th>
                           <th className="pb-2 px-2 font-black text-right">Doc</th>
-                          <th className="pb-2 px-2 font-black text-right">Mant.</th>
                           <th className="pb-2 pl-2 pr-4 font-black text-right">Saldo Final</th>
                         </tr>
                       </thead>
@@ -844,8 +841,7 @@ export default function DashboardProyectos() {
                           const desarrollo = p.aplica_desarrollo ? precio * (Number(p.porcentaje_desarrollo) || 0) / 100 : 0;
                           const iva = p.aplica_iva ? precio * (Number(p.porcentaje_iva) || 0) / 100 : 0;
                           const doc = p.aplica_doc ? precio * (Number(p.porcentaje_doc) || 0) / 100 : 0;
-                          const mant = Number(p.mantenimiento) || 0;
-                          const restante = precio - comision - desarrollo - iva - doc + mant;
+                          const restante = precio - comision - desarrollo - iva - doc;
 
                           return (
                             <tr
@@ -902,10 +898,6 @@ export default function DashboardProyectos() {
                                 </p>
                                 {doc > 0 && <p className="text-[10px] text-muted-foreground">{p.porcentaje_doc}%</p>}
                               </td>
-                              <td className="py-4 text-right border-y border-border group-hover:border-celeste-kore/20 transition-all duration-300">
-                                <p className={`text-sm ${mant > 0 ? 'text-celeste-kore font-bold' : 'text-muted-foreground'}`}>{mant > 0 ? `Q${mant.toLocaleString('en-US', {minimumFractionDigits: 2})}` : '—'}</p>
-                                {mant > 0 && <p className="text-[10px] text-muted-foreground">Mes</p>}
-                              </td>
                               <td className="py-4 pr-4 text-right rounded-r-xl border-y border-r border-border group-hover:border-celeste-kore/20 transition-all duration-300">
                                 <p className="font-black text-sm text-celeste-kore">Q{restante.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
                               </td>
@@ -932,10 +924,6 @@ export default function DashboardProyectos() {
                             </td>
                             <td className="py-4 text-right">
                               <p className="font-bold text-sm">&nbsp;</p>
-                            </td>
-                            <td className="py-4 text-right">
-                              <p className="text-sm text-muted-foreground">&nbsp;</p>
-                              <p className="text-[10px] text-muted-foreground">&nbsp;</p>
                             </td>
                             <td className="py-4 text-right">
                               <p className="text-sm text-muted-foreground">&nbsp;</p>

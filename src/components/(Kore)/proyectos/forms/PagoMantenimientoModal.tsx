@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
   Save,
-  DollarSign, 
   Calendar as CalendarIcon,
   RefreshCw
 } from "lucide-react";
@@ -159,10 +158,10 @@ export function PagoMantenimientoModal({ proyecto, onClose, onSuccess }: PagoMan
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Monto Cobrado <span className="text-emerald-500 lowercase normal-case">(Mensualidad: {formatMoney(sugerido)})</span>
+                  Monto Cobrado
                 </label>
                 <div className="relative">
-                  <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-muted-foreground">Q</span>
                   <input
                     type="number"
                     step="0.01"
@@ -214,7 +213,7 @@ export function PagoMantenimientoModal({ proyecto, onClose, onSuccess }: PagoMan
             type="submit"
             form="pago-form"
             disabled={loading}
-            className="flex items-center gap-1.5 px-6 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black tracking-widest transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-6 py-2 rounded-xl bg-celeste-kore text-black hover:bg-celeste-kore/90 text-xs font-black tracking-widest transition-all disabled:opacity-50"
           >
             {loading ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
             GUARDAR PAGO

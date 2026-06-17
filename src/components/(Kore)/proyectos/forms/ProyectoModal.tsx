@@ -164,6 +164,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
       fecha_entrega: "",
       precio: 0,
       monto_mensual_fijo: 0,
+      mantenimiento_fecha_cobro: "",
       estado: "En Progreso",
       vendedor_id: "",
       deducciones: [],
@@ -283,6 +284,15 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
           fecha_entrega:    proyecto.fecha_entrega     || "",
           precio:           proyecto.precio            || 0,
           monto_mensual_fijo: proyecto.monto_mensual_fijo || 0,
+          mantenimiento_fecha_cobro: (() => {
+            if (!proyecto.mantenimiento_fecha_cobro) return "";
+            try {
+              const d = new Date(proyecto.mantenimiento_fecha_cobro);
+              return isNaN(d.getTime()) ? "" : d.toISOString().split('T')[0];
+            } catch {
+              return "";
+            }
+          })(),
           estado:           proyecto.estado            || "En Progreso",
           vendedor_id:      proyecto.vendedor_id       || "",
           deducciones:      proyecto.deducciones       || [],
@@ -291,7 +301,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
         reset({
           nombre: "", cliente_nombre: "", cliente_nit: "",
           cliente_telefono: "", cliente_correo: "",
-          fecha_entrega: "", precio: 0, monto_mensual_fijo: 0, estado: "En Progreso",
+          fecha_entrega: "", precio: 0, monto_mensual_fijo: 0, mantenimiento_fecha_cobro: "", estado: "En Progreso",
           vendedor_id: "",
           deducciones: [],
         });

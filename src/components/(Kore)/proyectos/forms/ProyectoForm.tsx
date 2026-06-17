@@ -714,6 +714,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
       fecha_entrega: "",
       precio: 0,
       monto_mensual_fijo: 0,
+      mantenimiento_fecha_cobro: "",
       estado: "En Progreso",
       vendedor_id: "",
       deducciones: [],
@@ -871,6 +872,15 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
         fecha_entrega:    proyecto.fecha_entrega    || "",
         precio:           proyecto.precio           || 0,
         monto_mensual_fijo: proyecto.monto_mensual_fijo || 0,
+        mantenimiento_fecha_cobro: (() => {
+          if (!proyecto.mantenimiento_fecha_cobro) return "";
+          try {
+            const d = new Date(proyecto.mantenimiento_fecha_cobro);
+            return isNaN(d.getTime()) ? "" : d.toISOString().split('T')[0];
+          } catch {
+            return "";
+          }
+        })(),
         estado:           proyecto.estado           || "En Progreso",
         vendedor_id:      proyecto.vendedor_id      || "",
         deducciones:      proyecto.deducciones      || [],
@@ -1137,7 +1147,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                 </h4>
 
                 {/* Precio + Fecha + Vendedor + Desarrollador */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="precio">Precio Total (Q) *</Label>
                     <Input
@@ -1151,6 +1161,14 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                     {errors.precio && (
                       <p className="text-[10px] text-destructive">{errors.precio.message}</p>
                     )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="fecha_entrega">Fecha de Entrega</Label>
+                    <Input
+                      id="fecha_entrega"
+                      type="date"
+                      {...register("fecha_entrega")}
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="monto_mensual_fijo">Mantenimiento (Q)</Label>
@@ -1170,11 +1188,11 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                     </div>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="fecha_entrega">Fecha de Entrega</Label>
+                    <Label htmlFor="mantenimiento_fecha_cobro">Fecha Cobro Mant.</Label>
                     <Input
-                      id="fecha_entrega"
+                      id="mantenimiento_fecha_cobro"
                       type="date"
-                      {...register("fecha_entrega")}
+                      {...register("mantenimiento_fecha_cobro")}
                     />
                   </div>
                 </div>
