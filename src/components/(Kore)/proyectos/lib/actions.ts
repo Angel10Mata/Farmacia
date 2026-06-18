@@ -416,6 +416,20 @@ export async function registrarPagoMantenimiento(
 ) {
   const supabase = await createClient();
   
+  // Resolve current user name
+  let username = "Usuario";
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("nombre")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.nombre) {
+      username = profile.nombre;
+    }
+  }
+
   // 1. Insertar el registro del pago
   const { error: insertError } = await supabase
     .from("pro_mantenimientos")
@@ -424,7 +438,7 @@ export async function registrarPagoMantenimiento(
       monto_cobrado: montoCobrado,
       fecha_pago: fechaPago,
       periodo_pagado: periodoPagado,
-      descripcion: descripcion
+      descripcion: `${descripcion} | Confirmado por: ${username}`
     }]);
 
   if (insertError) {
@@ -467,6 +481,46 @@ export async function registrarPagoMantenimiento(
     if (updateError) {
       console.error("Error updating proyecto otros_campos:", updateError);
     }
+  }
+
+  revalidatePath("/kore/proyectos");
+  revalidatePath("/kore/proyectos/mantenimiento");
+  return { success: true };
+}
+
+export async function eliminarPagoMantenimiento(
+  pagoId: string,
+  proyectoId: string,
+  nuevaProximaFecha: string | null
+) {
+  const supabase = await createClient();
+
+  // 1. Eliminar el pago
+  const { error: deleteError } = await supabase
+    .from("pro_mantenimientos")
+    .delete()
+    .eq("id", pagoId);
+
+  if (deleteError) {
+    console.error("Error deleting pago mantenimiento:", deleteError);
+    return { error: deleteError.message };
+  }
+
+  // 2. Actualizar la próxima fecha de cobro
+  const { data: currentProyecto } = await supabase.from("proyectos").select("otros_campos").eq("id", proyectoId).single();
+  const otrosCampos = currentProyecto?.otros_campos || {};
+  const updatedOtrosCampos = {
+    ...otrosCampos,
+    mantenimiento_fecha_cobro: nuevaProximaFecha,
+  };
+
+  const { error: updateError } = await supabase
+    .from("proyectos")
+    .update({ otros_campos: updatedOtrosCampos })
+    .eq("id", proyectoId);
+
+  if (updateError) {
+    console.error("Error updating proxima fecha cobro on delete:", updateError);
   }
 
   revalidatePath("/kore/proyectos");

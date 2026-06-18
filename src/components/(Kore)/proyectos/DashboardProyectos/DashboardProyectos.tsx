@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Briefcase,
@@ -256,6 +256,47 @@ function DedListWithToggle({
   );
 }
 
+const monthsFull = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
+
+const monthsAbbr = [
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+];
+
+const getWeeksOfMonth = (year: number, month: number) => {
+  const weeks = [];
+  const monthNames = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  
+  for (let i = 0; i < 5; i++) {
+    const startDay = 1 + i * 7;
+    
+    // Construct start date
+    const startDate = new Date(year, month, startDay);
+    // Construct end date (start date + 6 days)
+    const endDate = new Date(year, month, startDay + 6);
+    
+    const startLabel = `${startDate.getDate()} ${monthNames[startDate.getMonth()]}`;
+    const endLabel = `${endDate.getDate()} ${monthNames[endDate.getMonth()]}`;
+    
+    weeks.push({
+      label: `${startLabel} - ${endLabel}`,
+      start: startDate,
+      end: endDate
+    });
+  }
+  return weeks;
+};
+
+const formatDateSlash = (dateStr: string) => {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+};
+
 export default function DashboardProyectos() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -275,6 +316,73 @@ export default function DashboardProyectos() {
   });
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [tempYear, setTempYear] = useState<number>(new Date().getFullYear());
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null);
+  
+  const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showWeekPicker, setShowWeekPicker] = useState(false);
+  const [showRangePicker, setShowRangePicker] = useState(false);
+  const [rangeActiveField, setRangeActiveField] = useState<"start" | "end">("start");
+  const [viewingMonth, setViewingMonth] = useState<number>(new Date().getMonth());
+  const [viewingYear, setViewingYear] = useState<number>(new Date().getFullYear());
+
+  const getDaysInMonthGrid = useCallback((year: number, month: number) => {
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month + 1, 0);
+    const daysInMonth = endOfMonth.getDate();
+    
+    const startDayOfWeek = startOfMonth.getDay();
+    const grid = [];
+    
+    for (let i = 0; i < startDayOfWeek; i++) {
+      grid.push(null);
+    }
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      grid.push({ dayNum: d, dateStr });
+    }
+    
+    return grid;
+  }, []);
+  const handleDayClick = (dayStr: string) => {
+    if (rangeActiveField === "start") {
+      if (dayStr > dateRange.end) {
+        setDateRange({ start: dayStr, end: dayStr });
+      } else {
+        setDateRange(prev => ({ ...prev, start: dayStr }));
+      }
+    } else {
+      if (dayStr < dateRange.start) {
+        setDateRange({ start: dayStr, end: dayStr });
+      } else {
+        setDateRange(prev => ({ ...prev, end: dayStr }));
+      }
+    }
+    setShowRangePicker(false);
+  };
+
+  const shiftDateRange = (direction: "prev" | "next") => {
+    const start = new Date(dateRange.start + "T00:00:00");
+    const end = new Date(dateRange.end + "T23:59:59");
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+    
+    const shift = direction === "prev" ? -diffDays : diffDays;
+    
+    const newStart = new Date(start);
+    newStart.setDate(start.getDate() + shift);
+    
+    const newEnd = new Date(end);
+    newEnd.setDate(end.getDate() + shift);
+    
+    setDateRange({
+      start: newStart.toISOString().split("T")[0],
+      end: newEnd.toISOString().split("T")[0]
+    });
+  };
+
   const [proyectos, setProyectos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -600,27 +708,65 @@ export default function DashboardProyectos() {
     }
 
     if (chartTab === "MES") {
-      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-      const dataByDay = Array.from({ length: daysInMonth }, (_, i) => ({
-        name: (i + 1).toString(),
-        precio: 0,
-        comision: 0,
-        iva: 0
-      }));
+      if (selectedWeekIndex !== null) {
+        const weeks = getWeeksOfMonth(selectedYear, selectedMonth);
+        const week = weeks[selectedWeekIndex];
+        const start = new Date(week.start);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(week.end);
+        end.setHours(23, 59, 59, 999);
 
-      proyectos.forEach(p => {
-        const date = new Date(p.created_at);
-        if (date.getFullYear() === selectedYear && date.getMonth() === selectedMonth) {
-          const d = date.getDate() - 1;
-          const precio = Number(p.precio) || 0;
-          dataByDay[d].precio += precio;
-          if (p.aplica_vendedor) dataByDay[d].comision += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
-          if (p.aplica_iva) dataByDay[d].iva += precio * (Number(p.porcentaje_iva) || 0) / 100;
+        // Generate 7 days for the selected week
+        const dataByDay: any[] = [];
+        const tempDate = new Date(start);
+        for (let i = 0; i < 7; i++) {
+          dataByDay.push({
+            name: tempDate.getDate().toString(),
+            dateStr: tempDate.toISOString().split("T")[0],
+            precio: 0,
+            comision: 0,
+            iva: 0
+          });
+          tempDate.setDate(tempDate.getDate() + 1);
         }
-      });
 
-      const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
-      return dataByDay.filter(d => d.precio > 0 || !isCurrentMonth || Number(d.name) <= now.getDate());
+        proyectos.forEach(p => {
+          const date = new Date(p.created_at);
+          if (date >= start && date <= end) {
+            const s = date.toISOString().split("T")[0];
+            const item = dataByDay.find(i => i.dateStr === s);
+            if (item) {
+              const precio = Number(p.precio) || 0;
+              item.precio += precio;
+              if (p.aplica_vendedor) item.comision += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
+              if (p.aplica_iva) item.iva += precio * (Number(p.porcentaje_iva) || 0) / 100;
+            }
+          }
+        });
+        return dataByDay;
+      } else {
+        const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+        const dataByDay = Array.from({ length: daysInMonth }, (_, i) => ({
+          name: (i + 1).toString(),
+          precio: 0,
+          comision: 0,
+          iva: 0
+        }));
+
+        proyectos.forEach(p => {
+          const date = new Date(p.created_at);
+          if (date.getFullYear() === selectedYear && date.getMonth() === selectedMonth) {
+            const d = date.getDate() - 1;
+            const precio = Number(p.precio) || 0;
+            dataByDay[d].precio += precio;
+            if (p.aplica_vendedor) dataByDay[d].comision += precio * (Number(p.porcentaje_vendedor) || 0) / 100;
+            if (p.aplica_iva) dataByDay[d].iva += precio * (Number(p.porcentaje_iva) || 0) / 100;
+          }
+        });
+
+        const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+        return dataByDay.filter(d => d.precio > 0 || !isCurrentMonth || Number(d.name) <= now.getDate());
+      }
     } else {
       const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
       const dataByMonth = Array.from({ length: 12 }, (_, i) => ({ name: months[i], precio: 0, comision: 0, iva: 0 }));
@@ -643,7 +789,7 @@ export default function DashboardProyectos() {
         return dataByMonth;
       }
     }
-  }, [proyectos, chartTab, dateRange, selectedMonth, selectedYear]);
+  }, [proyectos, chartTab, dateRange, selectedMonth, selectedYear, selectedWeekIndex]);
 
   const filteredProyectos = useMemo(() => {
     if (!searchTerm) return proyectos;
@@ -1041,7 +1187,76 @@ export default function DashboardProyectos() {
           </div>
 
           {/* CHARTS SECTION */}
-          <div className="grid grid-cols-1 lg:grid-cols-[60%_1fr] gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[38%_62%] gap-4">
+            {/* Donut Chart */}
+            <div className="rounded-2xl border border-celeste-kore/55 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20 flex flex-col">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
+                  <Briefcase size={14} className="text-celeste-kore" />
+                </div>
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest">Estado de Proyectos</h3>
+              </div>
+              
+              <div className="flex-1 flex flex-row items-center justify-between w-full mt-2 gap-2 sm:gap-4">
+                {/* Left Side: States */}
+                <div className="flex-[1] min-w-0 flex flex-col gap-2.5 sm:gap-4 items-start text-left">
+                  {pieData.map((item) => (
+                    <div key={item.name} className="flex items-center gap-1.5 h-5 sm:h-6">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }}></div>
+                      <span className="text-[9px] sm:text-xs font-bold text-muted-foreground uppercase truncate max-w-[75px] sm:max-w-none">{item.name}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Center: Donut Chart Graph */}
+                <div className="relative w-[110px] h-[110px] sm:w-[140px] sm:h-[140px] shrink-0">
+                  {pieData.length > 0 ? (
+                    <>
+                      <ResponsiveContainer width="100%" height="100%" className="absolute inset-0">
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            innerRadius="65%"
+                            outerRadius="85%"
+                            paddingAngle={5}
+                            cornerRadius={6}
+                            dataKey="value"
+                            stroke="none"
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                        <span className="text-[8px] sm:text-[9px] uppercase tracking-widest text-muted-foreground font-black">Total</span>
+                        <span className="text-sm sm:text-lg font-black text-foreground">{summary.count}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs sm:text-sm">No hay proyectos</div>
+                  )}
+                </div>
+
+                {/* Right Side: Numbers */}
+                <div className="flex-[1] min-w-0 flex flex-col gap-2.5 sm:gap-4 items-end text-right">
+                  {pieData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-end gap-1.5 h-5 sm:h-6 shrink-0">
+                      {item.mant > 0 && (
+                        <span className="text-[8px] sm:text-[9px] font-black text-celeste-kore bg-celeste-kore/10 px-1 py-0.5 rounded border border-celeste-kore/20">
+                          Q{item.mant.toLocaleString()}
+                        </span>
+                      )}
+                      <div className="text-[9px] sm:text-xs font-black">
+                        {item.value} <span className="text-muted-foreground font-bold">— {Math.round((item.value / Math.max(1, summary.count)) * 100)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* Bar Chart */}
             <div className="rounded-2xl border border-celeste-kore/55 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20">
               
@@ -1075,66 +1290,435 @@ export default function DashboardProyectos() {
               {/* Second Line: Active Filters (Centered) */}
               <div className="flex items-center justify-center w-full min-h-[40px] mt-2 mb-4">
                 {chartTab === "MES" && (
-                  <div className="flex items-center gap-2 bg-muted/20 border border-border/40 px-3 py-1.5 rounded-xl">
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                      className="bg-muted border border-border rounded-lg px-2.5 py-1 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
-                    >
-                      {["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"].map((m, idx) => (
-                        <option key={m} value={idx} className="bg-card text-foreground font-bold">
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(Number(e.target.value))}
-                      className="bg-muted border border-border rounded-lg px-2.5 py-1 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
-                    >
-                      {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                        <option key={y} value={y} className="bg-card text-foreground font-bold">
-                          {y}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="flex flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto relative">
+                    {/* Month Picker Segmented Controller */}
+                    <div className="relative w-1/2 sm:w-auto flex-1 sm:flex-initial min-w-0">
+                      <div className="flex items-center bg-muted/20 border border-border/40 rounded-xl overflow-hidden w-full transition-all h-8 sm:h-9">
+                        {/* Prev Month Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedMonth === 0) {
+                              setSelectedMonth(11);
+                              setSelectedYear((y) => y - 1);
+                            } else {
+                              setSelectedMonth((m) => m - 1);
+                            }
+                            setSelectedWeekIndex(null);
+                          }}
+                          className="h-full px-1.5 sm:px-3 hover:bg-muted/30 border-r border-border/40 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                          title="Mes anterior"
+                        >
+                          <ChevronLeft size={11} className="sm:w-3.5 sm:h-3.5" />
+                        </button>
+
+                        {/* Middle Month Picker Trigger */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTempYear(selectedYear);
+                            setShowMonthPicker(!showMonthPicker);
+                          }}
+                          className="filter-button h-full flex-1 flex items-center justify-center gap-1 px-1 sm:px-2 font-black uppercase tracking-widest text-foreground hover:bg-muted/30 transition-colors cursor-pointer min-w-0 overflow-hidden"
+                        >
+                          <AnimatePresence mode="wait" initial={false}>
+                            <motion.span
+                              key={`${selectedMonth}-${selectedYear}`}
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -8 }}
+                              transition={{ duration: 0.18, ease: "easeOut" }}
+                              className="truncate"
+                            >
+                              {`${monthsFull[selectedMonth]} ${selectedYear}`}
+                            </motion.span>
+                          </AnimatePresence>
+                          <ChevronDown size={10} className="text-muted-foreground shrink-0" />
+                        </button>
+
+                        {/* Next Month Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedMonth === 11) {
+                              setSelectedMonth(0);
+                              setSelectedYear((y) => y + 1);
+                            } else {
+                              setSelectedMonth((m) => m + 1);
+                            }
+                            setSelectedWeekIndex(null);
+                          }}
+                          className="h-full px-1.5 sm:px-3 hover:bg-muted/30 border-l border-border/40 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                          title="Siguiente mes"
+                        >
+                          <ChevronRight size={11} className="sm:w-3.5 sm:h-3.5" />
+                        </button>
+                      </div>
+
+                      <AnimatePresence>
+                        {showMonthPicker && (
+                          <>
+                            {/* Backdrop to close */}
+                            <motion.div
+                              className="fixed inset-0 z-40 bg-transparent"
+                              onClick={() => setShowMonthPicker(false)}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.15 }}
+                            />
+                            
+                            {/* Floating Card */}
+                            <motion.div
+                              className="absolute top-full left-0 mt-2 z-50 w-[240px] bg-card border border-border rounded-2xl shadow-xl p-4 flex flex-col gap-3"
+                              initial={{ opacity: 0, scale: 0.92, y: -8 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.92, y: -8 }}
+                              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                              style={{ originX: 0, originY: 0 }}
+                            >
+                              {/* Year Navigation Header */}
+                              <div className="flex items-center justify-between">
+                                <button
+                                  type="button"
+                                  onClick={() => setTempYear(prev => prev - 1)}
+                                  className="p-1 hover:bg-muted/50 rounded-lg text-foreground transition-colors cursor-pointer"
+                                >
+                                  <ChevronLeft size={16} />
+                                </button>
+                                <AnimatePresence mode="wait" initial={false}>
+                                  <motion.span
+                                    key={tempYear}
+                                    className="text-sm font-black text-foreground"
+                                    initial={{ opacity: 0, x: 12 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -12 }}
+                                    transition={{ duration: 0.15, ease: "easeOut" }}
+                                  >
+                                    {tempYear}
+                                  </motion.span>
+                                </AnimatePresence>
+                                <button
+                                  type="button"
+                                  onClick={() => setTempYear(prev => prev + 1)}
+                                  className="p-1 hover:bg-muted/50 rounded-lg text-foreground transition-colors cursor-pointer"
+                                >
+                                  <ChevronRight size={16} />
+                                </button>
+                              </div>
+
+                              {/* 3x4 Month Grid */}
+                              <div className="grid grid-cols-3 gap-2">
+                                {monthsAbbr.map((m, idx) => {
+                                  const isSelected = selectedMonth === idx && selectedYear === tempYear;
+                                  return (
+                                    <motion.button
+                                      key={m}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedMonth(idx);
+                                        setSelectedYear(tempYear);
+                                        setSelectedWeekIndex(null);
+                                        setShowMonthPicker(false);
+                                      }}
+                                      whileHover={{ scale: 1.08 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                        isSelected
+                                          ? "bg-celeste-kore text-white shadow-md"
+                                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                      }`}
+                                    >
+                                      {m}
+                                    </motion.button>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+
+                    </div>
+
+                    {/* Week Picker Trigger */}
+                    <div className="relative w-1/2 sm:w-auto flex-1 sm:flex-initial min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setShowWeekPicker(!showWeekPicker)}
+                        className="filter-button w-full h-8 sm:h-9 flex items-center justify-between gap-1.5 px-3 bg-muted/20 border border-border/40 rounded-xl font-black uppercase tracking-widest text-foreground hover:bg-muted/30 transition-all cursor-pointer"
+                      >
+                        <span className="truncate">
+                          {selectedWeekIndex !== null 
+                            ? getWeeksOfMonth(selectedYear, selectedMonth)[selectedWeekIndex]?.label 
+                            : "Todas las semanas"}
+                        </span>
+                        <ChevronDown size={10} className="text-muted-foreground shrink-0" />
+                      </button>
+
+                      <AnimatePresence>
+                        {showWeekPicker && (
+                          <>
+                            <motion.div
+                              className="fixed inset-0 z-40 bg-transparent"
+                              onClick={() => setShowWeekPicker(false)}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.15 }}
+                            />
+                            <motion.div
+                              className="absolute top-full mt-2 z-50 w-[200px] bg-card border border-border rounded-2xl shadow-xl p-3 flex flex-col gap-1"
+                              initial={{ opacity: 0, scale: 0.92, y: -8, x: "-50%" }}
+                              animate={{ opacity: 1, scale: 1, y: 0, x: "-50%" }}
+                              exit={{ opacity: 0, scale: 0.92, y: -8, x: "-50%" }}
+                              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                              style={{ left: "50%", originX: 0.5, originY: 0 }}
+                            >
+                              {/* Option: Todas las semanas */}
+                              <motion.button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedWeekIndex(null);
+                                  setShowWeekPicker(false);
+                                }}
+                                whileHover={{ scale: 1.02, x: 2 }}
+                                whileTap={{ scale: 0.98 }}
+                                className={`w-full py-2 px-3 text-left text-xs font-black rounded-lg transition-all cursor-pointer ${
+                                  selectedWeekIndex === null
+                                    ? "bg-celeste-kore text-white shadow-md"
+                                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                }`}
+                              >
+                                TODAS LAS SEMANAS
+                              </motion.button>
+
+                              {/* Weeks Options */}
+                              {getWeeksOfMonth(selectedYear, selectedMonth).map((w, idx) => {
+                                const isSelected = selectedWeekIndex === idx;
+                                return (
+                                  <motion.button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedWeekIndex(idx);
+                                      setShowWeekPicker(false);
+                                    }}
+                                    whileHover={{ scale: 1.02, x: 2 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className={`w-full py-2 px-3 text-left text-xs font-black rounded-lg transition-all cursor-pointer ${
+                                      isSelected
+                                        ? "bg-celeste-kore text-white shadow-md"
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                    }`}
+                                  >
+                                    {w.label}
+                                  </motion.button>
+                                );
+                              })}
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 )}
+
                 {chartTab === "AÑO" && (
-                  <div className="flex items-center justify-center gap-2 bg-muted/20 border border-border/40 px-3 py-1.5 rounded-xl">
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(Number(e.target.value))}
-                      className="bg-muted border border-border rounded-lg px-2.5 py-1 text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors uppercase tracking-wider cursor-pointer text-foreground"
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowYearPicker(!showYearPicker)}
+                      className="filter-button h-8 sm:h-9 flex items-center justify-center gap-1.5 px-4 bg-muted/20 border border-border/40 rounded-xl font-black uppercase tracking-widest text-foreground hover:bg-muted/30 transition-colors cursor-pointer"
                     >
-                      {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                        <option key={y} value={y} className="bg-card text-foreground font-bold">
-                          {y}
-                        </option>
-                      ))}
-                    </select>
+                      <span>{selectedYear}</span>
+                      <ChevronDown size={10} className="text-muted-foreground shrink-0" />
+                    </button>
+
+                    <AnimatePresence>
+                      {showYearPicker && (
+                        <>
+                          <motion.div
+                            className="fixed inset-0 z-40 bg-transparent"
+                            onClick={() => setShowYearPicker(false)}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                          />
+                          <motion.div
+                            className="absolute top-full mt-2 z-50 w-[140px] bg-card border border-border rounded-2xl shadow-xl p-3 flex flex-col gap-1.5"
+                            initial={{ opacity: 0, scale: 0.92, y: -8, x: "-50%" }}
+                            animate={{ opacity: 1, scale: 1, y: 0, x: "-50%" }}
+                            exit={{ opacity: 0, scale: 0.92, y: -8, x: "-50%" }}
+                            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                            style={{ left: "50%", originX: 0.5, originY: 0 }}
+                          >
+                            {[2024, 2025, 2026, 2027, 2028].map((y) => {
+                              const isSelected = selectedYear === y;
+                              return (
+                                <motion.button
+                                  key={y}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedYear(y);
+                                    setShowYearPicker(false);
+                                  }}
+                                  whileHover={{ scale: 1.04, x: 2 }}
+                                  whileTap={{ scale: 0.96 }}
+                                  className={`w-full py-1.5 text-center text-xs font-black rounded-lg transition-all cursor-pointer ${
+                                    isSelected
+                                      ? "bg-celeste-kore text-white shadow-md"
+                                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                  }`}
+                                >
+                                  {y}
+                                </motion.button>
+                              );
+                            })}
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
+
                 {chartTab === "RANGO" && (
-                  <div className="flex flex-wrap items-center justify-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/40 w-full sm:w-auto">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground">Desde:</span>
-                      <input 
-                        type="date" 
-                        value={dateRange.start}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                        className="bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] sm:text-[10px] font-black uppercase text-muted-foreground">Hasta:</span>
-                      <input 
-                        type="date" 
-                        value={dateRange.end}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                        className="bg-muted/50 border border-border/50 rounded-lg px-2.5 py-1 text-[11px] sm:text-xs font-bold outline-none focus:border-celeste-kore/50 transition-colors"
-                      />
-                    </div>
+                  <div className="relative w-full sm:w-auto flex-1 sm:flex-initial min-w-0 flex items-center justify-center gap-2">
+                    {/* Start Date Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (showRangePicker && rangeActiveField === "start") {
+                          setShowRangePicker(false);
+                        } else {
+                          setRangeActiveField("start");
+                          const initialDate = dateRange.start ? new Date(dateRange.start + "T00:00:00") : new Date();
+                          setViewingMonth(initialDate.getMonth());
+                          setViewingYear(initialDate.getFullYear());
+                          setShowRangePicker(true);
+                        }
+                      }}
+                      className="filter-button h-8 sm:h-9 px-3 flex items-center justify-between gap-3 rounded-xl bg-muted/20 border border-border/40 hover:bg-muted/30 text-foreground transition-all cursor-pointer font-black text-[10px] sm:text-xs tracking-widest"
+                    >
+                      <span>{formatDateSlash(dateRange.start)}</span>
+                      <Calendar size={12} className="text-muted-foreground shrink-0" />
+                    </button>
+
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-muted-foreground select-none">al</span>
+
+                    {/* End Date Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (showRangePicker && rangeActiveField === "end") {
+                          setShowRangePicker(false);
+                        } else {
+                          setRangeActiveField("end");
+                          const initialDate = dateRange.end ? new Date(dateRange.end + "T00:00:00") : new Date();
+                          setViewingMonth(initialDate.getMonth());
+                          setViewingYear(initialDate.getFullYear());
+                          setShowRangePicker(true);
+                        }
+                      }}
+                      className="filter-button h-8 sm:h-9 px-3 flex items-center justify-between gap-3 rounded-xl bg-muted/20 border border-border/40 hover:bg-muted/30 text-foreground transition-all cursor-pointer font-black text-[10px] sm:text-xs tracking-widest"
+                    >
+                      <span>{formatDateSlash(dateRange.end)}</span>
+                      <Calendar size={12} className="text-muted-foreground shrink-0" />
+                    </button>
+
+                    <AnimatePresence>
+                      {showRangePicker && (
+                        <>
+                          <motion.div
+                            className="fixed inset-0 z-40 bg-transparent"
+                            onClick={() => setShowRangePicker(false)}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                          />
+                          <motion.div
+                            className="absolute top-full mt-2 z-50 w-[260px] bg-card border border-border rounded-2xl shadow-xl p-4 flex flex-col gap-3"
+                            initial={{ opacity: 0, scale: 0.92, y: -8, x: "-50%" }}
+                            animate={{ opacity: 1, scale: 1, y: 0, x: "-50%" }}
+                            exit={{ opacity: 0, scale: 0.92, y: -8, x: "-50%" }}
+                            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                            style={{ left: "50%", originX: 0.5, originY: 0 }}
+                          >
+                            {/* Calendar Month Header */}
+                            <div className="flex items-center justify-between">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (viewingMonth === 0) {
+                                    setViewingMonth(11);
+                                    setViewingYear((y) => y - 1);
+                                  } else {
+                                    setViewingMonth((m) => m - 1);
+                                  }
+                                }}
+                                className="p-1 hover:bg-muted/50 rounded-lg text-foreground transition-colors cursor-pointer"
+                              >
+                                <ChevronLeft size={16} />
+                              </button>
+                              <span className="text-sm font-black uppercase text-foreground">
+                                {`${monthsFull[viewingMonth]} ${viewingYear}`}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (viewingMonth === 11) {
+                                    setViewingMonth(0);
+                                    setViewingYear((y) => y + 1);
+                                  } else {
+                                    setViewingMonth((m) => m + 1);
+                                  }
+                                }}
+                                className="p-1 hover:bg-muted/50 rounded-lg text-foreground transition-colors cursor-pointer"
+                              >
+                                <ChevronRight size={16} />
+                              </button>
+                            </div>
+
+                            {/* Calendar Days Header */}
+                            <div className="grid grid-cols-7 gap-1 text-center mb-1 border-b border-border/30 pb-1">
+                              {["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"].map((d) => (
+                                <span key={d} className="text-[9px] font-black text-muted-foreground uppercase">
+                                  {d}
+                                </span>
+                              ))}
+                            </div>
+
+                            {/* Calendar Days Grid */}
+                            <div className="grid grid-cols-7 gap-1">
+                              {getDaysInMonthGrid(viewingYear, viewingMonth).map((day, idx) => {
+                                if (!day) return <div key={`empty-${idx}`} className="w-7 h-7" />;
+
+                                const isSelected = rangeActiveField === "start"
+                                  ? dateRange.start === day.dateStr
+                                  : dateRange.end === day.dateStr;
+
+                                return (
+                                  <motion.button
+                                    key={day.dateStr}
+                                    type="button"
+                                    onClick={() => handleDayClick(day.dateStr)}
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className={`w-7 h-7 flex items-center justify-center text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                                      isSelected
+                                        ? "bg-celeste-kore text-white shadow-md font-black"
+                                        : "text-foreground hover:bg-muted/50"
+                                    }`}
+                                  >
+                                    {day.dayNum}
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
               </div>
@@ -1159,7 +1743,7 @@ export default function DashboardProyectos() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} dy={10} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} tickFormatter={(val) => `Q${val/1000}k`} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "#71717a" }} tickFormatter={(val) => `Q${val/1000}k`} dy={-8} />
                       <RechartsTooltip 
                         cursor={{ fill: "rgba(255,255,255,0.05)" }} 
                         contentStyle={{ 
@@ -1182,9 +1766,9 @@ export default function DashboardProyectos() {
                           return [formattedValue, name];
                         }}
                       />
-                      <Bar dataKey="precio" stackId="a" fill="#B7494E" radius={[4, 4, 0, 0]} barSize={20} />
-                      <Bar dataKey="comision" stackId="a" fill="#3D3C3C" radius={[0, 0, 0, 0]} barSize={20} />
-                      <Bar dataKey="iva" stackId="a" fill="#a1a1aa" radius={[4, 4, 0, 0]} barSize={20} />
+                      <Bar dataKey="precio" stackId="a" fill="#B7494E" radius={[8, 8, 0, 0]} barSize={20} />
+                      <Bar dataKey="comision" stackId="a" fill="#3D3C3C" radius={[8, 8, 0, 0]} barSize={20} />
+                      <Bar dataKey="iva" stackId="a" fill="#a1a1aa" radius={[8, 8, 0, 0]} barSize={20} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -1192,76 +1776,6 @@ export default function DashboardProyectos() {
                     No hay datos para mostrar
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* Donut Chart */}
-            <div className="rounded-2xl border border-celeste-kore/55 dark:border-border bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl p-4 sm:p-6 shadow-none dark:shadow-2xl dark:shadow-black/20 flex flex-col">
-              <div className="flex items-center gap-2 sm:gap-3 mb-4">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
-                  <Briefcase size={14} className="text-celeste-kore" />
-                </div>
-                <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest">Estado de Proyectos</h3>
-              </div>
-              <div className="flex-1 flex flex-col items-center justify-center relative min-h-[160px] sm:min-h-[200px]">
-                {pieData.length > 0 ? (
-                  <>
-                    <ResponsiveContainer width="100%" height="100%" className="absolute inset-0">
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          innerRadius="65%"
-                          outerRadius="85%"
-                          paddingAngle={5}
-                          dataKey="value"
-                          stroke="none"
-                        >
-                          {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <RechartsTooltip 
-                          contentStyle={{ 
-                            backgroundColor: "#18181b", 
-                            borderColor: "rgba(255,255,255,0.1)", 
-                            borderRadius: "12px", 
-                            fontSize: "12px",
-                            color: "#fff",
-                            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)"
-                          }}
-                          itemStyle={{ color: "#fff" }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none">
-                      <span className="text-[8px] sm:text-[9px] uppercase tracking-widest text-muted-foreground font-black">Total</span>
-                      <span className="text-sm sm:text-xl font-black text-foreground">{summary.count}</span>
-                    </div>
-                  </>
-                ) : (
-                  <span className="text-muted-foreground text-xs sm:text-sm">No hay proyectos</span>
-                )}
-              </div>
-              
-              <div className="w-full space-y-2 sm:space-y-3 mt-4 sm:mt-6">
-                {pieData.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between group">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
-                      <span className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase">{item.name}</span>
-                    </div>
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      {item.mant > 0 && (
-                        <span className="text-[9px] sm:text-[10px] font-black text-celeste-kore bg-celeste-kore/10 px-1.5 py-0.5 rounded border border-celeste-kore/20">
-                          Q{item.mant.toLocaleString()}
-                        </span>
-                      )}
-                      <div className="text-[10px] sm:text-xs font-black">
-                        {item.value} <span className="text-muted-foreground font-bold">— {Math.round((item.value / Math.max(1, summary.count)) * 100)}%</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>

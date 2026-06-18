@@ -303,10 +303,17 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
     const clean = phone.trim();
     if (!clean) return "";
     const cleanNoSpaces = clean.replace(/\s+/g, "");
-    const gtMatch = cleanNoSpaces.match(/^\+502(\d{4})(\d{4})$/);
+    const gtMatch = cleanNoSpaces.match(/^(?:\+?502)?(\d{4})(\d{4})$/);
     if (gtMatch) return `${gtMatch[1]}-${gtMatch[2]}`;
-    const gtShortMatch = cleanNoSpaces.match(/^(\d{4})(\d{4})$/);
-    if (gtShortMatch) return `${gtShortMatch[1]}-${gtShortMatch[2]}`;
+    return clean;
+  };
+
+  const formatWhatsAppLink = (phone: string | null | undefined): string => {
+    if (!phone) return "";
+    const clean = phone.replace(/\D/g, "");
+    if (clean.length === 8) {
+      return `502${clean}`;
+    }
     return clean;
   };
 
@@ -482,7 +489,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
               {proyecto.cliente_telefono && (
                 <p className="flex items-center gap-1.5">
                   <span className="text-zinc-500 dark:text-zinc-400">Teléfono:</span> 
-                  <a href={`https://wa.me/${proyecto.cliente_telefono.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-celeste-kore hover:underline flex items-center gap-1">
+                  <a href={`https://wa.me/${formatWhatsAppLink(proyecto.cliente_telefono)}`} target="_blank" rel="noopener noreferrer" className="font-bold text-celeste-kore hover:underline flex items-center gap-1">
                     {formatPhoneDisplay(proyecto.cliente_telefono)}
                   </a>
                 </p>
@@ -507,6 +514,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
                     innerRadius="65%"
                     outerRadius="85%"
                     paddingAngle={4}
+                    cornerRadius={6}
                     dataKey="value"
                     stroke="none"
                   >
@@ -590,7 +598,7 @@ export default function ProyectoDetalle({ proyecto: proyectoProp }: ProyectoDeta
                   <button
                     type="button"
                     onClick={handleDeleteProyecto}
-                    className="w-full sm:w-auto flex items-center justify-center px-6 py-3.5 rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all font-black text-xs uppercase tracking-widest whitespace-nowrap cursor-pointer active:scale-95 shadow-lg shadow-red-500/20"
+                    className="w-full sm:w-auto flex items-center justify-center px-6 py-3.5 rounded-xl border border-red-600 text-red-600 hover:bg-red-600/10 bg-transparent transition-all font-black text-xs uppercase tracking-widest whitespace-nowrap cursor-pointer active:scale-95"
                   >
                     ELIMINAR
                   </button>

@@ -729,6 +729,41 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
 
   // Estado del formulario de "agregar deducción"
   const [step, setStep] = useState<1 | 2>(1);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  const [showMonthYearPicker, setShowMonthYearPicker] = useState(false);
+  const watchFechaCobro = watch("mantenimiento_fecha_cobro");
+  const [pickerYear, setPickerYear] = useState<number>(() => {
+    if (watchFechaCobro) {
+      const d = new Date(watchFechaCobro + "T00:00:00");
+      if (!isNaN(d.getTime())) return d.getFullYear();
+    }
+    return new Date().getFullYear();
+  });
+
+  useEffect(() => {
+    if (watchFechaCobro) {
+      const d = new Date(watchFechaCobro + "T00:00:00");
+      if (!isNaN(d.getTime())) {
+        setPickerYear(d.getFullYear());
+      }
+    }
+  }, [watchFechaCobro]);
+
+  const getFechaCobroDisplay = (dateStr: string | null | undefined) => {
+    if (!dateStr) return "Seleccionar Mes/Año";
+    try {
+      const d = new Date(dateStr.split("T")[0] + "T00:00:00");
+      if (isNaN(d.getTime())) return "Seleccionar Mes/Año";
+      const months = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ];
+      return `${months[d.getMonth()]} de ${d.getFullYear()}`;
+    } catch {
+      return "Seleccionar Mes/Año";
+    }
+  };
   const totalDeduccionesPct = fields.reduce((acc, curr) => acc + (Number(curr.porcentaje) || 0), 0);
 
   const [newDed, setNewDed] = useState<{
@@ -765,6 +800,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
       usuario_id: "",
     });
     setUserSearchQuery("");
+    setShowAddForm(false);
   };
 
   // ── Usuarios (para asignación en deducciones y vendedor) ──
@@ -1030,7 +1066,8 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
               <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
                 Información del Cliente
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
+                {/* Search Box */}
                 <div className="grid gap-2 relative" ref={clientAutocompleteRef}>
                   <Label htmlFor="cliente_nombre">Nombre Cliente</Label>
                   <Input
@@ -1100,42 +1137,39 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                   )}
                 </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="cliente_nit">NIT</Label>
-                  <Input
-                    id="cliente_nit"
-                    {...register("cliente_nit")}
-                    placeholder="CF"
-                    readOnly
-                    className="bg-muted/30 cursor-not-allowed text-muted-foreground"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="cliente_telefono">Teléfono</Label>
-                  <KorePhoneInput
-                    id="cliente_telefono"
-                    value={watch("cliente_telefono") || ""}
-                    onChange={(val) => setValue("cliente_telefono", val, { shouldValidate: true })}
-                    placeholder="1234 5678"
-                    disabled={true}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="cliente_correo">Correo</Label>
-                  <Input
-                    id="cliente_correo"
-                    type="email"
-                    {...register("cliente_correo")}
-                    placeholder="juan@correo.com"
-                    readOnly
-                    className="bg-muted/30 cursor-not-allowed text-muted-foreground"
-                  />
-                  {errors.cliente_correo && (
-                    <p className="text-[10px] text-destructive">
-                      {errors.cliente_correo.message}
-                    </p>
-                  )}
-                </div>
+                {/* Unified Client Details Card */}
+                {watch("cliente_nombre") && (
+                  <div className="rounded-2xl border border-border/40 bg-muted/10 p-5 space-y-3 relative overflow-hidden backdrop-blur-sm">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[9px] sm:text-[10px] font-black uppercase text-celeste-kore tracking-widest">
+                        Datos del Cliente
+                      </p>
+                      <div className="w-1.5 h-1.5 rounded-full bg-celeste-kore animate-pulse" />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                      <div className="space-y-1">
+                        <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest">Nombre</p>
+                        <p className="text-xs sm:text-sm font-black text-foreground uppercase">{watch("cliente_nombre")}</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest">NIT</p>
+                        <p className="text-xs sm:text-sm font-black text-foreground uppercase">{watch("cliente_nit") || "C/F"}</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest">Teléfono</p>
+                        <p className="text-xs sm:text-sm font-black text-foreground">{formatPhoneDisplay(watch("cliente_telefono")) || "—"}</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest">Correo Electrónico</p>
+                        <p className="text-xs sm:text-sm font-black text-foreground break-all">{watch("cliente_correo") || "—"}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1189,11 +1223,101 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="mantenimiento_fecha_cobro">Fecha Cobro Mant.</Label>
-                    <Input
-                      id="mantenimiento_fecha_cobro"
-                      type="date"
-                      {...register("mantenimiento_fecha_cobro")}
-                    />
+                    <div className="relative">
+                      {/* Hidden input to bind React Hook Form register */}
+                      <input
+                        type="hidden"
+                        id="mantenimiento_fecha_cobro"
+                        {...register("mantenimiento_fecha_cobro")}
+                      />
+                      
+                      {/* Trigger Button */}
+                      <button
+                        type="button"
+                        onClick={() => setShowMonthYearPicker(!showMonthYearPicker)}
+                        className="w-full h-10 px-3 py-2 text-sm text-left bg-background/50 border border-input rounded-xl font-medium text-foreground hover:bg-muted/30 transition-colors flex items-center justify-between cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50"
+                      >
+                        <span>{getFechaCobroDisplay(watchFechaCobro)}</span>
+                        <ChevronDown size={16} className="text-muted-foreground" />
+                      </button>
+
+                      {/* Month Year Picker Calendar Dropdown */}
+                      <AnimatePresence>
+                        {showMonthYearPicker && (
+                          <>
+                            {/* Backdrop to close click outside */}
+                            <div
+                              className="fixed inset-0 z-40 bg-transparent"
+                              onClick={() => setShowMonthYearPicker(false)}
+                            />
+                            
+                            <motion.div
+                              className="absolute bottom-full left-0 mb-2 z-50 w-[280px] bg-white dark:bg-black border border-border dark:border-white/10 rounded-2xl shadow-2xl p-4 text-foreground dark:text-white"
+                              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              {/* Header: prev year, current year, next year */}
+                              <div className="flex items-center justify-between mb-4 border-b border-border dark:border-white/10 pb-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setPickerYear(y => y - 1)}
+                                  className="p-1 hover:bg-muted dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <ChevronLeft size={16} className="text-muted-foreground hover:text-foreground dark:hover:text-white" />
+                                </button>
+                                <span className="font-black text-sm tracking-widest">{pickerYear}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setPickerYear(y => y + 1)}
+                                  className="p-1 hover:bg-muted dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <ChevronRight size={16} className="text-muted-foreground hover:text-foreground dark:hover:text-white" />
+                                </button>
+                              </div>
+
+                              {/* 12 Months Grid */}
+                              <div className="grid grid-cols-3 gap-2">
+                                {[
+                                  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                                  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+                                ].map((m, idx) => {
+                                  // Check if this month/year matches current selection
+                                  let isSelected = false;
+                                  if (watchFechaCobro) {
+                                    const d = new Date(watchFechaCobro + "T00:00:00");
+                                    if (!isNaN(d.getTime())) {
+                                      isSelected = d.getFullYear() === pickerYear && d.getMonth() === idx;
+                                    }
+                                  }
+
+                                  return (
+                                    <button
+                                      key={m}
+                                      type="button"
+                                      onClick={() => {
+                                        const monthStr = String(idx + 1).padStart(2, "0");
+                                        setValue("mantenimiento_fecha_cobro", `${pickerYear}-${monthStr}-01`);
+                                        setShowMonthYearPicker(false);
+                                      }}
+                                      className={cn(
+                                        "py-3 px-2 rounded-xl text-center text-xs font-black uppercase transition-all cursor-pointer select-none",
+                                        isSelected
+                                          ? "bg-[#B7494E] text-white shadow-md font-black"
+                                          : "text-muted-foreground hover:bg-muted dark:hover:bg-white/5 hover:text-foreground dark:hover:text-white"
+                                      )}
+                                    >
+                                      {m}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1286,131 +1410,168 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                     )}
                   </AnimatePresence>
 
-                  {/* ── Agregar nueva deducción ── */}
-                  <div className="rounded-xl border border-dashed border-border/40 bg-muted/5 p-4 space-y-3">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                      Agregar Deducción
-                    </p>
+                  {/* ── Agregar nueva deducción (Accordion) ── */}
+                  <AnimatePresence initial={false}>
+                    {!showAddForm ? (
+                      <motion.button
+                        type="button"
+                        key="add-ded-toggle-btn"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        onClick={() => setShowAddForm(true)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border border-dashed border-celeste-kore/50 text-celeste-kore hover:bg-celeste-kore/5 hover:border-celeste-kore active:scale-95 transition-all text-xs font-black uppercase tracking-widest cursor-pointer animate-none"
+                      >
+                        <Plus size={14} />
+                        Agregar Deducción
+                      </motion.button>
+                    ) : (
+                      <motion.div
+                        key="add-ded-form-panel"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="rounded-xl border border-dashed border-border/40 bg-muted/5 p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                              Agregar Deducción
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setShowAddForm(false)}
+                              className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                      {/* Tipo y Porcentaje layout 80/20 */}
-                      <div className="col-span-1 md:col-span-5 grid grid-cols-[1fr_100px] gap-3">
-                        <div className="grid gap-1.5">
-                          <Label>Tipo</Label>
-                          <SelectWrap
-                            value={newDed.tipo}
-                            onChange={(e) => handleTipoChange(e.target.value)}
-                          >
-                            {TIPOS_DEDUCCION.map((t) => (
-                              <option key={t} value={t}>
-                                {t}
-                              </option>
-                            ))}
-                          </SelectWrap>
-                        </div>
-                        <div className="grid gap-1.5">
-                          <Label>% / Monto</Label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              inputMode="decimal"
-                              value={newDed.porcentaje}
-                              onChange={(e) =>
-                                setNewDed((p) => ({
-                                  ...p,
-                                  porcentaje: e.target.value === "" ? "" : Number(e.target.value),
-                                }))
-                              }
-                              className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
-                            />
-                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
-                              %
-                            </span>
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                            {/* Tipo y Porcentaje layout 80/20 */}
+                            <div className="col-span-1 md:col-span-5 grid grid-cols-[1fr_100px] gap-3">
+                              <div className="grid gap-1.5">
+                                <Label>Tipo</Label>
+                                <SelectWrap
+                                  value={newDed.tipo}
+                                  onChange={(e) => handleTipoChange(e.target.value)}
+                                >
+                                  {TIPOS_DEDUCCION.map((t) => (
+                                    <option key={t} value={t}>
+                                      {t}
+                                    </option>
+                                  ))}
+                                </SelectWrap>
+                              </div>
+                              <div className="grid gap-1.5">
+                                <Label>% / Monto</Label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    inputMode="decimal"
+                                    value={newDed.porcentaje}
+                                    onChange={(e) =>
+                                      setNewDed((p) => ({
+                                        ...p,
+                                        porcentaje: e.target.value === "" ? "" : Number(e.target.value),
+                                      }))
+                                    }
+                                    className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                                  />
+                                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
+                                    %
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            {/* Conditional Desc/User based on type */}
+                            {newDed.tipo !== "IVA" && (
+                              <>
+                                <div className="col-span-1 md:col-span-3 grid gap-1.5">
+                                  <Label>Descripción</Label>
+                                  <textarea
+                                    placeholder="Opcional..."
+                                    value={newDed.descripcion}
+                                    onChange={(e) =>
+                                      setNewDed((p) => ({ ...p, descripcion: e.target.value }))
+                                    }
+                                    rows={1}
+                                    className="flex min-h-[40px] w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all resize-y"
+                                  />
+                                </div>
+                                <div className="col-span-1 md:col-span-2 grid gap-1.5 relative" ref={userAutocompleteRef}>
+                                  <Label>Asignar a</Label>
+                                  <Input
+                                    type="text"
+                                    placeholder="Buscar usuario..."
+                                    value={userSearchQuery}
+                                    autoComplete="off"
+                                    onFocus={() => {
+                                      if (userSearchQuery.length >= 1 && !justSelectedUser) {
+                                        setShowUserSuggestions(true);
+                                      }
+                                    }}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setUserSearchQuery(val);
+                                      setJustSelectedUser(false);
+                                      setShowUserSuggestions(val.length >= 1);
+                                      if (val.trim() === "") {
+                                        setNewDed((p) => ({ ...p, usuario_id: "" }));
+                                      }
+                                    }}
+                                  />
+                                  <AnimatePresence>
+                                    {showUserSuggestions && filteredUsers.length > 0 && (
+                                      <motion.ul
+                                        initial={{ opacity: 0, y: -6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -6 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden max-h-48 overflow-y-auto"
+                                      >
+                                        {filteredUsers.map((u: any) => (
+                                          <li
+                                            key={u.id}
+                                            onMouseDown={() => {
+                                              setJustSelectedUser(true);
+                                              setNewDed((p) => ({ ...p, usuario_id: u.id }));
+                                              setUserSearchQuery(u.nombre || "");
+                                              setShowUserSuggestions(false);
+                                              setTimeout(() => setJustSelectedUser(false), 500);
+                                            }}
+                                            className="flex flex-col px-3 py-2 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
+                                          >
+                                            <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">
+                                              {u.nombre || "Sin nombre"}
+                                            </span>
+                                          </li>
+                                        ))}
+                                      </motion.ul>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleAddDed}
+                              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-celeste-kore text-celeste-kore hover:bg-celeste-kore/10 bg-transparent active:scale-95 transition-all text-xs font-black uppercase tracking-widest cursor-pointer"
+                            >
+                              <Plus size={13} />
+                              Agregar
+                            </button>
                           </div>
                         </div>
-                      </div>
-                      {/* Conditional Desc/User based on type */}
-                      {newDed.tipo !== "IVA" && (
-                        <>
-                          <div className="col-span-1 md:col-span-3 grid gap-1.5">
-                            <Label>Descripción</Label>
-                            <textarea
-                              placeholder="Opcional..."
-                              value={newDed.descripcion}
-                              onChange={(e) =>
-                                setNewDed((p) => ({ ...p, descripcion: e.target.value }))
-                              }
-                              rows={1}
-                              className="flex min-h-[40px] w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all resize-y"
-                            />
-                          </div>
-                           <div className="col-span-1 md:col-span-2 grid gap-1.5 relative" ref={userAutocompleteRef}>
-                             <Label>Asignar a</Label>
-                             <Input
-                               type="text"
-                               placeholder="Buscar usuario..."
-                               value={userSearchQuery}
-                               autoComplete="off"
-                               onFocus={() => {
-                                 if (userSearchQuery.length >= 1 && !justSelectedUser) {
-                                   setShowUserSuggestions(true);
-                                 }
-                               }}
-                               onChange={(e) => {
-                                 const val = e.target.value;
-                                 setUserSearchQuery(val);
-                                 setJustSelectedUser(false);
-                                 setShowUserSuggestions(val.length >= 1);
-                                 if (val.trim() === "") {
-                                   setNewDed((p) => ({ ...p, usuario_id: "" }));
-                                 }
-                               }}
-                             />
-                             <AnimatePresence>
-                               {showUserSuggestions && filteredUsers.length > 0 && (
-                                 <motion.ul
-                                   initial={{ opacity: 0, y: -6 }}
-                                   animate={{ opacity: 1, y: 0 }}
-                                   exit={{ opacity: 0, y: -6 }}
-                                   transition={{ duration: 0.15 }}
-                                   className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden max-h-48 overflow-y-auto"
-                                 >
-                                   {filteredUsers.map((u: any) => (
-                                     <li
-                                       key={u.id}
-                                       onMouseDown={() => {
-                                         setJustSelectedUser(true);
-                                         setNewDed((p) => ({ ...p, usuario_id: u.id }));
-                                         setUserSearchQuery(u.nombre || "");
-                                         setShowUserSuggestions(false);
-                                         setTimeout(() => setJustSelectedUser(false), 500);
-                                       }}
-                                       className="flex flex-col px-3 py-2 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
-                                     >
-                                       <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">
-                                         {u.nombre || "Sin nombre"}
-                                       </span>
-                                     </li>
-                                   ))}
-                                 </motion.ul>
-                               )}
-                             </AnimatePresence>
-                           </div>
-                         </>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleAddDed}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl border border-celeste-kore/30 bg-celeste-kore/5 text-celeste-kore hover:bg-celeste-kore/10 active:scale-95 transition-all text-xs font-black uppercase tracking-widest cursor-pointer"
-                    >
-                      <Plus size={13} />
-                      Agregar
-                    </button>
-                  </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             )}
@@ -1424,30 +1585,32 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
              <button
                type="button"
                onClick={() => setStep(1)}
-               className="px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer whitespace-nowrap"
+               className="px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-all text-[10px] font-black uppercase tracking-widest cursor-pointer whitespace-nowrap"
              >
                Paso Anterior
              </button>
           )}
 
-          <button
-            form="proyecto-form"
-            type="submit"
-            disabled={isSubmitting}
-            className="flex items-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
-          >
-            {isSubmitting ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Save size={14} />
-            )}
-            {isEditing ? "Guardar" : "Crear"}
-          </button>
+          {(step === 2 || isDeveloper) && (
+            <button
+              form="proyecto-form"
+              type="submit"
+              disabled={isSubmitting}
+              className="flex items-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-all text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
+            >
+              {isSubmitting ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Save size={14} />
+              )}
+              {isEditing ? "Guardar" : "Crear"}
+            </button>
+          )}
           {step === 1 && !isDeveloper && (
              <button
                type="button"
                onClick={() => setStep(2)}
-               className="flex items-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg bg-celeste-kore text-black hover:opacity-90 transition-opacity text-[10px] font-black uppercase tracking-widest cursor-pointer whitespace-nowrap"
+               className="flex items-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-all text-[10px] font-black uppercase tracking-widest cursor-pointer whitespace-nowrap"
              >
                Siguiente Paso
              </button>

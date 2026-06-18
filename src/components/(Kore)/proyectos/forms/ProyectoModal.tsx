@@ -73,6 +73,17 @@ const SelectWrap = ({
   </div>
 );
 
+const formatPhoneDisplay = (phone: string | null | undefined): string => {
+  if (!phone) return "";
+  const clean = phone.trim();
+  const cleanNoSpaces = clean.replace(/\s+/g, "");
+  const gtMatch = cleanNoSpaces.match(/^\+502(\d{4})(\d{4})$/);
+  if (gtMatch) return `${gtMatch[1]}-${gtMatch[2]}`;
+  const gtShortMatch = cleanNoSpaces.match(/^(\d{4})(\d{4})$/);
+  if (gtShortMatch) return `${gtShortMatch[1]}-${gtShortMatch[2]}`;
+  return clean;
+};
+
 // ── Color palette por tipo de deducción ──────────────────────────────────────
 
 const TIPO_STYLE: Record<string, { pill: string }> = {
@@ -195,6 +206,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
 
 
   // Estado del formulario de "agregar deducción"
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newDed, setNewDed] = useState({
     tipo: "Vendedor" as TipoDeduccion,
     porcentaje: 10,
@@ -215,6 +227,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
     });
     setNewDed({ tipo: "Vendedor", porcentaje: DEFAULT_PCT["Vendedor"], descripcion: "", usuario_id: "" });
     setUserSearchQuery("");
+    setShowAddForm(false);
   };
 
   // ── Autocomplete de usuarios ──
@@ -308,6 +321,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
         setNewDed({ tipo: "Vendedor", porcentaje: 10, descripcion: "", usuario_id: "" });
       }
       setUserSearchQuery("");
+      setShowAddForm(false);
     }
   }, [isOpen, proyecto, reset]);
 
@@ -411,7 +425,8 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                 <h4 className="text-xs font-black text-celeste-kore uppercase tracking-widest border-b border-border/50 pb-2">
                   Información del Cliente
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Search Box */}
                   <div className="grid gap-2 relative" ref={clientAutocompleteRef}>
                     <Label htmlFor="cliente_nombre">Nombre Cliente</Label>
                     <Input
@@ -480,40 +495,40 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                       <p className="text-[10px] text-destructive">{errors.cliente_nombre.message}</p>
                     )}
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="cliente_nit">NIT</Label>
-                    <Input
-                      id="cliente_nit"
-                      {...register("cliente_nit")}
-                      placeholder="CF"
-                      readOnly
-                      className="bg-muted/30 cursor-not-allowed text-muted-foreground"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="cliente_telefono">Teléfono</Label>
-                    <KorePhoneInput
-                      id="cliente_telefono"
-                      value={watch("cliente_telefono") || ""}
-                      onChange={(val) => setValue("cliente_telefono", val, { shouldValidate: true })}
-                      placeholder="1234 5678"
-                      disabled={true}
-                    />
-                  </div>
-                  <div className="grid gap-2 md:col-span-3">
-                    <Label htmlFor="cliente_correo">Correo</Label>
-                    <Input
-                      id="cliente_correo"
-                      type="email"
-                      {...register("cliente_correo")}
-                      placeholder="juan@correo.com"
-                      readOnly
-                      className="bg-muted/30 cursor-not-allowed text-muted-foreground"
-                    />
-                    {errors.cliente_correo && (
-                      <p className="text-[10px] text-destructive">{errors.cliente_correo.message}</p>
-                    )}
-                  </div>
+
+                  {/* Unified Client Details Card */}
+                  {watch("cliente_nombre") && (
+                    <div className="rounded-2xl border border-border/40 bg-muted/10 p-5 space-y-3 relative overflow-hidden backdrop-blur-sm">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[9px] sm:text-[10px] font-black uppercase text-celeste-kore tracking-widest">
+                          Datos del Cliente
+                        </p>
+                        <div className="w-1.5 h-1.5 rounded-full bg-celeste-kore animate-pulse" />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        <div className="space-y-1">
+                          <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest">Nombre</p>
+                          <p className="text-xs sm:text-sm font-black text-foreground uppercase">{watch("cliente_nombre")}</p>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest">NIT</p>
+                          <p className="text-xs sm:text-sm font-black text-foreground uppercase">{watch("cliente_nit") || "C/F"}</p>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest">Teléfono</p>
+                          <p className="text-xs sm:text-sm font-black text-foreground">{formatPhoneDisplay(watch("cliente_telefono")) || "—"}</p>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-[8px] sm:text-[9px] font-black text-muted-foreground uppercase tracking-widest">Correo Electrónico</p>
+                          <p className="text-xs sm:text-sm font-black text-foreground break-all">{watch("cliente_correo") || "—"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -657,116 +672,153 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
                         })}
                     </AnimatePresence>
 
-                    {/* Formulario de agregar */}
-                    <div className="rounded-xl border border-dashed border-border/40 bg-muted/5 p-3 space-y-3">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                        Agregar Deducción
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {/* Tipo */}
-                        <div className="grid gap-1.5">
-                          <Label>Tipo</Label>
-                          <SelectWrap
-                            value={newDed.tipo}
-                            onChange={(e) => handleTipoChange(e.target.value)}
-                          >
-                            {TIPOS_DEDUCCION.map((t) => (
-                              <option key={t} value={t}>{t}</option>
-                            ))}
-                          </SelectWrap>
-                        </div>
-                        {/* % */}
-                        <div className="grid gap-1.5">
-                          <Label>% / Monto</Label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={newDed.porcentaje}
-                              onChange={(e) => setNewDed((p) => ({ ...p, porcentaje: Number(e.target.value) }))}
-                              className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
-                            />
-                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
-                              %
-                            </span>
-                          </div>
-                        </div>
-                        {/* Descripción */}
-                        <div className="grid gap-1.5">
-                          <Label>Descripción</Label>
-                          <input
-                            type="text"
-                            placeholder="Opcional..."
-                            value={newDed.descripcion}
-                            onChange={(e) => setNewDed((p) => ({ ...p, descripcion: e.target.value }))}
-                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddDed(); } }}
-                            className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
-                          />
-                        </div>
-                        {/* Usuario */}
-                        <div className="grid gap-1.5 relative" ref={userAutocompleteRef}>
-                          <Label>Asignar a</Label>
-                          <Input
-                            type="text"
-                            placeholder="Buscar usuario..."
-                            value={userSearchQuery}
-                            autoComplete="off"
-                            onFocus={() => {
-                              if (userSearchQuery.length >= 1 && !justSelectedUser) {
-                                setShowUserSuggestions(true);
-                              }
-                            }}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setUserSearchQuery(val);
-                              setJustSelectedUser(false);
-                              setShowUserSuggestions(val.length >= 1);
-                              if (val.trim() === "") {
-                                setNewDed((p) => ({ ...p, usuario_id: "" }));
-                              }
-                            }}
-                          />
-                          <AnimatePresence>
-                            {showUserSuggestions && filteredUsers.length > 0 && (
-                              <motion.ul
-                                initial={{ opacity: 0, y: -6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -6 }}
-                                transition={{ duration: 0.15 }}
-                                className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden max-h-48 overflow-y-auto"
+                    {/* Formulario de agregar (Accordion) */}
+                    <AnimatePresence initial={false}>
+                      {!showAddForm ? (
+                        <motion.button
+                          type="button"
+                          key="add-ded-toggle-btn"
+                          initial={{ opacity: 0, scale: 0.98 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.98 }}
+                          onClick={() => setShowAddForm(true)}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border border-dashed border-celeste-kore/50 text-celeste-kore hover:bg-celeste-kore/5 hover:border-celeste-kore active:scale-95 transition-all text-xs font-black uppercase tracking-widest cursor-pointer animate-none"
+                        >
+                          <Plus size={14} />
+                          Agregar Deducción
+                        </motion.button>
+                      ) : (
+                        <motion.div
+                          key="add-ded-form-panel"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2, ease: "easeInOut" }}
+                          className="overflow-hidden"
+                        >
+                          <div className="rounded-xl border border-dashed border-border/40 bg-muted/5 p-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                                Agregar Deducción
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setShowAddForm(false)}
+                                className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                               >
-                                {filteredUsers.map((u: any) => (
-                                  <li
-                                    key={u.id}
-                                    onMouseDown={() => {
-                                      setJustSelectedUser(true);
-                                      setNewDed((p) => ({ ...p, usuario_id: u.id }));
-                                      setUserSearchQuery(u.nombre || "");
-                                      setShowUserSuggestions(false);
-                                      setTimeout(() => setJustSelectedUser(false), 500);
-                                    }}
-                                    className="flex flex-col px-3 py-2 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
-                                  >
-                                    <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">
-                                      {u.nombre || "Sin nombre"}
-                                    </span>
-                                  </li>
-                                ))}
-                              </motion.ul>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleAddDed}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl border border-celeste-kore/30 bg-celeste-kore/5 text-celeste-kore hover:bg-celeste-kore/10 active:scale-95 transition-all text-xs font-black uppercase tracking-widest cursor-pointer"
-                      >
-                        <Plus size={12} />
-                        Agregar
-                      </button>
-                    </div>
+                                Cancelar
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              {/* Tipo */}
+                              <div className="grid gap-1.5">
+                                <Label>Tipo</Label>
+                                <SelectWrap
+                                  value={newDed.tipo}
+                                  onChange={(e) => handleTipoChange(e.target.value)}
+                                >
+                                  {TIPOS_DEDUCCION.map((t) => (
+                                    <option key={t} value={t}>{t}</option>
+                                  ))}
+                                </SelectWrap>
+                              </div>
+                              {/* % */}
+                              <div className="grid gap-1.5">
+                                <Label>% / Monto</Label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={newDed.porcentaje}
+                                    onChange={(e) => setNewDed((p) => ({ ...p, porcentaje: Number(e.target.value) }))}
+                                    className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 pr-7 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                                  />
+                                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground">
+                                    %
+                                  </span>
+                                </div>
+                              </div>
+                              {/* Descripción */}
+                              <div className="grid gap-1.5">
+                                <Label>Descripción</Label>
+                                <input
+                                  type="text"
+                                  placeholder="Opcional..."
+                                  value={newDed.descripcion}
+                                  onChange={(e) => setNewDed((p) => ({ ...p, descripcion: e.target.value }))}
+                                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddDed(); } }}
+                                  className="flex h-10 w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-red-600/50 transition-all"
+                                />
+                              </div>
+                              {/* Usuario */}
+                              <div className="grid gap-1.5 relative" ref={userAutocompleteRef}>
+                                <Label>Asignar a</Label>
+                                <Input
+                                  type="text"
+                                  placeholder="Buscar usuario..."
+                                  value={userSearchQuery}
+                                  autoComplete="off"
+                                  onFocus={() => {
+                                    if (userSearchQuery.length >= 1 && !justSelectedUser) {
+                                      setShowUserSuggestions(true);
+                                    }
+                                  }}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setUserSearchQuery(val);
+                                    setJustSelectedUser(false);
+                                    setShowUserSuggestions(val.length >= 1);
+                                    if (val.trim() === "") {
+                                      setNewDed((p) => ({ ...p, usuario_id: "" }));
+                                    }
+                                  }}
+                                />
+                                <AnimatePresence>
+                                  {showUserSuggestions && filteredUsers.length > 0 && (
+                                    <motion.ul
+                                      initial={{ opacity: 0, y: -6 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, y: -6 }}
+                                      transition={{ duration: 0.15 }}
+                                      className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border/60 bg-popover text-popover-foreground shadow-2xl shadow-black/40 overflow-hidden max-h-48 overflow-y-auto"
+                                    >
+                                      {filteredUsers.map((u: any) => (
+                                        <li
+                                          key={u.id}
+                                          onMouseDown={() => {
+                                            setJustSelectedUser(true);
+                                            setNewDed((p) => ({ ...p, usuario_id: u.id }));
+                                            setUserSearchQuery(u.nombre || "");
+                                            setShowUserSuggestions(false);
+                                            setTimeout(() => setJustSelectedUser(false), 500);
+                                          }}
+                                          className="flex flex-col px-3 py-2 cursor-pointer hover:bg-celeste-kore/10 transition-colors border-b border-border/30 last:border-0 group"
+                                        >
+                                          <span className="text-sm font-bold text-foreground group-hover:text-celeste-kore transition-colors">
+                                            {u.nombre || "Sin nombre"}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </motion.ul>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={handleAddDed}
+                              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-celeste-kore text-celeste-kore hover:bg-celeste-kore/10 bg-transparent active:scale-95 transition-all text-xs font-black uppercase tracking-widest cursor-pointer"
+                            >
+                              <Plus size={12} />
+                              Agregar
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
               )}
@@ -786,7 +838,7 @@ export default function ProyectoModal({ isOpen, onClose, proyecto }: ProyectoMod
               form="proyecto-form"
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-celeste-kore text-black hover:opacity-90 transition-opacity text-xs font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-all text-xs font-black uppercase tracking-widest cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {isEditing ? "Guardar" : "Crear"}

@@ -98,6 +98,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    overflow-x: hidden;
   }
   .dark body {
     background-color: var(--background);
@@ -121,6 +122,31 @@
     select,
     button {
       font-size: inherit !important;
+    }
+  }
+
+  select.small-select,
+  button.small-button {
+    font-size: 12px !important;
+  }
+  @media (min-width: 640px) {
+    select.small-select,
+    button.small-button {
+      font-size: 14px !important;
+    }
+  }
+
+  /* Selectores de filtro de fecha en dashboard */
+  select.filter-select,
+  button.filter-button {
+    font-size: 12px !important;
+    letter-spacing: 0.1em;
+  }
+  @media (min-width: 640px) {
+    select.filter-select,
+    button.filter-button {
+      font-size: 14px !important;
+      letter-spacing: 0.1em;
     }
   }
 }

@@ -10,12 +10,9 @@ cada componente debe de estar encarpetado
     /lib
         actions.ts (aqui van todas las server actions)
         zod.ts (aqui van todos los esquemas y verificaciones)
-        hooks.ts (aqui van todos los hooks personalizados)
+        hooks.ts (aqui van todos los hooks personalizados, usar TanStack Query)
         utils.ts (aqui van todas las funciones de utilidad)
     /forms
         form1.tsx (aqui van todos los modal que se utilicen para datos)
 
     nombrecomponenteprincipal.tsx (este es el componente principal)
-
-
-        

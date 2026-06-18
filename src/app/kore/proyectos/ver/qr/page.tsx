@@ -189,10 +189,6 @@ export default function ProyectoQRPage() {
     ctx.font = "10px helvetica, sans-serif";
     ctx.fillText(`${proyecto.cliente_nombre || "N/A"}`, finalCanvas.width / 2, infoY + 18);
 
-    ctx.fillStyle = "#B7494E";
-    ctx.font = "bold 11px monospace";
-    ctx.fillText(shortCode, finalCanvas.width / 2, infoY + 36);
-
     const link = document.createElement("a");
     link.download = `qr-${shortCode}.png`;
     link.href = finalCanvas.toDataURL("image/png");
@@ -302,14 +298,7 @@ export default function ProyectoQRPage() {
               Información del Proyecto
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Código</span>
-                <code className="text-xs font-mono font-bold text-[#B7494E] bg-[#B7494E]/10 px-2 py-0.5 rounded border border-[#B7494E]/20">
-                  {shortCode}
-                </code>
-              </div>
-
+            <div className="grid grid-cols-1 gap-4">
               <div className="flex flex-col items-start gap-0.5 px-4 py-2.5 rounded-xl bg-muted/20 dark:bg-white/5 border border-border dark:border-white/10 text-left">
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Cliente</span>
                 <span className="text-xs font-bold text-foreground dark:text-white break-words w-full">

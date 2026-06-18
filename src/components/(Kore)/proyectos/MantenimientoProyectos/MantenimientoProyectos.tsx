@@ -14,15 +14,17 @@ import {
   ChevronRight,
   ArrowLeft,
   DollarSign,
+  Calendar,
 } from "lucide-react";
 import { 
   getProyectos, 
   updateMantenimientoProyecto,
 } from "@/components/(Kore)/proyectos/lib/actions";
 
+import { cn } from "@/lib/utils";
+
 // Components
 import { PagoMantenimientoModal } from "@/components/(Kore)/proyectos/forms/PagoMantenimientoModal";
-import { HistorialMantenimientoModal } from "@/components/(Kore)/proyectos/forms/HistorialMantenimientoModal";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { useTheme } from "next-themes";
 import Swal from "sweetalert2";
@@ -52,6 +54,46 @@ function formatDate(dateStr: string | null): string {
   } catch {
     return "—";
   }
+}
+
+function formatCobroDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr.split("T")[0] + "T09:00:00");
+    if (isNaN(d.getTime())) return "—";
+    
+    const weekdays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    const wDay = weekdays[d.getDay()];
+    
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = String(d.getFullYear()).slice(-2);
+    
+    return `${wDay} ${day}/${month}/${year}`;
+  } catch {
+    return "—";
+  }
+}
+
+function formatPhoneDisplay(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const clean = phone.trim();
+  if (!clean) return "";
+  const cleanNoSpaces = clean.replace(/\s+/g, "");
+  const gtMatch = cleanNoSpaces.match(/^(?:\+?502)?(\d{4})(\d{4})$/);
+  if (gtMatch) {
+    return `${gtMatch[1]}-${gtMatch[2]}`;
+  }
+  return clean;
+}
+
+function formatWhatsAppLink(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const clean = phone.replace(/\D/g, "");
+  if (clean.length === 8) {
+    return `502${clean}`;
+  }
+  return clean;
 }
 
 function formatMoney(val: number): string {
@@ -93,7 +135,6 @@ export default function MantenimientoProyectos() {
   const [editingDate, setEditingDate] = useState<Record<string, string>>({});
   // Modal state
   const [pagoModalProyecto, setPagoModalProyecto] = useState<any | null>(null);
-  const [historialModalProyecto, setHistorialModalProyecto] = useState<any | null>(null);
 
   // Role guard
   useEffect(() => {
@@ -189,7 +230,7 @@ export default function MantenimientoProyectos() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 text-foreground px-4 pt-32 pb-16 md:px-8 md:pt-24 relative">
+    <div className="w-full max-w-7xl mx-auto flex flex-col gap-6 text-foreground px-4 pt-32 pb-16 md:px-8 md:pt-24 relative overflow-x-hidden">
       {/* Decorative glow */}
       <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-celeste-kore/10 rounded-full blur-[120px] pointer-events-none -z-10 animate-pulse" />
       <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
@@ -211,7 +252,7 @@ export default function MantenimientoProyectos() {
 
 
       {/* ── TABLE ──────────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-red-500/20 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
+      <div className="rounded-2xl border border-red-500/20 dark:border-white/10 bg-white dark:bg-black backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
         <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-border/50">
           <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
             <Wrench size={16} className="text-red-500" />
@@ -241,12 +282,11 @@ export default function MantenimientoProyectos() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border/40">
-                  <th className="text-left px-2 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[35%] sm:w-[30%]">Proyecto</th>
-                  <th className="text-left px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground sm:w-[25%]">Cliente</th>
-                  <th className="text-right px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[25%] sm:w-[15%]">Monto</th>
-                  <th className="text-right px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[30%] sm:w-[20%]">Fecha Cobro</th>
+                  <th className="text-left px-2 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[45%] sm:w-[35%]">Proyecto</th>
+                  <th className="text-left px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground sm:w-[30%]">Cliente</th>
+                  <th className="text-right px-2 sm:px-4 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[25%] sm:w-[20%]">Monto</th>
                   {!isDeveloper && (
-                    <th className="text-right px-2 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[10%]">Acción</th>
+                    <th className="text-right px-2 sm:px-6 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground w-[15%]">Acción</th>
                   )}
                 </tr>
               </thead>
@@ -266,20 +306,22 @@ export default function MantenimientoProyectos() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         transition={{ delay: idx * 0.03 }}
-                        className="border-b border-border/20 last:border-0 hover:bg-muted/10 transition-colors group cursor-pointer"
-                        onClick={() => setHistorialModalProyecto(p)}
+                        className={cn(
+                          "border-b border-border/20 last:border-0 hover:bg-muted/10 transition-colors group",
+                          !isDeveloper ? "cursor-pointer" : "cursor-default"
+                        )}
+                        onClick={() => {
+                          if (!isDeveloper) {
+                            setPagoModalProyecto(p);
+                          }
+                        }}
                       >
                         {/* Project */}
                         <td className="px-2 sm:px-6 py-3.5">
-                          <div className="flex items-center gap-1 sm:gap-2">
-                            <div className="p-1.5 rounded-lg bg-red-500/10 shrink-0">
-                              <Wrench size={12} className="text-red-500" />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-foreground leading-none">{p.nombre}</p>
-                              <p className="text-[9px] text-muted-foreground mt-0.5 font-mono">{p.id.slice(0, 8).toUpperCase()}</p>
-                            </div>
-                          </div>
+                          <p className="text-xs font-bold text-foreground leading-none">{p.nombre}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 select-none font-bold">
+                            Próximo cobro: {formatCobroDate(p.mantenimiento_fecha_cobro)}
+                          </p>
                         </td>
 
                         {/* Client */}
@@ -287,12 +329,12 @@ export default function MantenimientoProyectos() {
                           <p className="text-xs font-bold text-foreground/80 leading-none">{p.cliente_nombre || "—"}</p>
                           {p.cliente_telefono && (
                             <a
-                              href={`https://wa.me/${p.cliente_telefono.replace(/\D/g, '')}`}
+                              href={`https://wa.me/${formatWhatsAppLink(p.cliente_telefono)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-[10px] text-celeste-kore hover:underline font-semibold block mt-1"
                             >
-                              {p.cliente_telefono}
+                              {formatPhoneDisplay(p.cliente_telefono)}
                             </a>
                           )}
                         </td>
@@ -305,35 +347,6 @@ export default function MantenimientoProyectos() {
                               {p.monto_mensual_fijo ? "Monto Fijo" : `${pct}% mensual`}
                             </p>
                           </div>
-                        </td>
-
-
-                        {/* Date input */}
-                        <td className="px-2 sm:px-4 py-3.5 text-right">
-                          {isDeveloper ? (
-                            <span className="text-xs font-semibold text-foreground/80">
-                              {formatDate(p.mantenimiento_fecha_cobro)}
-                            </span>
-                          ) : (
-                            <div className="flex items-center justify-end gap-1.5">
-                              <input
-                                type="date"
-                                value={isEditing ? editingDate[p.id] : toInputDate(p.mantenimiento_fecha_cobro)}
-                                onChange={e => setEditingDate(prev => ({ ...prev, [p.id]: e.target.value }))}
-                                onClick={e => e.stopPropagation()}
-                                className="text-[10px] sm:text-xs bg-muted/20 border border-border/50 rounded-lg px-1 sm:px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-500/30 text-foreground w-[105px] sm:w-[130px]"
-                              />
-                              {isEditing && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleSaveDate(p); }}
-                                  disabled={isSaving}
-                                  className="px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-500 text-[10px] font-bold border border-red-500/20 cursor-pointer transition-all disabled:opacity-50"
-                                >
-                                  OK
-                                </button>
-                              )}
-                            </div>
-                          )}
                         </td>
 
 
@@ -366,21 +379,13 @@ export default function MantenimientoProyectos() {
             proyecto={pagoModalProyecto}
             onClose={() => setPagoModalProyecto(null)}
             onSuccess={() => {
-              setPagoModalProyecto(null);
               fetchData();
             }}
           />
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {historialModalProyecto && (
-          <HistorialMantenimientoModal
-            proyecto={historialModalProyecto}
-            onClose={() => setHistorialModalProyecto(null)}
-          />
-        )}
-      </AnimatePresence>
+
     </div>
   );
 }
