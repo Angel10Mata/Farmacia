@@ -24,7 +24,7 @@ const MODULES = [
     icon: "qikuvfgb",
     href: "/kore/proyectos",
     allowedRoles: ["super", "admin", "proyectos"],
-    isWide: true,
+    colSpan: "md:col-span-2",
   },
   {
     id: "perfil",
@@ -33,7 +33,17 @@ const MODULES = [
     desc: "Actualización de credenciales y datos personales del usuario.",
     icon: "btgcyfug",
     href: "/kore/perfil",
-    isWide: false,
+    colSpan: "md:col-span-1 md:col-start-3",
+  },
+  {
+    id: "clientes",
+    title: "Gestión de",
+    subtitle: "Clientes",
+    desc: "Administración de clientes y contactos de la empresa.",
+    icon: "zdwrqfmb",
+    href: "/kore/clientes",
+    allowedRoles: ["super", "admin", "proyectos"],
+    colSpan: "md:col-span-2",
   },
   {
     id: "dispositivos",
@@ -43,7 +53,7 @@ const MODULES = [
     icon: "gzqipvbr",
     href: "/kore/admin",
     requiresAdmin: true,
-    isWide: false,
+    colSpan: "md:col-span-1",
   },
 ];
 
@@ -88,16 +98,32 @@ export function Dashboard() {
     }
   };
 
-  const renderCardsGrid = () => (
-    <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto">
-      {visibleModules.map((mod, index) => {
+  const renderCardsGrid = () => {
+    const sortedModules = isMobile
+      ? [...visibleModules].sort((a, b) => {
+          const order = ["proyectos", "clientes", "perfil", "dispositivos"];
+          return order.indexOf(a.id) - order.indexOf(b.id);
+        })
+      : visibleModules;
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mx-auto">
+        {sortedModules.map((mod, index) => {
         const isActive = isMobile && activeId === mod.id;
         const isModuleActive = isActive || (mod.id === 'perfil' && expandedPerfil);
+
+        const isWide = mod.colSpan.includes("col-span-2");
+        const iconContainerSize = isWide ? "size-14 md:size-24 lg:size-32" : "size-12 md:size-16 lg:size-20";
+        const animatedIconSize = isWide ? "size-8 md:size-14 lg:size-20" : "size-7 md:size-10 lg:size-12";
+        const titleFontSize = isWide ? "text-[14px] md:text-xl lg:text-3xl xl:text-4xl" : "text-[13px] md:text-base lg:text-xl xl:text-2xl";
+        const descFontSize = isWide ? "text-[10px] md:text-sm lg:text-base xl:text-lg" : "text-[9px] md:text-xs lg:text-[13px]";
+        const paddingClass = isWide ? "px-6 md:px-10 lg:px-12" : "px-4 md:px-5 lg:px-6";
+        const gapClass = isWide ? "gap-4 md:gap-8 lg:gap-10" : "gap-3 md:gap-4 lg:gap-5";
 
         return (
           <motion.div
             key={mod.id}
-            className="cursor-pointer w-full relative h-[150px] sm:h-[160px]"
+            className={`cursor-pointer w-full relative h-[150px] md:h-[220px] lg:h-[240px] ${mod.colSpan}`}
             id={`${mod.id}-card`}
             initial="idle"
             whileHover={isMobile ? undefined : "hover"}
@@ -208,16 +234,16 @@ export function Dashboard() {
                         </span>
                       </div>
                       <div
-                        className="w-full h-full flex flex-row justify-start items-center px-6 gap-4 relative z-10"
+                        className={`w-full h-full flex flex-row justify-start items-center ${paddingClass} ${gapClass} relative z-10`}
                       >
                         <div className="relative z-10 flex justify-center shrink-0">
-                          <div className="size-14 sm:size-16 flex items-center justify-center relative">
+                          <div className={`${iconContainerSize} flex items-center justify-center relative`}>
                             <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <motion.div
                               variants={{
                                 idle: { y: 0 },
-                                hover: { y: -18 },
-                                active: { y: -18 },
+                                hover: { y: -24 },
+                                active: { y: -24 },
                               }}
                               transition={{ duration: 0.3 }}
                               className="w-full h-full flex items-center justify-center relative"
@@ -228,7 +254,7 @@ export function Dashboard() {
                               <AnimatedIcon
                                 iconKey={mod.icon}
                                 target={`#${mod.id}-card`}
-                                className="size-8 sm:size-10"
+                                className={animatedIconSize}
                                 speed={1.5}
                                 trigger="hover"
                               />
@@ -238,20 +264,20 @@ export function Dashboard() {
                         <motion.div
                           variants={{
                             idle: { y: 0 },
-                            hover: { y: -18 },
-                            active: { y: -18 },
+                            hover: { y: -24 },
+                            active: { y: -24 },
                           }}
                           transition={{ duration: 0.3 }}
                           className="relative z-10 flex-1 flex flex-col items-start text-left space-y-1"
                         >
-                          <h3 className="text-base sm:text-lg font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words md:transition-colors md:duration-500">
+                          <h3 className={`${titleFontSize} font-black tracking-tighter text-slate-900 dark:text-white group-hover:text-white uppercase leading-none w-full break-words md:transition-colors md:duration-500`}>
                             {mod.title}
                             <br />
                             <span className="text-celeste-kore group-hover:text-white/90 md:transition-colors md:duration-500">
                               {mod.subtitle}
                             </span>
                           </h3>
-                          <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 md:transition-colors md:duration-500">
+                          <p className={`${descFontSize} text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 md:transition-colors md:duration-500`}>
                             {mod.desc}
                           </p>
                         </motion.div>
@@ -295,7 +321,7 @@ export function Dashboard() {
                     </motion.span>
                   </div>
                   <motion.div
-                    className="w-full flex relative z-10 h-full flex-row items-center justify-start px-6 gap-4"
+                    className={`w-full flex relative z-10 h-full flex-row items-center justify-start ${paddingClass} ${gapClass}`}
                     variants={{
                       idle: { opacity: 1 },
                       hover: { opacity: 1 },
@@ -308,13 +334,13 @@ export function Dashboard() {
                     }}
                   >
                     <div className="relative z-10 flex justify-center shrink-0">
-                      <div className="size-14 sm:size-16 flex items-center justify-center relative">
+                      <div className={`${iconContainerSize} flex items-center justify-center relative`}>
                         <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <motion.div
                           variants={{
                             idle: { y: 0 },
-                            hover: { y: -18 },
-                            active: { y: -18 },
+                            hover: { y: -24 },
+                            active: { y: -24 },
                           }}
                           transition={{ duration: 0.3 }}
                           className="w-full h-full flex items-center justify-center relative"
@@ -325,7 +351,7 @@ export function Dashboard() {
                           <AnimatedIcon
                             iconKey={mod.icon}
                             target={`#${mod.id}-card`}
-                            className="size-8 sm:size-10"
+                            className={animatedIconSize}
                             speed={1.5}
                             trigger="hover"
                           />
@@ -335,13 +361,13 @@ export function Dashboard() {
                     <motion.div
                       variants={{
                         idle: { y: 0 },
-                        hover: { y: -18 },
-                        active: { y: -18 },
+                        hover: { y: -24 },
+                        active: { y: -24 },
                       }}
                       transition={{ duration: 0.3 }}
                       className="relative z-10 flex-1 flex flex-col items-start space-y-1 text-left"
                     >
-                      <h3 className="text-base sm:text-lg font-black tracking-tighter uppercase leading-none w-full break-words md:transition-colors md:duration-500">
+                      <h3 className={`${titleFontSize} font-black tracking-tighter uppercase leading-none w-full break-words md:transition-colors md:duration-500`}>
                         <span
                           className="text-slate-900 dark:text-white group-hover:text-white md:transition-colors md:duration-500"
                           style={{ color: isActive ? "#ffffff" : undefined }}
@@ -361,7 +387,7 @@ export function Dashboard() {
                         </span>
                       </h3>
                       <p
-                        className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 md:transition-colors md:duration-500"
+                        className={`${descFontSize} text-slate-500 dark:text-slate-400 group-hover:text-white/80 font-bold italic leading-tight pr-2 md:transition-colors md:duration-500`}
                         style={{
                           color: isActive ? "rgba(255,255,255,0.8)" : undefined,
                         }}
@@ -378,6 +404,7 @@ export function Dashboard() {
       })}
     </div>
   );
+};
 
   return (
     <div className="relative w-full flex-1 flex flex-col">
@@ -400,7 +427,7 @@ export function Dashboard() {
       <div className="hidden md:flex md:flex-col md:flex-1 relative w-full">
         <div className="relative z-10 w-full flex-1 flex flex-col">
           <div className="w-full flex-1 bg-transparent px-8 lg:px-12 pt-20 pb-20 flex flex-col justify-center">
-            <div className="w-full max-w-2xl mx-auto">
+            <div className="w-full max-w-[90vw] xl:max-w-7xl mx-auto">
               {renderCardsGrid()}
             </div>
           </div>

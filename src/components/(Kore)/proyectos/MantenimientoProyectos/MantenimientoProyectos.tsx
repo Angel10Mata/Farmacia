@@ -124,7 +124,19 @@ function DaysChip({ days }: { days: number | null }) {
 export default function MantenimientoProyectos() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains("dark"));
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, [resolvedTheme]);
   const { effectiveRole } = useUserContext();
   const isDeveloper = effectiveRole === "proyectos";
 

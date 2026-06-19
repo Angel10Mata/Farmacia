@@ -750,6 +750,77 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
     }
   }, [watchFechaCobro]);
 
+  const [showEntregaPicker, setShowEntregaPicker] = useState(false);
+  const watchFechaEntrega = watch("fecha_entrega");
+
+  const months = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+
+  const [viewingMonth, setViewingMonth] = useState<number>(() => {
+    if (watchFechaEntrega) {
+      const d = new Date(watchFechaEntrega + "T00:00:00");
+      if (!isNaN(d.getTime())) return d.getMonth();
+    }
+    return new Date().getMonth();
+  });
+  const [viewingYear, setViewingYear] = useState<number>(() => {
+    if (watchFechaEntrega) {
+      const d = new Date(watchFechaEntrega + "T00:00:00");
+      if (!isNaN(d.getTime())) return d.getFullYear();
+    }
+    return new Date().getFullYear();
+  });
+
+  useEffect(() => {
+    if (watchFechaEntrega) {
+      const d = new Date(watchFechaEntrega + "T00:00:00");
+      if (!isNaN(d.getTime())) {
+        setViewingMonth(d.getMonth());
+        setViewingYear(d.getFullYear());
+      }
+    }
+  }, [watchFechaEntrega]);
+
+  const getDaysInMonthGrid = (year: number, month: number) => {
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month + 1, 0);
+    const daysInMonth = endOfMonth.getDate();
+    
+    const startDayOfWeek = startOfMonth.getDay();
+    const grid = [];
+    
+    for (let i = 0; i < startDayOfWeek; i++) {
+      grid.push(null);
+    }
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      grid.push({ dayNum: d, dateStr });
+    }
+    
+    return grid;
+  };
+
+  const handlePrevMonth = () => {
+    if (viewingMonth === 0) {
+      setViewingMonth(11);
+      setViewingYear((y) => y - 1);
+    } else {
+      setViewingMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (viewingMonth === 11) {
+      setViewingMonth(0);
+      setViewingYear((y) => y + 1);
+    } else {
+      setViewingMonth((m) => m + 1);
+    }
+  };
+
   const getFechaCobroDisplay = (dateStr: string | null | undefined) => {
     if (!dateStr) return "Seleccionar Mes/Año";
     try {
@@ -1004,33 +1075,37 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="w-full max-w-3xl mx-auto px-4 pt-32 pb-16 md:px-0 md:pt-24"
+      className="w-full max-w-5xl mx-auto flex flex-col gap-6 text-foreground px-4 pt-32 pb-16 md:px-8 md:pt-24 relative"
     >
       <title>{isEditing ? `Editar Proyecto: ${proyecto?.nombre || ""} | KORE BMS` : "Nuevo Proyecto | KORE BMS"}</title>
 
-      <div className="rounded-2xl border border-celeste-kore/55 dark:border-white/10 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl shadow-none dark:shadow-2xl dark:shadow-black/20 overflow-hidden">
-        {/* Title bar */}
-        <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/5 gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center border border-red-200 dark:border-red-900/30 shrink-0">
-              <Briefcase size={20} className="text-celeste-kore" />
+      {/* Decorative Glows */}
+      <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-celeste-kore/10 rounded-full blur-[120px] pointer-events-none -z-10 animate-pulse" />
+
+      {/* CARD WRAPPER CONTAINING HEADER AND FORM */}
+      <div className="w-full max-w-5xl mx-auto overflow-visible relative rounded-3xl border border-zinc-200 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl shadow-xl dark:shadow-2xl dark:shadow-black/60 p-6 md:p-10 flex flex-col gap-6">
+        {/* Header bar */}
+        <div className="flex flex-col gap-4 border-b border-border/40 pb-6 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-celeste-kore/10 flex items-center justify-center border border-celeste-kore/20 shrink-0">
+              <Briefcase size={22} className="text-celeste-kore" />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-foreground uppercase">
-                {isEditing ? "Editar Proyecto" : "Nuevo Proyecto"}
-              </h1>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+              <h2 className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-primary/80">
                 {isEditing ? "Modificando información" : "Registro de datos"}
-              </p>
+              </h2>
+              <h1 className="text-xl sm:text-4xl font-black tracking-tight mt-0.5 sm:mt-1 leading-none uppercase text-black dark:text-white">
+                {isEditing ? "Editar" : "Nuevo"} <span className="text-celeste-kore">Proyecto</span>
+              </h1>
             </div>
-          </div>        </div>
+          </div>
+        </div>
 
         {/* Form body */}
-        <div className="p-6">
-          <form
-            id="proyecto-form"
-            onSubmit={handleSubmit(onSubmit as any, onInvalid)}
-          >
+        <form
+          id="proyecto-form"
+          onSubmit={handleSubmit(onSubmit as any, onInvalid)}
+        >
             <div className={cn("space-y-8", step === 1 ? "block" : "hidden")}>
             {/* ── Información General ── */}
             <div className="space-y-4">
@@ -1198,15 +1273,107 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="fecha_entrega">Fecha de Entrega</Label>
-                    <Input
-                      id="fecha_entrega"
-                      type="date"
-                      {...register("fecha_entrega")}
-                    />
+                    <div className="relative">
+                      {/* Hidden input to bind React Hook Form register */}
+                      <input
+                        type="hidden"
+                        id="fecha_entrega"
+                        {...register("fecha_entrega")}
+                      />
+                      
+                      {/* Trigger Button */}
+                      <button
+                        type="button"
+                        onClick={() => setShowEntregaPicker(!showEntregaPicker)}
+                        className="w-full h-10 px-3 py-2 text-sm text-left bg-background/50 border border-input rounded-xl font-medium text-foreground hover:bg-muted/30 transition-colors flex items-center justify-between cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600/50"
+                      >
+                        <span>{watchFechaEntrega ? formatDate(watchFechaEntrega) : "Seleccionar Fecha"}</span>
+                        <ChevronDown size={16} className="text-muted-foreground" />
+                      </button>
+
+                      {/* Month Year Picker Calendar Dropdown */}
+                      <AnimatePresence>
+                        {showEntregaPicker && (
+                          <>
+                            {/* Backdrop to close click outside */}
+                            <div
+                              className="fixed inset-0 z-40 bg-transparent"
+                              onClick={() => setShowEntregaPicker(false)}
+                            />
+                            
+                            <motion.div
+                              className="absolute bottom-full left-0 mb-2 z-50 w-[280px] bg-white dark:bg-black border border-border dark:border-white/10 rounded-2xl shadow-2xl p-4 text-foreground dark:text-white"
+                              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              {/* Header: prev month, current month/year, next month */}
+                              <div className="flex items-center justify-between mb-4 border-b border-border dark:border-white/10 pb-2">
+                                <button
+                                  type="button"
+                                  onClick={handlePrevMonth}
+                                  className="p-1 hover:bg-muted dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <ChevronLeft size={16} className="text-muted-foreground hover:text-foreground dark:hover:text-white" />
+                                </button>
+                                <span className="font-black text-xs uppercase tracking-wider text-foreground">
+                                  {`${months[viewingMonth]} ${viewingYear}`}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={handleNextMonth}
+                                  className="p-1 hover:bg-muted dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <ChevronRight size={16} className="text-muted-foreground hover:text-foreground dark:hover:text-white" />
+                                </button>
+                              </div>
+
+                              {/* Calendar Weekdays */}
+                              <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                                {["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"].map((d) => (
+                                  <span key={d} className="text-[9px] font-black text-muted-foreground uppercase">
+                                    {d}
+                                  </span>
+                                ))}
+                              </div>
+
+                              {/* Calendar Day Grid */}
+                              <div className="grid grid-cols-7 gap-1">
+                                {getDaysInMonthGrid(viewingYear, viewingMonth).map((day, idx) => {
+                                  if (!day) return <div key={`empty-${idx}`} className="w-8 h-8" />;
+
+                                  const isSelected = watchFechaEntrega === day.dateStr;
+
+                                  return (
+                                    <button
+                                      key={day.dateStr}
+                                      type="button"
+                                      onClick={() => {
+                                        setValue("fecha_entrega", day.dateStr);
+                                        setShowEntregaPicker(false);
+                                      }}
+                                      className={cn(
+                                        "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black transition-all cursor-pointer select-none",
+                                        isSelected
+                                          ? "bg-[#B7494E] text-white shadow-md"
+                                          : "text-muted-foreground hover:bg-muted dark:hover:bg-white/5 hover:text-foreground dark:hover:text-white"
+                                      )}
+                                    >
+                                      {day.dayNum}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="monto_mensual_fijo">Mantenimiento (Q)</Label>
-                    <div className="relative pt-1">
+                    <div className="relative">
                       <Input
                         id="monto_mensual_fijo"
                         type="number"
@@ -1252,7 +1419,7 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
                             />
                             
                             <motion.div
-                              className="absolute bottom-full left-0 mb-2 z-50 w-[280px] bg-white dark:bg-black border border-border dark:border-white/10 rounded-2xl shadow-2xl p-4 text-foreground dark:text-white"
+                              className="absolute bottom-full right-0 mb-2 z-50 w-[280px] bg-white dark:bg-black border border-border dark:border-white/10 rounded-2xl shadow-2xl p-4 text-foreground dark:text-white"
                               initial={{ opacity: 0, scale: 0.95, y: 8 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: 8 }}
@@ -1577,46 +1744,44 @@ export default function ProyectoForm({ proyecto: proyectoProp }: ProyectoFormPro
             )}
             </div>
           </form>
-        </div>
 
-        {/* Footer */}
-        <div className="p-4 md:p-6 border-t border-border/50 bg-muted/5 flex flex-nowrap justify-center gap-1.5 sm:gap-3 overflow-x-auto custom-scrollbar">
-          {step === 2 && (
-             <button
-               type="button"
-               onClick={() => setStep(1)}
-               className="px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-all text-[10px] font-black uppercase tracking-widest cursor-pointer whitespace-nowrap"
-             >
-               Paso Anterior
-             </button>
-          )}
-
-          {(step === 2 || isDeveloper) && (
-            <button
-              form="proyecto-form"
-              type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-all text-[10px] font-black uppercase tracking-widest cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
-            >
-              {isSubmitting ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Save size={14} />
-              )}
-              {isEditing ? "Guardar" : "Crear"}
-            </button>
-          )}
-          {step === 1 && !isDeveloper && (
-             <button
-               type="button"
-               onClick={() => setStep(2)}
-               className="flex items-center gap-1.5 px-2.5 py-2 sm:px-4 sm:py-2 rounded-lg border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-all text-[10px] font-black uppercase tracking-widest cursor-pointer whitespace-nowrap"
-             >
-               Siguiente Paso
-             </button>
-          )}
+          {/* Form Footer Buttons */}
+          <div className="flex gap-4 pt-6 border-t border-border/40 justify-end mt-8">
+            {step === 2 && (
+               <button
+                 type="button"
+                 onClick={() => setStep(1)}
+                 className="px-6 py-3 rounded-xl border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer whitespace-nowrap"
+               >
+                 Paso Anterior
+               </button>
+            )}
+            {(step === 2 || isDeveloper) && (
+              <button
+                form="proyecto-form"
+                type="submit"
+                disabled={isSubmitting}
+                className="px-8 py-3 rounded-xl border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
+              >
+                {isSubmitting ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Save size={14} />
+                )}
+                {isEditing ? "Guardar" : "Crear"}
+              </button>
+            )}
+            {step === 1 && !isDeveloper && (
+               <button
+                 type="button"
+                 onClick={() => setStep(2)}
+                 className="px-8 py-3 rounded-xl border border-celeste-kore bg-transparent text-celeste-kore hover:bg-celeste-kore/10 transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer whitespace-nowrap"
+               >
+                 Siguiente Paso
+               </button>
+            )}
+          </div>
         </div>
-      </div>
 
 
 

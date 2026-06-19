@@ -111,7 +111,19 @@ const parsePaymentDescription = (desc: string | null | undefined) => {
 
 export function PagoMantenimientoModal({ proyecto, onClose, onSuccess }: PagoMantenimientoModalProps) {
   const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains("dark"));
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, [resolvedTheme]);
   
   const pct = Number(proyecto.monto_mantenimiento) || Number(proyecto.mantenimiento) || 0;
   const sugerido = proyecto.monto_mensual_fijo 
@@ -158,25 +170,43 @@ export function PagoMantenimientoModal({ proyecto, onClose, onSuccess }: PagoMan
     if (existingPayment) {
       const { username } = parsePaymentDescription(existingPayment.descripcion);
       const formattedDate = formatPaymentDateWithTime(existingPayment.fecha_pago);
+      let timerInterval: NodeJS.Timeout;
       const result = await Swal.fire({
         title: "¿Eliminar pago?",
-        html: `
-          <div class="text-left text-xs space-y-2">
-            <p>¿Deseas eliminar el registro de pago para <strong>${monthName} de ${selectedYear}</strong>?</p>
-            <div class="p-3 bg-muted/20 border border-border/40 rounded-xl space-y-1 mt-2">
-              <p class="font-bold text-[10px] text-muted-foreground uppercase">DETALLES DEL REGISTRO</p>
-              <p><strong>Fecha Pago:</strong> ${formattedDate}</p>
-              <p><strong>Confirmado por:</strong> ${username}</p>
-            </div>
-          </div>
-        `,
+        html: `¿Deseas eliminar el registro de pago para <strong>${monthName} de ${selectedYear}</strong>?`,
         icon: "warning",
         showCancelButton: true,
-        confirmButtonText: "Sí, eliminar",
+        confirmButtonText: "Sí, eliminar (7)",
         cancelButtonText: "Cancelar",
         background: isDark ? "#18181b" : "#ffffff",
         color: isDark ? "#ffffff" : "#000000",
         confirmButtonColor: "#B7494E",
+        didOpen: () => {
+          const confirmButton = Swal.getConfirmButton();
+          if (confirmButton) {
+            confirmButton.disabled = true;
+            confirmButton.style.opacity = "0.5";
+            confirmButton.style.cursor = "not-allowed";
+            let timeLeft = 7;
+            confirmButton.innerText = `Sí, eliminar (${timeLeft})`;
+            timerInterval = setInterval(() => {
+              timeLeft--;
+              confirmButton.innerText = `Sí, eliminar (${timeLeft})`;
+              if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                confirmButton.disabled = false;
+                confirmButton.style.opacity = "1";
+                confirmButton.style.cursor = "pointer";
+                confirmButton.innerText = "Sí, eliminar";
+              }
+            }, 1000);
+          }
+        },
+        willClose: () => {
+          if (timerInterval) {
+            clearInterval(timerInterval);
+          }
+        }
       });
 
       if (result.isConfirmed) {

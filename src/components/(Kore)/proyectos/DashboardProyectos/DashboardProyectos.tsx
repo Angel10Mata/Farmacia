@@ -880,12 +880,6 @@ export default function DashboardProyectos() {
 
         <div className="flex items-stretch gap-2 w-full sm:w-auto">
           <button 
-            onClick={() => router.push("/kore/clientes")}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-black dark:text-white transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer"
-          >
-            CLIENTES
-          </button>
-          <button 
             onClick={() => router.push("/kore/proyectos/mantenimiento")}
             className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-1.5 px-2 py-2.5 sm:px-6 sm:py-4 rounded-xl bg-celeste-kore text-black hover:bg-celeste-kore border border-transparent transition-all font-black text-[10px] sm:text-sm whitespace-nowrap cursor-pointer"
           >

@@ -36,7 +36,6 @@ export function BreadcrumbNav() {
   const visibleSegments = isClientes
     ? [
         { segment: "kore", label: "Kore", href: "/kore" },
-        { segment: "resumen", label: "Dashboard", href: "/kore/proyectos" },
         { segment: "clientes", label: "Clientes", href: "/kore/clientes" },
       ]
     : rawSegments
@@ -70,7 +69,7 @@ export function BreadcrumbNav() {
   } else if (rawSegments.includes("ver")) {
     backHref = "/kore/proyectos";
   } else if (isClientes) {
-    backHref = "/kore/proyectos";
+    backHref = "/kore";
   } else if (rawSegments.length > 1) {
     backHref = `/${rawSegments.slice(0, -1).join("/")}`;
   }

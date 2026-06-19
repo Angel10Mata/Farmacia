@@ -17,6 +17,8 @@ interface DBCliente {
   nit?: string | null;
   telefono?: string | null;
   correo?: string | null;
+  departamento?: string | null;
+  municipio?: string | null;
   created_at: string;
   proyectos?: DBProyecto[];
 }
@@ -35,6 +37,8 @@ interface Cliente {
   nit: string;
   telefono: string;
   correo: string;
+  departamento: string;
+  municipio: string;
   created_at: string;
   proyectosCount: number;
   totalPagado: number;
@@ -71,6 +75,8 @@ export async function getClientes(): Promise<Cliente[]> {
       nit: c.nit || "",
       telefono: c.telefono || "",
       correo: c.correo || "",
+      departamento: c.departamento || "",
+      municipio: c.municipio || "",
       created_at: c.created_at,
       proyectosCount: proyectosList.length,
       totalPagado,
@@ -95,6 +101,8 @@ export async function createCliente(data: {
   nit?: string;
   telefono?: string;
   correo?: string;
+  departamento?: string;
+  municipio?: string;
 }) {
   const supabase = await createClient();
 
@@ -106,6 +114,8 @@ export async function createCliente(data: {
         nit: data.nit?.trim() || null,
         telefono: data.telefono?.trim() || null,
         correo: data.correo?.trim() || null,
+        departamento: data.departamento?.trim() || null,
+        municipio: data.municipio?.trim() || null,
       },
     ])
     .select()
@@ -126,7 +136,14 @@ export async function createCliente(data: {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function updateCliente(
   id: string,
-  data: { nombre: string; nit?: string; telefono?: string; correo?: string }
+  data: {
+    nombre: string;
+    nit?: string;
+    telefono?: string;
+    correo?: string;
+    departamento?: string;
+    municipio?: string;
+  }
 ) {
   const supabase = await createClient();
 
@@ -137,6 +154,8 @@ export async function updateCliente(
       nit: data.nit?.trim() || null,
       telefono: data.telefono?.trim() || null,
       correo: data.correo?.trim() || null,
+      departamento: data.departamento?.trim() || null,
+      municipio: data.municipio?.trim() || null,
     })
     .eq("id", id)
     .select()
