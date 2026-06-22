@@ -1,21 +1,23 @@
-Responda de forma extremadamente breve. 
-Prohibido explicar, resumir o describir cambios aplicados en los archivos. 
-Solo confirme la ejecución.
-No incluya comentarios internos.
-Verifique tipado estricto de TypeScript.
-
-cada componente debe de estar encarpetado
-
-/nombredelcomponente
+# Estructura Modular de Componentes
+Cada componente debe estar encarpetado individualmente con la siguiente jerarquía estricta:
+/[nombredelcomponente]
     /lib
-        actions.ts (aqui van todas las server actions)
-        zod.ts (aqui van todos los esquemas y verificaciones)
-        hooks.ts (aqui van todos los hooks personalizados)
-        utils.ts (aqui van todas las funciones de utilidad)
+        actions.ts  # Server Actions con tipado estricto
+        zod.ts      # Esquemas de validación y tipos inferidos de Zod
+        hooks.ts    # Hooks personalizados de React y TanStack Query
+        utils.ts    # Funciones de utilidad pura
     /forms
-        form1.tsx (aqui van todos los modal que se utilicen para datos)
+        [nombreForm].tsx # Modales y formularios de captura de datos
+    [nombrecomponenteprincipal].tsx # Componente principal de la vista
 
-    nombrecomponenteprincipal.tsx (este es el componente principal)
+# Reglas de Tipado Estricto (TypeScript)
+- Prohibido el uso de 'any'. Todo parámetro, retorno y estado debe estar explícitamente tipado.
+- Las Server Actions deben retornar tipos estructurados { success: boolean; data?: T; error?: string }.
 
-
-        
+# Paleta de Colores del Proyecto (Look 1, Look 2 y Blanco Suave)
+Define y utiliza exclusivamente las siguientes constantes de color en tus estilos o configuración de Tailwind CSS:
+- LOOK_1_OLIVO_OSCURO: "#525D53"
+- LOOK_1_SALVIA_SUAVE: "#A3BEB0"
+- LOOK_2_SALVIA_MENTA: "#8DA78E"
+- LOOK_2_PASTEL_CLARO: "#C1D1C5"
+- BLANCO_SUAVE_HUESO:  "#F5F5F1"
