@@ -10,6 +10,21 @@ Cada componente debe estar encarpetado individualmente con la siguiente jerarqu�
         [nombreForm].tsx # Modales y formularios de captura de datos
     [nombrecomponenteprincipal].tsx # Componente principal de la vista
 
+    Al crear las rutas para acceder al sistema se manda a llamar el componente principal se manda a llamar con suspense como se ve a continuación 
+
+    import { Suspense } from "react";
+
+    import { Dashboard } from "@/components/(base)/dashboard";
+
+    export default function DashboardPage() {
+    return (
+        <Suspense>
+        <Dashboard />
+        </Suspense>
+    );
+    }
+    
+    Al crear los archivos y carpetas colocarle nombres cortos con prefijo 
 # Reglas de Tipado Estricto (TypeScript)
 - Prohibido el uso de 'any'. Todo parámetro, retorno y estado debe estar explícitamente tipado.
 - Las Server Actions deben retornar tipos estructurados { success: boolean; data?: T; error?: string }.

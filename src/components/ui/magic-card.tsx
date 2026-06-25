@@ -5,7 +5,7 @@ import { motion, useMotionTemplate, useMotionValue } from "motion/react";
 
 import { cn } from "@/lib/utils";
 
-interface MagicCardProps {
+interface MagicCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children?: React.ReactNode;
   className?: string;
   gradientSize?: number;
@@ -13,6 +13,7 @@ interface MagicCardProps {
   gradientOpacity?: number;
   gradientFrom?: string;
   gradientTo?: string;
+  borderWidth?: number;
   style?: React.CSSProperties;
 }
 
@@ -22,7 +23,9 @@ export function MagicCard({
   gradientSize = 200,
   gradientFrom = "#9E7AFF",
   gradientTo = "#FE8BBB",
+  borderWidth = 1,
   style,
+  ...props
 }: MagicCardProps) {
   const mouseX = useMotionValue(-gradientSize);
   const mouseY = useMotionValue(-gradientSize);
@@ -70,11 +73,16 @@ export function MagicCard({
 
   return (
     <div
-      className={cn("group relative rounded-[inherit] bg-background", className)}
+      className={cn(
+        "group relative rounded-[inherit]",
+        !className?.split(" ").some((c) => c.startsWith("bg-")) && "bg-card",
+        className
+      )}
       onPointerMove={handlePointerMove}
       onPointerLeave={reset}
       onPointerEnter={reset}
       style={style}
+      {...props}
     >
       <motion.div
         className="bg-border pointer-events-none absolute inset-0 rounded-[inherit] duration-300 group-hover:opacity-100"
@@ -89,7 +97,15 @@ export function MagicCard({
         }}
       />
 
-      <div className="absolute inset-px rounded-[inherit] bg-inherit" />
+      <div 
+        className="absolute rounded-[inherit] bg-inherit" 
+        style={{
+          top: `${borderWidth}px`,
+          left: `${borderWidth}px`,
+          right: `${borderWidth}px`,
+          bottom: `${borderWidth}px`,
+        }}
+      />
       <div className="relative z-10 h-full min-h-0 w-full flex flex-col">{children}</div>
     </div>
   );

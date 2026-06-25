@@ -12,7 +12,6 @@ import Menu from "./Menu";
 import { getPendingDevicesCount } from "@/components/(Kore)/admin/lib/actions";
 import { createPortal } from "react-dom";
 import AnimacionLogoKore from "@/components/(Kore)/logo/AnimacionLogoKore";
-import { MaintenanceAlertBar } from "@/components/(base)/layout/MaintenanceAlertBar";
 
 export default function Header() {
   const user = useUser();
@@ -135,9 +134,6 @@ export default function Header() {
       )}
 
       <Menu isOpen={isOpen} setIsOpen={setIsOpen} user={user} />
-
-      {/* Maintenance alert bar: shows below header on proyectos pages when billing is due within 5 days */}
-      {user && <MaintenanceAlertBar />}
 
       {mounted && createPortal(
         <AnimacionLogoKore isOpen={isFullScreen} onClose={() => setIsFullScreen(false)} />,

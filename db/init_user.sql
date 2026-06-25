@@ -33,7 +33,7 @@ with check (true);
 
 INSERT INTO public.profiles (id, nombre, email, telefono, rol, activo)
 SELECT 
-    'adlja;sldjka56356', --aui pegue el id del usuario que se encuentra en auth.users con email
+    '6fd31511-afc4-4a4b-8061-a7ec350f6c39', --aqui pegue el id del usuario que se encuentra en auth.users con email
     'Kore Devs', 
     'kore@gmail.com', 
     '42140797', 

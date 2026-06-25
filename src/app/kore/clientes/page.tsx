@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import ClientesDashboard from "@/components/(Kore)/clientes/ClientesDashboard";
+import { VerClientes } from "@/components/(base)/clientes/VerClientes";
 
 export default function ClientesPage() {
   return (
-    <Suspense>
-      <ClientesDashboard />
+    <Suspense fallback={null}>
+      <VerClientes />
     </Suspense>
   );
 }

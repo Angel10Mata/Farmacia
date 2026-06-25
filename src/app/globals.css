@@ -4,53 +4,58 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #f4f4f5; /* zinc-100 */
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #B7494E; /* New Red */
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: #3D3C3C; /* New Gray */
-  --secondary-foreground: oklch(0.985 0 0);
+  --primary: #525D53; /* LOOK_1_OLIVO_OSCURO */
+  --primary-foreground: #f4f4f5;
+  --secondary: #CBDAD2; /* LOOK_1_SALVIA_SUAVE (Softer Sage) */
+  --secondary-foreground: oklch(0.145 0 0);
   --muted: oklch(0.96 0 0);
   --muted-foreground: oklch(0.45 0 0);
-  --accent: #B7494E;
-  --accent-foreground: oklch(0.985 0 0);
+  --accent: #AEC1B0; /* LOOK_2_SALVIA_MENTA (Softer Mint) */
+  --accent-foreground: #f4f4f5;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: 0 0% 98%;
   --border: oklch(0.922 0 0);
-  --input: rgba(183, 73, 78, 0.55);
-  --ring: #B7494E;
+  --input: rgba(82, 93, 83, 0.55);
+  --ring: #525D53;
   --radius: 0.625rem;
 }
 
 .dark {
-  --background: #121214;
+  --background: #27272a; /* zinc-800 */
   --foreground: oklch(98.5% 0 0);
-  --card: #1e1e22;
+  --card: #18181b; /* zinc-900 */
   --card-foreground: oklch(98.5% 0 0);
   --popover: #1e1e22;
   --popover-foreground: oklch(98.5% 0 0);
-  --primary: #B7494E;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: #3D3C3C;
+  --primary: #CBDAD2; /* LOOK_1_SALVIA_SUAVE for better contrast in dark mode */
+  --primary-foreground: #27272a;
+  --secondary: #525D53; /* LOOK_1_OLIVO_OSCURO */
   --secondary-foreground: oklch(98.5% 0 0);
-  --muted: #3D3C3C;
+  --muted: #525D53;
   --muted-foreground: oklch(70.8% 0 0);
-  --accent: #B7494E;
-  --accent-foreground: oklch(98.5% 0 0);
-  --destructive: oklch(60% 0.15 25);
-  --destructive-foreground: oklch(98% 0 0);
+  --accent: #AEC1B0; /* LOOK_2_SALVIA_MENTA */
+  --accent-foreground: #27272a;
   --border: #2d2d34;
   --input: #2d2d34;
-  --ring: #B7494E;
+  --ring: #CBDAD2;
 }
 
 @theme {
-  --color-azul-kore: #3D3C3C;
-  --color-celeste-kore: #B7494E;
+  --color-look-1-olivo-oscuro: #525D53;
+  --color-look-1-salvia-suave: #A3BEB0;
+  --color-look-2-salvia-menta: #8DA78E;
+  --color-look-2-pastel-claro: #C1D1C5;
+  --color-blanco-suave-hueso: #F5F5F1;
+
+  --color-azul-kore: var(--color-look-1-olivo-oscuro);
+  --color-celeste-kore: var(--color-look-1-salvia-suave);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -98,10 +103,14 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    background-color: var(--background);
+    background-image: radial-gradient(rgba(82, 93, 83, 0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-attachment: fixed;
   }
   .dark body {
     background-color: var(--background);
-    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
     background-size: 24px 24px;
     background-attachment: fixed;
   }
@@ -109,8 +118,7 @@
   /* Evitar zoom automático en dispositivos móviles (iOS Safari / Chromium) */
   input, 
   textarea, 
-  select,
-  button {
+  select {
     font-size: 16px !important;
   }
 
@@ -178,6 +186,41 @@ select option {
   background: transparent !important;
   outline: none !important;
 }
+/* Quitar las flechas de los inputs de tipo number */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 
+/* Estilos de Impresión para Tickets */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-receipt-ticket,
+  #print-receipt-ticket * {
+    visibility: visible;
+  }
+  #print-receipt-ticket {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 10px;
+    background: white !important;
+    color: black !important;
+    font-family: monospace;
+    font-size: 11px;
+  }
+  @page {
+    margin: 0;
+  }
+}
 

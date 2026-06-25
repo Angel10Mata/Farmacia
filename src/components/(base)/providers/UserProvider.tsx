@@ -28,6 +28,7 @@ export function UserProvider({
   children: React.ReactNode;
 }) {
   const [user, setUser] = useState<User | null>(initialUser);
+  const [profileRole, setProfileRole] = useState<string | null>(null);
   const [simulatedRole, setSimulatedRole] = useState<string | null>(null);
   const supabase = createClient();
 
@@ -43,6 +44,7 @@ export function UserProvider({
         setUser(session.user);
       } else {
         setUser(null);
+        setProfileRole(null);
       }
     });
 
@@ -51,9 +53,35 @@ export function UserProvider({
     };
   }, [supabase]);
 
+  useEffect(() => {
+    if (!user) {
+      setProfileRole(null);
+      return;
+    }
+    const fetchProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("rol")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("UserProvider: Error al obtener perfil:", JSON.stringify(error));
+        } else if (data) {
+          setProfileRole(data.rol);
+        }
+      } catch (err) {
+        console.error("UserProvider: Error inesperado al obtener perfil:", err);
+      }
+    };
+    fetchProfile();
+  }, [user, supabase]);
+
   const metadata = user?.user_metadata || {};
-  const realRole = metadata.rol || user?.role || "user";
+  const realRole = profileRole || metadata.rol || user?.role || "authenticated";
   const effectiveRole = simulatedRole || realRole;
+
 
   return (
     <UserContext.Provider value={{ user, simulatedRole, setSimulatedRole, effectiveRole, realRole }}>

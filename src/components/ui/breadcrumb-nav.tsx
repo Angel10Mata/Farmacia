@@ -14,12 +14,16 @@ const SEGMENT_LABELS: Record<string, string> = {
   editar: "Editar",
   ver: "Ver",
   qr: "QR",
-  clientes: "Clientes",
   mantenimiento: "Mantenimiento",
   admin: "Administración",
   configuraciones: "Configuraciones",
   dispositivos: "Dispositivos de Acceso",
   usuarios: "Gestión de Usuarios",
+  clientes: "Clientes",
+  inventario: "Inventario",
+  ventas: "Ventas",
+  proveedores: "Proveedores",
+  perfil: "Mi Perfil",
 };
 
 export function BreadcrumbNav() {
@@ -27,35 +31,25 @@ export function BreadcrumbNav() {
 
   if (pathname === "/kore") return null;
 
-  const cleanPathname = pathname.replace(/\/$/, "");
-  const isClientes = cleanPathname === "/kore/clientes";
-
   const rawSegments = pathname.split("/").filter((item) => item !== "");
 
-  // ── Mapeo dinámico de segmentos visibles y sus URLs correspondientes ──────
-  const visibleSegments = isClientes
-    ? [
-        { segment: "kore", label: "Kore", href: "/kore" },
-        { segment: "resumen", label: "Dashboard", href: "/kore/proyectos" },
-        { segment: "clientes", label: "Clientes", href: "/kore/clientes" },
-      ]
-    : rawSegments
-        .map((segment, index) => {
-          const label = SEGMENT_LABELS[segment];
-          if (!label) return null;
+  const visibleSegments = rawSegments
+    .map((segment, index) => {
+      const label = SEGMENT_LABELS[segment];
+      if (!label) return null;
 
-          // Construir href incluyendo cualquier ID subsiguiente que no tenga etiqueta
-          const parts = rawSegments.slice(0, index + 1);
-          let nextIdx = index + 1;
-          while (nextIdx < rawSegments.length && !SEGMENT_LABELS[rawSegments[nextIdx]]) {
-            parts.push(rawSegments[nextIdx]);
-            nextIdx++;
-          }
-          const href = "/" + parts.join("/");
+      // Construir href incluyendo cualquier ID subsiguiente que no tenga etiqueta
+      const parts = rawSegments.slice(0, index + 1);
+      let nextIdx = index + 1;
+      while (nextIdx < rawSegments.length && !SEGMENT_LABELS[rawSegments[nextIdx]]) {
+        parts.push(rawSegments[nextIdx]);
+        nextIdx++;
+      }
+      const href = "/" + parts.join("/");
 
-          return { segment, label, href };
-        })
-        .filter((item): item is { segment: string; label: string; href: string } => item !== null);
+      return { segment, label, href };
+    })
+    .filter((item): item is { segment: string; label: string; href: string } => item !== null);
 
   // ── Navegación hacia atrás (botón flecha izquierda) ────────────────────────
   let backHref = "/kore";
@@ -68,8 +62,6 @@ export function BreadcrumbNav() {
     const id = detalleIdx >= 0 && detalleIdx + 1 < rawSegments.length ? rawSegments[detalleIdx + 1] : "";
     backHref = id ? `/kore/proyectos/ver/${id}` : "/kore/proyectos";
   } else if (rawSegments.includes("ver")) {
-    backHref = "/kore/proyectos";
-  } else if (isClientes) {
     backHref = "/kore/proyectos";
   } else if (rawSegments.length > 1) {
     backHref = `/${rawSegments.slice(0, -1).join("/")}`;

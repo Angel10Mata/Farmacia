@@ -1,14 +1,14 @@
 "use client";
 
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { checkDeviceRequest, createDeviceRequest, notifyAdminsOfArrival } from "./actions";
 import { Loader2, Lock, PhoneOff } from "lucide-react";
 import Swal from "sweetalert2";
 import { useTheme } from "next-themes";
 
-export default function EsperandoAcceso() {
+function EsperandoAccesoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
@@ -126,5 +126,17 @@ export default function EsperandoAcceso() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function EsperandoAcceso() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center p-4 text-foreground">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <EsperandoAccesoContent />
+    </Suspense>
   );
 }
