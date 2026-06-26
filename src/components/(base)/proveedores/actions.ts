@@ -105,10 +105,10 @@ export async function obtenerProveedoresYProductos() {
 
     if (provError) throw new Error(provError.message);
 
-    // Obtener productos activos
+    // Obtener productos activos (incluye proveedor_id para autoselección en compras)
     const { data: productos, error: prodError } = await supabase
       .from("inv_productos")
-      .select("*")
+      .select("id, codigo, nombre, precio_base, stock_actual, activo, proveedor_id")
       .eq("activo", true)
       .order("nombre", { ascending: true });
 
@@ -176,7 +176,7 @@ export async function crearCompra(params: {
       throw new Error(`Error al registrar los detalles de compra: ${detallesError.message}`);
     }
 
-    // 3. Incrementar las existencias (stock_actual) en inv_productos
+    // 3. Incrementar las existencias (stock_actual) y sincronizar proveedor_id en inv_productos
     for (const item of items) {
       // Obtener el stock actual
       const { data: prod, error: findError } = await supabase
@@ -191,10 +191,10 @@ export async function crearCompra(params: {
 
       const nuevoStock = (prod.stock_actual || 0) + item.cantidad;
 
-      // Actualizar stock
+      // Actualizar stock y proveedor_id (vincula el proveedor directamente al producto)
       const { error: stockError } = await supabase
         .from("inv_productos")
-        .update({ stock_actual: nuevoStock })
+        .update({ stock_actual: nuevoStock, proveedor_id: proveedor_id })
         .eq("id", item.producto_id);
 
       if (stockError) {

@@ -54,6 +54,7 @@ interface Producto {
   nombre: string;
   precio_base: number;
   stock_actual: number;
+  proveedor_id?: string | null;
 }
 
 interface ItemCarritoCompra {
@@ -96,6 +97,7 @@ export function VerProveedores() {
   const [proveedorSeleccionado, setProveedorSeleccionado] = useState<Proveedor | null>(null);
   const [proveedorBusqueda, setProveedorBusqueda] = useState("");
   const [mostrarSugerenciasProv, setMostrarSugerenciasProv] = useState(false);
+  const [proveedorAutoSeleccionado, setProveedorAutoSeleccionado] = useState(false);
 
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
   const [productoBusqueda, setProductoBusqueda] = useState("");
@@ -179,6 +181,18 @@ export function VerProveedores() {
     return p.nombre.toLowerCase().includes(q) || (p.codigo && p.codigo.toLowerCase().includes(q));
   });
 
+  // Helper: autoseleccionar proveedor desde un producto (si no hay uno elegido aún)
+  const autoSeleccionarProveedor = (producto: Producto) => {
+    if (producto.proveedor_id && !proveedorSeleccionado) {
+      const prov = proveedores.find((p) => p.id === producto.proveedor_id);
+      if (prov) {
+        setProveedorSeleccionado(prov);
+        setProveedorBusqueda(prov.nombre);
+        setProveedorAutoSeleccionado(true);
+      }
+    }
+  };
+
   // Agregar al carrito
   const handleAgregarAlCarrito = () => {
     if (!productoSeleccionado) return;
@@ -229,6 +243,9 @@ export function VerProveedores() {
         }
       ]);
     }
+
+    // Intentar autoseleccionar proveedor al agregar al carrito
+    autoSeleccionarProveedor(productoSeleccionado);
 
     // Resetear inputs
     setProductoSeleccionado(null);
@@ -330,6 +347,7 @@ export function VerProveedores() {
       setCarrito([]);
       setProveedorSeleccionado(null);
       setProveedorBusqueda("");
+      setProveedorAutoSeleccionado(false);
       setObservaciones("");
       setEstadoPago("Pagado");
 
@@ -519,6 +537,8 @@ export function VerProveedores() {
                                   setProductoSeleccionado(p);
                                   setProductoBusqueda(p.nombre);
                                   setMostrarSugerenciasProd(false);
+                                  // Autoseleccionar proveedor al elegir un producto del dropdown
+                                  autoSeleccionarProveedor(p);
                                 }}
                                 className="w-full px-4 py-2 border-b border-slate-100 dark:border-slate-900 hover:bg-[#8DA78E]/10 dark:hover:bg-[#8DA78E]/20 text-left flex items-center justify-between text-xs cursor-pointer"
                               >
@@ -664,9 +684,17 @@ export function VerProveedores() {
 
                 {/* 1. Selección de Proveedor */}
                 <div className="relative text-left" ref={provDropdownRef}>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                    Seleccionar Proveedor
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
+                      Seleccionar Proveedor
+                    </label>
+                    {proveedorAutoSeleccionado && proveedorSeleccionado && (
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-[#8DA78E] dark:text-[#A3BEB0] bg-[#8DA78E]/10 dark:bg-[#8DA78E]/20 px-2 py-0.5 rounded-full">
+                        <Truck className="size-2.5" />
+                        Auto
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-1.5 items-center">
                     <div className="relative flex-1">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
@@ -676,11 +704,16 @@ export function VerProveedores() {
                         onChange={(e) => {
                           setProveedorBusqueda(e.target.value);
                           setMostrarSugerenciasProv(true);
+                          setProveedorAutoSeleccionado(false);
                           if (!e.target.value) setProveedorSeleccionado(null);
                         }}
                         onFocus={() => setMostrarSugerenciasProv(true)}
                         placeholder="Escribe nombre o NIT del proveedor..."
-                        className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+                        className={`w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors ${
+                          proveedorAutoSeleccionado && proveedorSeleccionado
+                            ? "border-[#8DA78E] dark:border-[#A3BEB0]/60"
+                            : "border-slate-200 dark:border-slate-800"
+                        }`}
                       />
                     </div>
                     <button
@@ -991,62 +1024,144 @@ export function VerProveedores() {
                   </button>
                 </div>
 
-                {/* Listado de Tarjetas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
-                  {proveedores
-                    .filter((p) => {
-                      const q = proveedorBusqueda.toLowerCase();
-                      return p.nombre.toLowerCase().includes(q) || (p.nit && p.nit.toLowerCase().includes(q));
-                    })
-                    .map((p) => (
-                      <div
-                        key={p.id}
-                        className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-2xl p-4 flex flex-col gap-3 shadow-xs relative hover:border-[#8DA78E] dark:hover:border-[#A3BEB0] transition-colors w-full max-w-sm"
-                      >
-                        <div>
-                          <h4 className="font-bold text-sm md:text-base text-slate-900 dark:text-white truncate pr-16">{p.nombre}</h4>
-                          <p className="text-[11px] md:text-xs text-slate-400 mt-0.5">NIT: {p.nit || "C/F"}</p>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5 text-xs md:text-sm text-slate-500 dark:text-slate-400">
-                          {p.telefono && (
-                            <p className="flex items-center gap-1.5">
-                              <Phone className="size-3.5 text-[#8DA78E]" /> {p.telefono}
-                            </p>
-                          )}
-                          {p.correo && (
-                            <p className="flex items-center gap-1.5 truncate">
-                              <Mail className="size-3.5 text-[#8DA78E]" /> {p.correo}
-                            </p>
-                          )}
-                          {p.descripcion && (
-                            <p className="mt-1.5 border-t border-slate-100 dark:border-zinc-800/80 pt-1.5 text-xs italic leading-normal text-slate-500 dark:text-slate-400 break-all whitespace-normal block w-full line-clamp-3">
-                              {p.descripcion}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Botones de acción */}
-                        <div className="flex gap-2 justify-end mt-auto pt-3 border-t border-slate-100 dark:border-zinc-800">
-                          <button
-                            onClick={() => {
-                              setProveedorAEditar(p);
-                              setIsEditarOpen(true);
-                            }}
-                            className="px-3 py-1.5 text-xs font-bold text-[#8DA78E] hover:bg-[#8DA78E]/10 rounded-lg cursor-pointer transition-colors uppercase border border-[#8DA78E]/30"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => handleEliminarProveedor(p.id, p.nombre)}
-                            className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg cursor-pointer transition-colors uppercase border border-red-200 dark:border-red-900/40"
-                          >
-                            Eliminar
-                          </button>
+                {/* Tabla de Proveedores (Desktop) */}
+                {(() => {
+                  const proveedoresFiltrados = proveedores.filter((p) => {
+                    const q = proveedorBusqueda.toLowerCase();
+                    return p.nombre.toLowerCase().includes(q) || (p.nit && p.nit.toLowerCase().includes(q));
+                  });
+                  return (
+                    <>
+                      {/* Desktop Table */}
+                      <div className="hidden md:block bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-3xl overflow-hidden shadow-xs">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-[#F5F5F1] dark:bg-[#525D53]/20 text-[#525D53] dark:text-[#A3BEB0] font-black uppercase tracking-wider border-b border-[#C1D1C5]/30">
+                                <th className="px-5 py-3.5">Nombre</th>
+                                <th className="px-5 py-3.5">NIT</th>
+                                <th className="px-5 py-3.5">Teléfono</th>
+                                <th className="px-5 py-3.5">Correo</th>
+                                <th className="px-5 py-3.5">Descripción</th>
+                                <th className="px-5 py-3.5 text-center">Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#C1D1C5]/15 dark:divide-zinc-800/40 text-slate-700 dark:text-slate-300">
+                              {proveedoresFiltrados.length === 0 ? (
+                                <tr>
+                                  <td colSpan={6} className="text-center py-14 text-slate-400 font-bold">
+                                    No se encontraron proveedores
+                                  </td>
+                                </tr>
+                              ) : (
+                                proveedoresFiltrados.map((p) => (
+                                  <tr
+                                    key={p.id}
+                                    className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 transition-colors"
+                                  >
+                                    <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
+                                      {p.nombre}
+                                    </td>
+                                    <td className="px-5 py-3.5 font-mono text-slate-500 dark:text-slate-400">
+                                      {p.nit || <span className="text-slate-300 dark:text-slate-600">C/F</span>}
+                                    </td>
+                                    <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400">
+                                      {p.telefono ? (
+                                        <span className="flex items-center gap-1.5">
+                                          <Phone className="size-3 text-[#8DA78E]" /> {p.telefono}
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-300 dark:text-slate-600">—</span>
+                                      )}
+                                    </td>
+                                    <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400">
+                                      {p.correo ? (
+                                        <span className="flex items-center gap-1.5">
+                                          <Mail className="size-3 text-[#8DA78E]" /> {p.correo}
+                                        </span>
+                                      ) : (
+                                        <span className="text-slate-300 dark:text-slate-600">—</span>
+                                      )}
+                                    </td>
+                                    <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 max-w-[200px]">
+                                      {p.descripcion ? (
+                                        <span className="line-clamp-1 italic">{p.descripcion}</span>
+                                      ) : (
+                                        <span className="text-slate-300 dark:text-slate-600">—</span>
+                                      )}
+                                    </td>
+                                    <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+                                      <div className="flex items-center justify-center gap-2">
+                                        <button
+                                          onClick={() => {
+                                            setProveedorAEditar(p);
+                                            setIsEditarOpen(true);
+                                          }}
+                                          className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
+                                        >
+                                          Editar
+                                        </button>
+                                        <button
+                                          onClick={() => handleEliminarProveedor(p.id, p.nombre)}
+                                          className="px-3 py-1.5 bg-slate-800 dark:bg-zinc-800 hover:bg-red-600 dark:hover:bg-red-700 text-white font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
+                                        >
+                                          Eliminar
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
-                    ))}
-                </div>
+
+                      {/* Mobile Cards */}
+                      <div className="md:hidden flex flex-col gap-3">
+                        {proveedoresFiltrados.length === 0 ? (
+                          <div className="py-10 text-center text-slate-400 font-bold text-sm bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl">
+                            No se encontraron proveedores
+                          </div>
+                        ) : (
+                          proveedoresFiltrados.map((p) => (
+                            <div
+                              key={p.id}
+                              className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-2xl p-4 flex flex-col gap-3 shadow-xs"
+                            >
+                              <div>
+                                <h4 className="font-bold text-sm text-slate-900 dark:text-white">{p.nombre}</h4>
+                                <p className="text-[11px] text-slate-400 mt-0.5">NIT: {p.nit || "C/F"}</p>
+                              </div>
+                              <div className="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                {p.telefono && (
+                                  <p className="flex items-center gap-1.5"><Phone className="size-3.5 text-[#8DA78E]" /> {p.telefono}</p>
+                                )}
+                                {p.correo && (
+                                  <p className="flex items-center gap-1.5 truncate"><Mail className="size-3.5 text-[#8DA78E]" /> {p.correo}</p>
+                                )}
+                              </div>
+                              <div className="flex gap-2 justify-end pt-3 border-t border-slate-100 dark:border-zinc-800">
+                                <button
+                                  onClick={() => { setProveedorAEditar(p); setIsEditarOpen(true); }}
+                                  className="px-3 py-1.5 text-xs font-bold text-[#8DA78E] hover:bg-[#8DA78E]/10 rounded-lg cursor-pointer transition-colors uppercase border border-[#8DA78E]/30"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => handleEliminarProveedor(p.id, p.nombre)}
+                                  className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg cursor-pointer transition-colors uppercase border border-red-200 dark:border-red-900/40"
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}

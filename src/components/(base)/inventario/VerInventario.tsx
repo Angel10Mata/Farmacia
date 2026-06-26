@@ -53,10 +53,12 @@ function ProductoCard({
   producto,
   onClick,
   onEdit,
+  onDelete,
 }: {
   producto: Producto;
   onClick: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }) {
   const isLowStock = producto.stock_actual <= producto.stock_minimo;
   return (
@@ -114,7 +116,16 @@ function ProductoCard({
       </div>
 
       {/* Mobile Actions: only visible on mobile (md:hidden) */}
-      <div className="flex md:hidden items-center justify-end mt-3 pt-2 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10">
+      <div className="flex md:hidden items-center justify-end gap-2 mt-3 pt-2 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[11px] font-bold transition-all shadow-xs"
+        >
+          Eliminar
+        </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -339,6 +350,52 @@ export function VerInventario() {
     setIsCreateOpen(true);
   };
 
+  const handleEliminarProducto = async (producto: Producto) => {
+    const confirm = await Swal.fire({
+      title: "¿Eliminar producto?",
+      html: `¿Estás seguro de que deseas eliminar <strong>${producto.nombre}</strong>? Esta acción no se puede deshacer.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      ...getSwalThemeOpts(),
+      confirmButtonColor: "#ef4444"
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("inv_productos")
+        .delete()
+        .eq("id", producto.id);
+
+      if (error) throw new Error(error.message);
+
+      if (productoSeleccionado?.id === producto.id) setProductoSeleccionado(null);
+
+      Swal.fire({
+        title: "Eliminado",
+        text: `${producto.nombre} fue eliminado del inventario.`,
+        icon: "success",
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        ...getSwalThemeOpts()
+      });
+
+      loadDbProductos();
+    } catch (err: any) {
+      Swal.fire({
+        title: "Error",
+        text: "No se pudo eliminar el producto: " + err.message,
+        icon: "error",
+        ...getSwalThemeOpts(),
+        confirmButtonColor: "#ef4444"
+      });
+    }
+  };
+
 
 
   // Exportar lista a PDF
@@ -518,6 +575,7 @@ export function VerInventario() {
                     setProductoParaEditar(p);
                     setIsEditOpen(true);
                   }}
+                  onDelete={() => handleEliminarProducto(p)}
                 />
               ))
             )}
@@ -613,6 +671,12 @@ export function VerInventario() {
                                 className="px-3 py-1.5 bg-slate-800 dark:bg-zinc-800 hover:bg-slate-700 dark:hover:bg-zinc-700 text-white font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
                               >
                                 Editar
+                              </button>
+                              <button
+                                onClick={() => handleEliminarProducto(p)}
+                                className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
+                              >
+                                Eliminar
                               </button>
                             </div>
                           </td>
