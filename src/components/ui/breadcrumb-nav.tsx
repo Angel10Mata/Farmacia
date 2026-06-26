@@ -6,7 +6,7 @@ import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 const SEGMENT_LABELS: Record<string, string> = {
-  kore: "Kore",
+  kore: "Farmacia Salud",
   proyectos: "Proyectos",
   proyecto: "Proyectos",
   resumen: "Dashboard",

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
@@ -10,29 +9,6 @@ interface AnimacionLogoKoreProps {
 }
 
 export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKoreProps) {
-  const [lang, setLang] = useState<"en" | "es">("en");
-  const [displayedText, setDisplayedText] = useState("");
-
-  const targetText = lang === "en"
-    ? "Business Management Suite"
-    : "Sistema de Gestión empresarial";
-
-  useEffect(() => {
-    if (!isOpen) {
-      setDisplayedText("");
-      return;
-    }
-    let index = 0;
-    setDisplayedText("");
-    const interval = setInterval(() => {
-      const char = targetText.charAt(index);
-      setDisplayedText((prev) => prev + char);
-      index++;
-      if (index >= targetText.length) clearInterval(interval);
-    }, 45);
-    return () => clearInterval(interval);
-  }, [targetText, isOpen]);
-
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -57,7 +33,7 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
             </svg>
           </motion.button>
 
-          {/* Content — vertical layout matching the dashboard logo */}
+          {/* Content — vertical layout with Farmacia Salud branding */}
           <motion.div
             initial={{ scale: 1.15, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -66,13 +42,9 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
             className="w-full h-full flex items-center justify-center pointer-events-none"
           >
             <div
-              onClick={(e) => {
-                e.stopPropagation();
-                setLang((prev) => (prev === "en" ? "es" : "en"));
-              }}
-              className="pointer-events-auto flex flex-col items-center justify-center gap-0 cursor-pointer select-none"
+              className="pointer-events-auto flex flex-col items-center justify-center gap-4 select-none"
             >
-              {/* KORE logo — big */}
+              {/* Farmacia Salud logo */}
               <motion.div
                 initial={{ opacity: 0, y: 30, scale: 0.88 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -80,58 +52,33 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
                 className="flex-shrink-0"
               >
                 <Image
-                  src="/kore/kore.png"
-                  alt="KoreAPP"
+                  src="/kore/farmacia-salud-logo.png"
+                  alt="Farmacia Salud"
                   width={320}
                   height={320}
-                  className="w-[200px] sm:w-[260px] lg:w-[320px] h-auto object-contain rounded-3xl"
+                  className="w-[160px] sm:w-[220px] lg:w-[280px] h-[160px] sm:h-[220px] lg:h-[280px] object-cover rounded-full"
                   priority
                 />
               </motion.div>
 
-              {/* Text block — below logo */}
-              <div className="flex flex-col items-center mt-5 gap-1 w-full px-4">
-                {/* BMS — sweeps in */}
-                <motion.span
-                  initial={{ opacity: 0, x: -40, clipPath: "inset(0 100% 0 0)" }}
-                  animate={{ opacity: 1, x: 0, clipPath: "inset(0 0% 0 0)" }}
-                  transition={{ duration: 0.7, delay: 0.3, ease: [0.33, 1, 0.68, 1] as [number, number, number, number] }}
-                  translate="no"
-                  className="notranslate text-base sm:text-lg lg:text-xl font-black uppercase tracking-[0.45em] text-celeste-kore"
-                >
-                  BMS
-                </motion.span>
-
-                {/* Divider line — grows from left */}
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.9, delay: 0.5, ease: "easeInOut" }}
-                  className="w-full max-w-[280px] h-px bg-white/30 my-2"
-                  style={{ originX: 0 }}
-                />
-
-                {/* Business Management Suite — typewriter effect */}
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.7 }}
-                  className="text-[11px] sm:text-xs lg:text-sm font-bold uppercase tracking-[0.3em] text-white/50 h-5 flex items-center gap-0.5"
-                >
-                  {displayedText}
-                  <span className="inline-block w-[1.5px] h-3 bg-celeste-kore animate-pulse" />
-                </motion.div>
-              </div>
-
-              {/* Lang toggle hint */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.2 }}
-                className="mt-6 text-[9px] uppercase tracking-[0.3em] text-white/20 dark:text-white/20"
+              {/* Brand text */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+                className="flex flex-col items-center leading-none gap-0"
               >
-                Toca para cambiar idioma
-              </motion.p>
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-[#1a6aa5] dark:text-[#4da8da]">Farmacia</span>
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-[#4caf50] dark:text-[#66bb6a]">Salud</span>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
+                  className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 mt-2"
+                >
+                  Tu Bienestar, Nuestro Compromiso
+                </motion.span>
+              </motion.div>
             </div>
           </motion.div>
 

@@ -150,16 +150,16 @@ const MODULES: ModuleConfig[] = [
     desc: "Punto de venta, control de caja diaria, reportes de ingresos y facturación.",
     href: "/kore/ventas",
     allowedRoles: ["super", "admin", "ventas"],
-    gradientFrom: "#8B5CF6",
-    gradientTo: "#A78BFA",
-    accent: "text-violet-500 dark:text-violet-400",
-    accentHover: "group-hover:text-violet-600 dark:group-hover:text-violet-300",
-    activeBorder: "ring-violet-500/40",
+    gradientFrom: "#8DA78E",
+    gradientTo: "#A3BEB0",
+    accent: "text-[#8DA78E] dark:text-[#A3BEB0]",
+    accentHover: "group-hover:text-[#525D53] dark:group-hover:text-white",
+    activeBorder: "ring-[#8DA78E]/40",
     bento: "col-span-1 row-span-2 md:col-span-2 md:row-span-2",
     size: "hero" as const,
     tag: "Facturación · Caja",
-    cardBg: "bg-[#f5f3ff] dark:bg-[#1c1936] hover:bg-[#ede9fe] dark:hover:bg-[#25214d]",
-    cardBorder: "border-violet-200 dark:border-violet-800/40",
+    cardBg: "bg-[#f4f7f5] dark:bg-[#151f19] hover:bg-[#e9f0eb] dark:hover:bg-[#1b2a21]",
+    cardBorder: "border-[#8DA78E]/20 dark:border-[#A3BEB0]/20",
   },
   {
     id: "clientes",
@@ -255,15 +255,12 @@ const MODULES: ModuleConfig[] = [
 
 const DashboardHeader = () => (
   <div className="flex items-center gap-4 md:gap-6 mb-8 w-full max-w-5xl mx-auto px-1">
-    <div className="shrink-0 flex items-center justify-center size-14 md:size-16 bg-white dark:bg-zinc-800/90 border border-slate-200/50 dark:border-zinc-700/50 shadow-md rounded-2xl">
-      <Settings className="size-8 md:size-9 text-violet-600 dark:text-violet-400" />
-    </div>
     <div className="flex-1 min-w-0 flex flex-col">
-      <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight text-slate-900 dark:text-white leading-none">
+      <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight text-zinc-800 dark:text-white leading-none">
         Administración
       </h1>
       <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1.5 leading-tight">
-        Gestione todos los módulos del sistema KORE BMS desde un solo lugar.
+        Gestione todos los módulos de Farmacia Salud desde un solo lugar.
       </p>
     </div>
   </div>
@@ -303,15 +300,7 @@ export function Dashboard() {
 
   const handleCardClick = (id: string, href: string) => {
     setExpandedPerfil(false);
-    if (isMobile) {
-      if (activeId === id) {
-        router.push(href);
-      } else {
-        setActiveId(id);
-      }
-    } else {
-      router.push(href);
-    }
+    router.push(href);
   };
 
   // Agrupar módulos por área
@@ -380,9 +369,9 @@ export function Dashboard() {
                       }}
                       className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all cursor-pointer text-left h-fit"
                     >
-                      <UserIcon className="size-4 shrink-0 text-slate-900 dark:text-white" />
+                      <UserIcon className="size-4 shrink-0 text-zinc-800 dark:text-white" />
                       <div>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">
+                        <p className="text-xs font-bold text-zinc-800 dark:text-white leading-none">
                           Mi Perfil
                         </p>
                         <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 leading-none">
@@ -397,9 +386,9 @@ export function Dashboard() {
                       }}
                       className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all cursor-pointer text-left h-fit"
                     >
-                      <Fingerprint className="size-4 text-slate-900 dark:text-white" />
+                      <Fingerprint className="size-4 text-zinc-800 dark:text-white" />
                       <div>
-                        <p className="text-xs font-bold text-slate-900 dark:text-white leading-none">
+                        <p className="text-xs font-bold text-zinc-800 dark:text-white leading-none">
                           Ingreso Seguro
                         </p>
                         <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 leading-none">
@@ -419,7 +408,7 @@ export function Dashboard() {
                     }}
                     className="relative z-10 w-full h-9 flex justify-center items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border-t border-slate-200 dark:border-slate-800"
                   >
-                    <span className="flex items-center gap-2 text-slate-900 dark:text-white font-black uppercase text-[10px] tracking-[0.25em]">
+                    <span className="flex items-center gap-2 text-zinc-800 dark:text-white font-black uppercase text-[10px] tracking-[0.25em]">
                       ← Volver
                     </span>
                   </button>
@@ -442,19 +431,11 @@ export function Dashboard() {
 
                     {/* Text details */}
                     <div className="flex-1 min-w-0 flex flex-col justify-start">
-                      {/* Tag */}
-                      {mod.tag && (
-                        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 mb-2 transition-colors duration-500">
-                          <span className="size-1.5 rounded-full bg-primary" />
-                          {mod.tag}
-                        </div>
-                      )}
-                      
                       {/* Title */}
-                      <h3 className="font-black tracking-tighter uppercase leading-none text-slate-900 dark:text-white transition-colors duration-500" style={{ fontSize: mod.size === "hero" ? "1.875rem" : mod.size === "tall" ? "1.5rem" : mod.size === "wide" ? "1.25rem" : "1.125rem" }}>
+                      <h3 className="font-black tracking-tighter uppercase leading-none text-zinc-800 dark:text-white transition-colors duration-500" style={{ fontSize: mod.size === "hero" ? "1.875rem" : mod.size === "tall" ? "1.5rem" : mod.size === "wide" ? "1.25rem" : "1.125rem" }}>
                         {mod.title}
                         <br />
-                        <span className={cn(mod.accent, mod.accentHover, "transition-colors duration-500")}>
+                        <span className="text-zinc-800 dark:text-white transition-colors duration-500">
                           {mod.subtitle}
                         </span>
                       </h3>
@@ -473,7 +454,7 @@ export function Dashboard() {
                       mod.accent,
                       mod.accentHover
                     )}>
-                      {isActive ? "Toca de nuevo para entrar" : "Entrar al módulo"}
+                      Entrar al módulo
                     </span>
                     <ArrowUpRight className={cn("size-4 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5", mod.accent, mod.accentHover)} />
                   </div>

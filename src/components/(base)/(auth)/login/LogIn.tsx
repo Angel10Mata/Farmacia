@@ -128,7 +128,7 @@ useEffect(() => {
                 <AuroraText>Bienvenido de nuevo</AuroraText>
               </h3>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
-                KORE AUTHENTICATION SYSTEM
+                FARMACIA SALUD
               </p>
             </div>
           </div>

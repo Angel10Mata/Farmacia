@@ -86,41 +86,14 @@ export default function LogoKore({
         {/* Logo image — big */}
         <motion.div variants={logoVariants} className="flex-shrink-0">
           <Image
-            src="/kore/kore.png"
-            alt="KoreAPP"
+            src="/kore/farmacia-salud-logo.png"
+            alt="Farmacia Salud"
             width={220}
             height={220}
-            className="w-[160px] sm:w-[200px] lg:w-[220px] h-auto object-contain rounded-3xl"
+            className="w-[160px] sm:w-[200px] lg:w-[220px] h-[160px] sm:h-[200px] lg:h-[220px] object-cover rounded-full"
             priority
           />
         </motion.div>
-
-        {/* Text block — below logo */}
-        <div className="flex flex-col items-center mt-4 gap-1 w-full px-2">
-          {/* BMS — sweeps in left to right */}
-          <motion.span
-            variants={sweepVariants}
-            translate="no"
-            className="notranslate text-sm sm:text-base font-black uppercase tracking-[0.35em] text-celeste-kore"
-          >
-            BMS
-          </motion.span>
-
-          {/* Divider line — grows from left */}
-          <motion.div
-            variants={lineVariants}
-            className="w-full max-w-[200px] h-px bg-white/30 my-1"
-            style={{ originX: 0 }}
-          />
-
-          {/* Business Management Suite */}
-          <motion.span
-            variants={suiteVariants}
-            className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.3em] text-white/50"
-          >
-            Business Management Suite
-          </motion.span>
-        </div>
       </motion.div>
 
       {mounted &&

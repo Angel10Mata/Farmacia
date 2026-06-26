@@ -86,11 +86,11 @@ export default function LogoKoreLogin({
         <div className="flex flex-row items-center justify-center gap-4 w-full">
           <motion.div variants={logoVariants} className="flex-shrink-0">
             <Image
-              src="/kore/kore.png"
-              alt="KoreAPP"
+              src="/kore/farmacia-salud-logo.png"
+              alt="Farmacia Salud"
               width={100}
               height={100}
-              className="w-[85px] h-auto object-contain rounded-xl"
+              className="w-[85px] h-[85px] object-cover rounded-full"
               priority
             />
           </motion.div>

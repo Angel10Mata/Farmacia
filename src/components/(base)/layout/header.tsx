@@ -54,22 +54,22 @@ export default function Header() {
                 className="flex flex-row items-center shrink-0 group gap-1 md:gap-1.5 cursor-pointer"
               >
                 <motion.img 
-                  src="/kore/kore.png"
-                  alt="KORE"
+                  src="/kore/farmacia-salud-logo.png"
+                  alt="Farmacia Salud"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="h-10 md:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105 origin-left"
+                  className="h-10 md:h-12 w-10 md:w-12 object-cover transition-transform duration-300 group-hover:scale-105 origin-left rounded-full"
                 />
-                <motion.div 
-                  initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
-                  animate={{ opacity: 1, clipPath: "inset(0 0 0 0)" }}
-                  transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 1, 0.5, 1] }}
-                  translate="no"
-                  className="notranslate text-xs md:text-sm font-black uppercase tracking-widest leading-[1.15] md:leading-[1.15] text-celeste-kore border-l border-border/60 pl-2 md:pl-3 transition-transform duration-300 group-hover:scale-[1.02] origin-left group-hover:text-white dark:group-hover:text-[#FFFDD0]"
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
+                  className="hidden sm:flex flex-col leading-none"
                 >
-                  BMS
-                </motion.div>
+                  <span className="text-[15px] md:text-[17px] font-black uppercase tracking-tight text-[#1a6aa5] dark:text-[#4da8da]">Farmacia</span>
+                  <span className="text-[15px] md:text-[17px] font-black uppercase tracking-tight text-[#4caf50] dark:text-[#66bb6a]">Salud</span>
+                </motion.span>
               </Link>
             </div>
             {user && (

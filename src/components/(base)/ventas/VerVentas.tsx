@@ -403,7 +403,7 @@ export function VerVentas() {
   const [isCrearClienteOpen, setIsCrearClienteOpen] = useState(false);
   
   // Cobro
-  const [tipoVenta, setTipoVenta] = useState<"Efectivo" | "Tarjeta" | "Crédito">("Efectivo");
+  const [tipoVenta, setTipoVenta] = useState<"Contado" | "Crédito">("Contado");
   const [mostrarMetodoPagoDropdown, setMostrarMetodoPagoDropdown] = useState(false);
   const [observaciones, setObservaciones] = useState("");
   const [isProcesandoVenta, setIsProcesandoVenta] = useState(false);
@@ -669,8 +669,8 @@ export function VerVentas() {
   const handleFinalizarVenta = async () => {
     if (carrito.length === 0) {
       Swal.fire({
-        title: "Carrito vacío",
-        text: "Por favor agrega productos al carrito antes de cobrar.",
+        title: "Venta vacía",
+        text: "Por favor agrega productos a la venta antes de cobrar.",
         icon: "warning",
         ...getSwalThemeOpts()
       });
@@ -841,7 +841,7 @@ export function VerVentas() {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       doc.setTextColor(82, 93, 83); // Color Olivo
-      doc.text("KORE BMS - FARMACIA", 40, 10, { align: "center" });
+      doc.text("FARMACIA SALUD", 40, 10, { align: "center" });
       
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
@@ -920,7 +920,7 @@ export function VerVentas() {
       doc.setTextColor(100, 116, 139);
       doc.text("¡Gracias por su compra!", 40, finalY + 20, { align: "center" });
 
-      doc.save(`Recibo_Kore_${codigoRecibo}.pdf`);
+      doc.save(`Recibo_FarmaciaSalud_${codigoRecibo}.pdf`);
     } catch (error) {
       console.error("Error al exportar PDF:", error);
     }
@@ -957,12 +957,12 @@ export function VerVentas() {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(22);
       doc.setTextColor(82, 93, 83);
-      doc.text("KORE BMS - FARMACIA", 15, 30);
+      doc.text("FARMACIA SALUD", 15, 30);
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(100, 116, 139);
-      doc.text("Guatemala | Tel: +502 1234-5678 | info@korebms.com", 15, 36);
+      doc.text("Guatemala | Tu Bienestar, Nuestro Compromiso", 15, 36);
 
       // Bloque del Recibo
       const codigoRecibo = obtenerCodigoRecibo(venta.id);
@@ -1120,7 +1120,7 @@ export function VerVentas() {
               <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-4 text-slate-800 dark:text-slate-200">
                 <div className="border border-dashed border-[#C1D1C5]/50 dark:border-zinc-800 rounded-2xl p-4 bg-[#F5F5F1]/50 dark:bg-zinc-950/40 flex flex-col gap-3 font-mono text-xs leading-normal">
                   <div className="text-center font-bold text-sm tracking-tight text-slate-900 dark:text-white">
-                    KORE BMS - FARMACIA
+                    FARMACIA SALUD
                   </div>
                   <div className="text-center text-[10px] text-slate-500 -mt-2">
                     Guatemala
@@ -1265,23 +1265,143 @@ export function VerVentas() {
 
       {/* Main Content Areas */}
       {activeTab === "pos" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
           {/* POS Panel (Llenado de datos) */}
-          <div className="lg:col-span-6 flex flex-col gap-4">
+          <div className="w-full lg:w-[30%] shrink-0 flex flex-col gap-4">
             <div className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 flex flex-col gap-5">
               <h2 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-300 border-b border-[#C1D1C5]/30 pb-2">
                 Punto de Venta
               </h2>
 
-              {/* 1. Producto y Cantidad */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+              {/* 1. Cliente */}
+              <div className="w-full relative text-left" ref={cliDropdownRef}>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                  Seleccionar Cliente
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={clienteBusqueda}
+                    onChange={(e) => {
+                      setClienteBusqueda(e.target.value);
+                      setMostrarSugerenciasCli(true);
+                      if (!e.target.value) setClienteSeleccionado(null);
+                    }}
+                    onFocus={() => {
+                      setMostrarSugerenciasCli(true);
+                      if (clienteBusqueda === "Consumidor Final") {
+                        setClienteBusqueda("");
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => {
+                        if (!clienteSeleccionado && !clienteBusqueda) {
+                          setClienteBusqueda("Consumidor Final");
+                        }
+                      }, 200);
+                    }}
+                    placeholder="Nombre o NIT del cliente..."
+                    className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-9"
+                  />
+                </div>
+
+                {/* Dropdown sugerencias */}
+                <AnimatePresence>
+                  {mostrarSugerenciasCli && sugerenciasClientes.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 text-left"
+                    >
+                      {sugerenciasClientes.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setClienteSeleccionado(c);
+                            setClienteBusqueda(c.nombre);
+                            setMostrarSugerenciasCli(false);
+                          }}
+                          className="w-full px-4 py-2 border-b border-slate-100 dark:border-slate-900 hover:bg-[#8DA78E]/10 dark:hover:bg-[#8DA78E]/20 text-left flex items-center justify-between text-xs cursor-pointer"
+                        >
+                          <div>
+                            <p className="font-bold text-slate-950 dark:text-white">{c.nombre}</p>
+                            <p className="text-[10px] text-slate-500">Tel: {c.telefono || "Sin Teléfono"}</p>
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
+                            NIT: {c.nit || "C/F"}
+                          </span>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* 2. Método de Pago */}
+              <div className="w-full relative text-left" ref={payDropdownRef}>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                  Método de Pago
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setMostrarMetodoPagoDropdown(!mostrarMetodoPagoDropdown)}
+                  className="w-full flex items-center justify-center px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-all cursor-pointer h-[38px] hover:border-[#8DA78E] relative"
+                >
+                  <span className="font-bold">
+                    {tipoVenta === "Contado"
+                      ? "💵 Contado"
+                      : "⏳ Crédito"}
+                  </span>
+                  <ChevronDown className="absolute right-3 size-4 text-slate-400" />
+                </button>
+
+                <AnimatePresence>
+                  {mostrarMetodoPagoDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 right-0 mt-1 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5"
+                    >
+                      {[
+                        { id: "Contado", label: "💵 Contado" },
+                        { id: "Crédito", label: "⏳ Crédito" }
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setTipoVenta(opt.id as any);
+                            setMostrarMetodoPagoDropdown(false);
+                          }}
+                          className={`w-full px-3 py-2 rounded-lg text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
+                            tipoVenta === opt.id
+                              ? "bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0]"
+                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/60"
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          {tipoVenta === opt.id && <Check className="size-3.5" />}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* 3. Producto y Cantidad */}
+              <div className="flex flex-col gap-4 w-full">
                 {/* Autocomplete Producto */}
-                <div className="md:col-span-9 relative" ref={prodDropdownRef}>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 text-left">
+                <div className="w-full relative text-left" ref={prodDropdownRef}>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                     Buscar Producto / Medicamento
                   </label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4.5 text-slate-400" />
                     <input
                       type="text"
                       value={productoBusqueda}
@@ -1290,8 +1410,8 @@ export function VerVentas() {
                         setMostrarSugerenciasProd(true);
                       }}
                       onFocus={() => setMostrarSugerenciasProd(true)}
-                      placeholder="Escribe el nombre o código de barras del producto..."
-                      className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+                      placeholder="Nombre o código de barras..."
+                      className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-10"
                     />
                   </div>
 
@@ -1338,23 +1458,20 @@ export function VerVentas() {
                     )}
                   </AnimatePresence>
                 </div>
-              </div>
 
-              {/* 2. Cantidad + Cliente en una línea */}
-              <div className="flex items-end gap-3">
                 {/* Cantidad Selector + Agregar */}
-                <div className="flex items-end gap-1.5 shrink-0">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 text-left">
+                <div className="flex items-end gap-3 w-full">
+                  <div className="w-[40%]">
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 text-left truncate">
                       Cantidad
                     </label>
-                    <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-zinc-900 px-1 h-9">
+                    <div className="flex items-center justify-between gap-0.5 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-zinc-900 px-0.5 h-10 w-full">
                       <button
                         type="button"
                         onClick={() => setCantSeleccionada(Math.max(1, (Number(cantSeleccionada) || 0) - 1))}
-                        className="size-7 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-400 rounded-md cursor-pointer"
+                        className="size-8 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-400 rounded-md cursor-pointer shrink-0"
                       >
-                        <Minus className="size-3" />
+                        <Minus className="size-3.5" />
                       </button>
                       <input
                         type="number"
@@ -1369,14 +1486,14 @@ export function VerVentas() {
                             setCantSeleccionada(isNaN(parsed) ? 1 : Math.max(1, parsed));
                           }
                         }}
-                        className="w-12 text-center text-sm font-bold bg-transparent border-0 focus:outline-none focus:ring-0 text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full text-center text-sm font-bold bg-transparent border-0 focus:outline-none focus:ring-0 text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none px-0"
                       />
                       <button
                         type="button"
                         onClick={() => setCantSeleccionada((Number(cantSeleccionada) || 0) + 1)}
-                        className="size-7 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-400 rounded-md cursor-pointer"
+                        className="size-8 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-400 rounded-md cursor-pointer shrink-0"
                       >
-                        <Plus className="size-3" />
+                        <Plus className="size-3.5" />
                       </button>
                     </div>
                   </div>
@@ -1384,168 +1501,29 @@ export function VerVentas() {
                     type="button"
                     onClick={handleAgregarAlCarrito}
                     disabled={!productoSeleccionado}
-                    className="size-9 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] font-bold rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs shrink-0"
+                    className="w-[60%] h-10 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs shrink-0"
                   >
-                    <Plus className="size-5" />
+                    Añadir
                   </button>
-                </div>
-
-                {/* Cliente */}
-                <div className="flex-1 relative text-left" ref={cliDropdownRef}>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                    Seleccionar Cliente
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                      type="text"
-                      value={clienteBusqueda}
-                      onChange={(e) => {
-                        setClienteBusqueda(e.target.value);
-                        setMostrarSugerenciasCli(true);
-                        if (!e.target.value) setClienteSeleccionado(null);
-                      }}
-                      onFocus={() => {
-                        setMostrarSugerenciasCli(true);
-                        if (clienteBusqueda === "Consumidor Final") {
-                          setClienteBusqueda("");
-                        }
-                      }}
-                      onBlur={() => {
-                        setTimeout(() => {
-                          if (!clienteSeleccionado && !clienteBusqueda) {
-                            setClienteBusqueda("Consumidor Final");
-                          }
-                        }, 200);
-                      }}
-                      placeholder="Nombre o NIT del cliente..."
-                      className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-9"
-                    />
-                  </div>
-
-                  {/* Dropdown sugerencias */}
-                  <AnimatePresence>
-                    {mostrarSugerenciasCli && sugerenciasClientes.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 text-left"
-                      >
-                        {sugerenciasClientes.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => {
-                              setClienteSeleccionado(c);
-                              setClienteBusqueda(c.nombre);
-                              setMostrarSugerenciasCli(false);
-                            }}
-                            className="w-full px-4 py-2 border-b border-slate-100 dark:border-slate-900 hover:bg-[#8DA78E]/10 dark:hover:bg-[#8DA78E]/20 text-left flex items-center justify-between text-xs cursor-pointer"
-                          >
-                            <div>
-                              <p className="font-bold text-slate-950 dark:text-white">{c.nombre}</p>
-                              <p className="text-[10px] text-slate-500">Tel: {c.telefono || "Sin Teléfono"}</p>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
-                              NIT: {c.nit || "C/F"}
-                            </span>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* 3. Forma de Pago y Observaciones */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
-                {/* Forma de pago */}
-                <div className="md:col-span-1 relative text-left" ref={payDropdownRef}>
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                    Método de Pago
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setMostrarMetodoPagoDropdown(!mostrarMetodoPagoDropdown)}
-                    className="w-full flex items-center justify-center px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-all cursor-pointer h-[38px] hover:border-[#8DA78E] relative"
-                  >
-                    <span className="font-bold">
-                      {tipoVenta === "Efectivo"
-                        ? "💵 Efectivo"
-                        : tipoVenta === "Tarjeta"
-                        ? "💳 Tarjeta"
-                        : "⏳ Crédito"}
-                    </span>
-                    <ChevronDown className="absolute right-3 size-4 text-slate-400" />
-                  </button>
-
-                  <AnimatePresence>
-                    {mostrarMetodoPagoDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute left-0 right-0 mt-1 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5"
-                      >
-                        {[
-                          { id: "Efectivo", label: "💵 Efectivo" },
-                          { id: "Tarjeta", label: "💳 Tarjeta" },
-                          { id: "Crédito", label: "⏳ Crédito" }
-                        ].map((opt) => (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => {
-                              setTipoVenta(opt.id as any);
-                              setMostrarMetodoPagoDropdown(false);
-                            }}
-                            className={`w-full px-3 py-2 rounded-lg text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
-                              tipoVenta === opt.id
-                                ? "bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0]"
-                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/60"
-                            }`}
-                          >
-                            <span>{opt.label}</span>
-                            {tipoVenta === opt.id && <Check className="size-3.5" />}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Observaciones */}
-                <div className="md:col-span-2 flex flex-col">
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                    Observaciones / Comentarios
-                  </label>
-                  <textarea
-                    value={observaciones}
-                    onChange={(e) => setObservaciones(e.target.value)}
-                    placeholder="Notas o especificaciones adicionales de esta venta..."
-                    className="w-full flex-1 px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-full min-h-[94px] resize-none"
-                  />
                 </div>
               </div>
             </div>
           </div>
 
           {/* Carrito de Compras */}
-          <div className="lg:col-span-6 flex flex-col gap-4">
-            <div className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-3xl p-5 shadow-xs flex flex-col gap-4 h-full min-h-[460px]">
+          <div className="w-full lg:w-[70%] flex flex-col gap-4 font-mono">
+            <div className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-3xl p-5 shadow-xs flex flex-col gap-4 h-full min-h-[750px]">
               <div className="flex items-center justify-between border-b border-[#C1D1C5]/30 pb-2">
                 <h2 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <ShoppingCart className="size-4 text-[#8DA78E]" /> Carrito
+                  <ShoppingCart className="size-4 text-[#8DA78E]" /> Venta
                 </h2>
                 <span className="bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0] text-xs font-bold px-2 py-0.5 rounded-full">
-                  {carrito.length} Ítem(s)
+                  {carrito.length} Producto(s)
                 </span>
               </div>
 
               {/* Items List */}
-              <div className="flex-1 overflow-y-auto max-h-[280px] pr-1 space-y-2.5">
+              <div className="flex-1 overflow-y-auto max-h-[500px] pr-1 space-y-2.5">
                 <AnimatePresence initial={false}>
                   {carrito.length === 0 ? (
                     <motion.div
@@ -1554,8 +1532,8 @@ export function VerVentas() {
                       className="h-full flex flex-col items-center justify-center py-20 text-slate-400"
                     >
                       <ShoppingCart className="size-10 text-slate-300 dark:text-slate-700 mb-2" />
-                      <p className="text-xs font-bold">Carrito vacío</p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 max-w-[150px] leading-normal mt-1">
+                      <p className="text-xs font-bold">Venta vacía</p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 max-w-[150px] leading-normal mt-1 text-center">
                         Busca y agrega productos desde el panel izquierdo.
                       </p>
                     </motion.div>
@@ -1566,54 +1544,66 @@ export function VerVentas() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, x: 20 }}
-                        className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/20 dark:border-zinc-800 rounded-xl p-3 flex flex-col gap-2 text-left"
+                        className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/20 dark:border-zinc-800 rounded-xl p-3 flex items-center justify-between gap-3 text-left"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
-                              {item.producto.nombre}
-                            </h4>
-                            <p className="text-[10px] text-slate-500">
-                              Unitario: Q{item.precio_aplicado.toFixed(2)}
-                            </p>
-                          </div>
+                        {/* Name and Unit Price */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate" title={item.producto.nombre}>
+                            {item.producto.nombre}
+                          </h4>
+                          <p className="text-[10px] text-slate-500">
+                            Unitario: Q{item.precio_aplicado.toFixed(2)}
+                          </p>
+                        </div>
+
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-800 rounded-md bg-white dark:bg-zinc-900 px-1 py-0.5 shrink-0">
                           <button
-                            onClick={() => handleEliminarDelCarrito(idx)}
-                            className="text-slate-400 hover:text-red-500 transition-colors cursor-pointer p-0.5"
+                            onClick={() => handleAjustarCantidad(idx, -1)}
+                            className="size-5 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-500 rounded cursor-pointer"
                           >
-                            <Trash2 className="size-3.5" />
+                            <Minus className="size-2.5" />
+                          </button>
+                          <span className="w-6 text-center text-[11px] font-bold text-slate-900 dark:text-white">
+                            {item.cantidad}
+                          </span>
+                          <button
+                            onClick={() => handleAjustarCantidad(idx, 1)}
+                            className="size-5 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-500 rounded cursor-pointer"
+                          >
+                            <Plus className="size-2.5" />
                           </button>
                         </div>
 
-                        <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-[#C1D1C5]/10 dark:border-zinc-800/40">
-                          {/* Controles cantidad */}
-                          <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-800 rounded-md bg-white dark:bg-zinc-900 px-1 py-0.5">
-                            <button
-                              onClick={() => handleAjustarCantidad(idx, -1)}
-                              className="size-5 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 rounded cursor-pointer"
-                            >
-                              <Minus className="size-2.5" />
-                            </button>
-                            <span className="w-6 text-center text-[11px] font-bold text-slate-900 dark:text-white">
-                              {item.cantidad}
-                            </span>
-                            <button
-                              onClick={() => handleAjustarCantidad(idx, 1)}
-                              className="size-5 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-500 rounded cursor-pointer"
-                            >
-                              <Plus className="size-2.5" />
-                            </button>
-                          </div>
-                          
-                          {/* Subtotal */}
-                          <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">
-                            Q{item.subtotal.toFixed(2)}
-                          </span>
-                        </div>
+                        {/* Subtotal */}
+                        <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0] min-w-[75px] text-right shrink-0">
+                          Q{item.subtotal.toFixed(2)}
+                        </span>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => handleEliminarDelCarrito(idx)}
+                          className="text-slate-400 hover:text-red-500 transition-colors cursor-pointer p-1 shrink-0"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
                       </motion.div>
                     ))
                   )}
                 </AnimatePresence>
+              </div>
+
+              {/* Observaciones */}
+              <div className="flex flex-col gap-1 text-left mt-2 border-t border-[#C1D1C5]/30 pt-3">
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                  Observaciones / Comentarios
+                </label>
+                <textarea
+                  value={observaciones}
+                  onChange={(e) => setObservaciones(e.target.value)}
+                  placeholder="Notas o especificaciones adicionales de esta venta..."
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-20 resize-none"
+                />
               </div>
 
               {/* Totales */}
@@ -1625,23 +1615,25 @@ export function VerVentas() {
               </div>
 
               {/* Cobrar Button */}
-              <button
-                type="button"
-                onClick={handleFinalizarVenta}
-                disabled={carrito.length === 0 || isProcesandoVenta}
-                className="w-full py-3 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
-              >
-                {isProcesandoVenta ? (
-                  <>
-                    <div className="size-4 rounded-full border-2 border-[#F5F5F1]/30 border-t-[#F5F5F1] animate-spin" />
-                    <span>Procesando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Receipt className="size-4.5" /> Registrar y Cobrar
-                  </>
-                )}
-              </button>
+              <div className="flex justify-end w-full mt-4">
+                <button
+                  type="button"
+                  onClick={handleFinalizarVenta}
+                  disabled={carrito.length === 0 || isProcesandoVenta}
+                  className="w-full lg:w-auto px-6 py-3 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
+                >
+                  {isProcesandoVenta ? (
+                    <>
+                      <div className="size-4 rounded-full border-2 border-[#F5F5F1]/30 border-t-[#F5F5F1] animate-spin" />
+                      <span>Procesando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Receipt className="size-4.5" /> Registrar y Cobrar
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2378,7 +2370,7 @@ export function VerVentas() {
       {ticketParaImprimir && (
         <div id="print-receipt-ticket" className="hidden print:block w-[80mm] p-4 bg-white text-black font-mono text-[11px] leading-tight text-left">
           <div className="text-center font-bold text-[13px] mb-0.5">
-            KORE BMS - FARMACIA
+            FARMACIA SALUD
           </div>
           <div className="text-center text-[9px] text-slate-500 mb-2">
             Guatemala

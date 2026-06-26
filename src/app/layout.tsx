@@ -30,19 +30,19 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "KORE BMS",
-  description: "Sistema Integral de Gestión - Kore",
+  title: "Farmacia Salud",
+  description: "Sistema Integral de Gestión - Farmacia Salud",
   other: {
     google: "notranslate",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "KORE BMS",
+    title: "Farmacia Salud",
   },
   icons: {
-    icon: "/kore/logo.png",
-    apple: "/kore/logo.png",
+    icon: "/kore/farmacia-salud-logo.png",
+    apple: "/kore/farmacia-salud-logo.png",
   },
 };
 
