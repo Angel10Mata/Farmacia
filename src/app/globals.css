@@ -27,22 +27,22 @@
 }
 
 .dark {
-  --background: #27272a; /* zinc-800 */
+  --background: #1e211e; /* Olivo oscuro del proyecto */
   --foreground: oklch(98.5% 0 0);
-  --card: #18181b; /* zinc-900 */
+  --card: #252825; /* Tono olivo medio-oscuro */
   --card-foreground: oklch(98.5% 0 0);
-  --popover: #1e1e22;
+  --popover: #2a2e2a;
   --popover-foreground: oklch(98.5% 0 0);
   --primary: #CBDAD2; /* LOOK_1_SALVIA_SUAVE for better contrast in dark mode */
-  --primary-foreground: #27272a;
+  --primary-foreground: #1e211e;
   --secondary: #525D53; /* LOOK_1_OLIVO_OSCURO */
   --secondary-foreground: oklch(98.5% 0 0);
   --muted: #525D53;
   --muted-foreground: oklch(70.8% 0 0);
   --accent: #AEC1B0; /* LOOK_2_SALVIA_MENTA */
-  --accent-foreground: #27272a;
-  --border: #2d2d34;
-  --input: #2d2d34;
+  --accent-foreground: #1e211e;
+  --border: #353b35;
+  --input: #353b35;
   --ring: #CBDAD2;
 }
 

@@ -40,13 +40,13 @@ export default function LogIn() {
       icon: "error",
       title: "Error de Acceso",
       text: message,
-      background: isDark ? "#09090b" : "#ffffff",
-      color: isDark ? "#ffffff" : "#09090b",
-      confirmButtonColor: "#ea580c",
+      background: isDark ? "#18181b" : "#F5F5F1",
+      color: isDark ? "#F5F5F1" : "#525D53",
+      confirmButtonColor: isDark ? "#525D53" : "#8DA78E",
       customClass: {
         popup: cn(
           "rounded-3xl border backdrop-blur-xl transition-colors duration-300",
-          isDark ? "border-white/10 shadow-2xl" : "border-black/10 shadow-lg",
+          isDark ? "border-[#525D53]/40 shadow-2xl" : "border-[#C1D1C5]/60 shadow-lg",
         ),
       },
     });
@@ -118,7 +118,7 @@ useEffect(() => {
   return (
     <div className="relative flex-1 flex flex-col items-center justify-center w-full bg-transparent z-0 overflow-hidden">
       <div className="relative w-full max-w-md px-6 md:px-12 pb-12 z-10">
-        <MagicCard className="rounded-3xl border border-border/50 bg-white/40 dark:bg-black backdrop-blur-xl shadow-2xl overflow-visible!">
+        <MagicCard className="rounded-3xl border border-[#C1D1C5]/40 dark:border-[#525D53]/50 bg-white/40 dark:bg-[#1a1d1a]/95 backdrop-blur-xl shadow-2xl overflow-visible!">
           <div className="flex flex-col items-center space-y-6 p-10 border-b border-border/50 text-center">
             
 
@@ -241,10 +241,10 @@ useEffect(() => {
                     setShowCredentials(true);
                   }
                 }}
-                className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-300 bg-secondary hover:bg-secondary/90 hover:border-border/80 hover:shadow-md border border-border text-secondary-foreground cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-300 bg-[#8DA78E] dark:bg-[#525D53] hover:bg-[#525D53] dark:hover:bg-[#8DA78E] border border-[#8DA78E]/30 dark:border-[#A3BEB0]/20 text-[#F5F5F1] cursor-pointer active:scale-[0.98] disabled:opacity-50 shadow-sm"
                 disabled={showCredentials && (isPending || isPasskeyPending)}
               >
-                <User className="size-4 text-secondary-foreground/70" />
+                <User className="size-4 text-[#F5F5F1]/80" />
                 <span>
                   {!showCredentials
                     ? "Iniciar sesión con contraseña"
@@ -267,12 +267,12 @@ useEffect(() => {
                   <button
                     type="button"
                     onClick={handlePasskeyLogin}
-                    className="w-full py-5 flex flex-col items-center justify-center gap-3 rounded-xl transition-all duration-300 bg-secondary hover:bg-secondary/90 hover:border-border/80 hover:shadow-md border border-border text-secondary-foreground cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                    className="w-full py-5 flex flex-col items-center justify-center gap-3 rounded-xl transition-all duration-300 bg-[#C1D1C5]/20 dark:bg-[#525D53]/30 hover:bg-[#C1D1C5]/40 dark:hover:bg-[#525D53]/50 border border-[#8DA78E]/30 dark:border-[#A3BEB0]/20 text-slate-700 dark:text-[#A3BEB0] cursor-pointer active:scale-[0.98] disabled:opacity-50"
                     disabled={isPending || isPasskeyPending}
                   >
                     {isPasskeyPending ? (
                       <div className="flex flex-col items-center gap-3">
-                        <div className="size-6 rounded-full border-2 border-secondary-foreground/30 border-t-secondary-foreground animate-spin" />
+                        <div className="size-6 rounded-full border-2 border-[#A3BEB0]/30 border-t-[#8DA78E] animate-spin" />
                         <span className="text-sm font-bold">Esperando dispositivo...</span>
                       </div>
                     ) : (
@@ -281,11 +281,11 @@ useEffect(() => {
                           Ingreso Seguro
                         </span>
                         <div className="flex items-center gap-4">
-                          <Fingerprint className="size-6 text-secondary-foreground/70" />
-                          <div className="w-px h-5 bg-border" />
-                          <ScanFace className="size-6 text-secondary-foreground/70" />
-                          <div className="w-px h-5 bg-border" />
-                          <KeyRound className="size-6 text-secondary-foreground/70" />
+                          <Fingerprint className="size-6 text-[#8DA78E] dark:text-[#A3BEB0]" />
+                          <div className="w-px h-5 bg-[#C1D1C5] dark:bg-[#525D53]" />
+                          <ScanFace className="size-6 text-[#8DA78E] dark:text-[#A3BEB0]" />
+                          <div className="w-px h-5 bg-[#C1D1C5] dark:bg-[#525D53]" />
+                          <KeyRound className="size-6 text-[#8DA78E] dark:text-[#A3BEB0]" />
                         </div>
                       </>
                     )}

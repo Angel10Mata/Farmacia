@@ -44,7 +44,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="w-full fixed top-0 left-0 transition-all bg-white dark:bg-black border-b border-border/40 z-[100] shadow-sm">
+      <header className="w-full fixed top-0 left-0 transition-all bg-white dark:bg-[#171a17] border-b border-[#C1D1C5]/30 dark:border-[#525D53]/50 z-[100] shadow-sm">
         <div className="mx-auto flex h-14 md:h-16 items-center justify-between px-4 md:px-8 gap-4">
           <div className="flex items-center h-full">
             <div className="flex items-center shrink-0">
