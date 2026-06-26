@@ -340,7 +340,7 @@ export function Dashboard() {
 
           <motion.div
             key={mod.id}
-            className={cn("cursor-pointer w-full relative col-span-1 row-span-1", mod.bento)}
+            className={cn("cursor-pointer w-full relative col-span-1 row-span-1", mod.bento, (mod.size === "hero" || mod.size === "tall") && "min-h-[250px] sm:min-h-0")}
             id={`${mod.id}-card`}
             initial="idle"
             whileHover={isMobile ? undefined : "hover"}
@@ -426,11 +426,12 @@ export function Dashboard() {
                 </div>
               ) : (
                 <div className={cn(
-                  "w-full h-full flex flex-col justify-between relative",
-                  mod.size === "hero" || mod.size === "tall" ? "p-6 pb-6 md:p-8 md:pb-8" : "p-4 pb-4 md:p-5 md:pb-5"
+                  "w-full h-full flex flex-col relative",
+                  mod.size === "compact" || mod.size === "wide" ? "justify-start md:justify-between gap-2 md:gap-0" : "justify-between",
+                  mod.size === "hero" || mod.size === "tall" ? "p-6 pb-6 md:p-8 md:pb-8" : "p-4 pb-3 md:p-5 md:pb-5"
                 )}>
                   {/* Content */}
-                  <div className="relative z-10 flex-1 flex flex-row items-center justify-start gap-4 w-full">
+                  <div className={cn("relative z-10 flex flex-row items-center justify-start gap-4 w-full", mod.size === "compact" || mod.size === "wide" ? "md:flex-1" : "flex-1")}>
                     {/* Icon Container */}
                     <div className="shrink-0 flex items-center justify-center relative">
                       <IconComponent className={cn(
@@ -466,7 +467,7 @@ export function Dashboard() {
                   </div>
 
                   {/* Footer */}
-                  <div className="relative z-10 flex items-center justify-between pt-2.5 mt-2 border-t border-slate-200/50 dark:border-slate-800/30 transition-colors duration-500">
+                  <div className={cn("relative z-10 flex items-center justify-between border-t border-slate-200/50 dark:border-slate-800/30 transition-colors duration-500", mod.size === "compact" || mod.size === "wide" ? "pt-2 md:pt-2.5 md:mt-2" : "pt-2.5 mt-2")}>
                     <span className={cn(
                       "text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500",
                       mod.accent,
@@ -489,7 +490,7 @@ export function Dashboard() {
       {comercialModules.length > 0 && (
         <div className="flex flex-col">
           <AreaLabel color="violet">Área de Ventas</AreaLabel>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[150px] sm:auto-rows-[160px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-auto sm:auto-rows-[160px]">
             {comercialModules.map(renderModuleCard)}
           </div>
         </div>
@@ -499,7 +500,7 @@ export function Dashboard() {
       {operativaModules.length > 0 && (
         <div className="flex flex-col">
           <AreaLabel color="emerald">Área Operativa</AreaLabel>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[150px] sm:auto-rows-[160px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-auto sm:auto-rows-[160px]">
             {operativaModules.map(renderModuleCard)}
           </div>
         </div>

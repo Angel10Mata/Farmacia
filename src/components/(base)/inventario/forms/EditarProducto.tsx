@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
+import { AnimatePresence, motion } from "framer-motion";
+import { Search, Truck } from "lucide-react";
 import Swal from "sweetalert2";
 
 interface Producto {
@@ -16,6 +18,8 @@ interface Producto {
   stock_actual: number;
   stock_minimo: number;
   activo: boolean;
+  proveedor_id?: string | null;
+  inv_proveedores?: { nombre: string } | null;
   created_at?: string;
 }
 
@@ -35,8 +39,50 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
   const [stockMinimo, setStockMinimo] = useState("");
   const [activo, setActivo] = useState(true);
 
+  // Proveedores state
+  const [proveedores, setProveedores] = useState<{ id: string; nombre: string; nit: string | null }[]>([]);
+  const [proveedorBusqueda, setProveedorBusqueda] = useState("");
+  const [mostrarSugerenciasProv, setMostrarSugerenciasProv] = useState(false);
+  const [proveedorSeleccionado, setProveedorSeleccionado] = useState<{ id: string; nombre: string } | null>(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  const provDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Cargar proveedores desde Supabase
+  useEffect(() => {
+    const fetchProveedores = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("inv_proveedores")
+          .select("id, nombre, nit")
+          .order("nombre", { ascending: true });
+        if (!error && data) {
+          setProveedores(data);
+        }
+      } catch (err) {
+        console.error("Error al cargar proveedores:", err);
+      }
+    };
+    if (isOpen) {
+      fetchProveedores();
+    }
+  }, [isOpen]);
+
+  // Click outside listener para cerrar dropdown de proveedores
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (provDropdownRef.current && !provDropdownRef.current.contains(event.target as Node)) {
+        setMostrarSugerenciasProv(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Cargar datos cuando cambie el producto o se abra la modal
   useEffect(() => {
@@ -48,8 +94,35 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
       setStockActual(producto.stock_actual?.toString() || "0");
       setStockMinimo(producto.stock_minimo?.toString() || "0");
       setActivo(producto.activo !== false);
+
+      if (producto.proveedor_id) {
+        const pNombre = producto.inv_proveedores?.nombre || "";
+        setProveedorSeleccionado({ id: producto.proveedor_id, nombre: pNombre });
+        setProveedorBusqueda(pNombre);
+      } else {
+        setProveedorSeleccionado(null);
+        setProveedorBusqueda("");
+      }
     }
   }, [producto, isOpen]);
+
+  // Sincronizar proveedor seleccionado si se cargan los proveedores después
+  useEffect(() => {
+    if (producto && producto.proveedor_id && proveedores.length > 0) {
+      const match = proveedores.find((p) => p.id === producto.proveedor_id);
+      if (match) {
+        setProveedorSeleccionado({ id: match.id, nombre: match.nombre });
+        setProveedorBusqueda(match.nombre);
+      }
+    }
+  }, [producto, proveedores]);
+
+  const sugerenciasProveedores = proveedorBusqueda.trim() === ""
+    ? proveedores
+    : proveedores.filter((p) =>
+        p.nombre.toLowerCase().includes(proveedorBusqueda.toLowerCase()) ||
+        (p.nit && p.nit.toLowerCase().includes(proveedorBusqueda.toLowerCase()))
+      );
 
   // Helper para obtener colores de SweetAlert según el tema activo (claro/oscuro)
   const getSwalThemeOpts = () => {
@@ -111,6 +184,7 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
           precio_base: priceNum,
           stock_actual: stockActualNum,
           stock_minimo: stockMinimoNum,
+          proveedor_id: proveedorSeleccionado?.id || null,
           activo: activo
         })
         .eq("id", producto.id);
@@ -192,6 +266,56 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
               onChange={(e) => setDescripcion(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-20 resize-none"
             />
+          </div>
+
+          <div className="relative text-left" ref={provDropdownRef}>
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+              Proveedor
+            </label>
+            <div className="relative">
+              <Truck className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+              <input
+                type="text"
+                value={proveedorBusqueda}
+                onChange={(e) => {
+                  setProveedorBusqueda(e.target.value);
+                  setMostrarSugerenciasProv(true);
+                  if (!e.target.value) setProveedorSeleccionado(null);
+                }}
+                onFocus={() => setMostrarSugerenciasProv(true)}
+                placeholder="Buscar o seleccionar proveedor..."
+                className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-[38px]"
+              />
+            </div>
+
+            <AnimatePresence>
+              {mostrarSugerenciasProv && sugerenciasProveedores.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 text-left"
+                >
+                  {sugerenciasProveedores.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setProveedorSeleccionado(p);
+                        setProveedorBusqueda(p.nombre);
+                        setMostrarSugerenciasProv(false);
+                      }}
+                      className="w-full px-4 py-2 border-b border-slate-100 dark:border-slate-900 hover:bg-[#8DA78E]/10 dark:hover:bg-[#8DA78E]/20 text-left flex items-center justify-between text-xs cursor-pointer"
+                    >
+                      <div>
+                        <p className="font-bold text-slate-950 dark:text-white">{p.nombre}</p>
+                        {p.nit && <p className="text-[10px] text-slate-500">NIT: {p.nit}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

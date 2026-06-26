@@ -145,7 +145,7 @@ function ClienteCard({
       </div>
 
       {/* Stats */}
-      <div className="mt-3 pt-3 border-t border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 grid grid-cols-3 gap-2">
+      <div className="mt-3 pt-3 border-t border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 grid grid-cols-2 gap-2">
         <div className="text-center">
           <p className="text-[10px] text-[#525D53] dark:text-[#A3BEB0]/70 uppercase tracking-wide font-semibold">Compras</p>
           <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">{cliente.totalCompras}</p>
@@ -154,16 +154,6 @@ function ClienteCard({
           <p className="text-[10px] text-[#525D53] dark:text-[#A3BEB0]/70 uppercase tracking-wide font-semibold">Saldo</p>
           <p className="text-sm font-black text-[#8DA78E] dark:text-[#A3BEB0] mt-0.5">
             Q{cliente.saldo.toFixed(2)}
-          </p>
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] text-[#525D53] dark:text-[#A3BEB0]/70 uppercase tracking-wide font-semibold">Última</p>
-          <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 mt-0.5">
-            {cliente.ultimaCompra ? (
-              new Date(cliente.ultimaCompra).toLocaleDateString("es-GT", { day: "2-digit", month: "short" })
-            ) : (
-              "—"
-            )}
           </p>
         </div>
       </div>

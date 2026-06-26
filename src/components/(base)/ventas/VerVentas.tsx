@@ -1338,66 +1338,64 @@ export function VerVentas() {
                     )}
                   </AnimatePresence>
                 </div>
+              </div>
 
-                {/* Cantidad Selector */}
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 text-left">
-                    Cantidad
-                  </label>
-                  <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-zinc-900 px-1 py-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setCantSeleccionada(Math.max(1, (Number(cantSeleccionada) || 0) - 1))}
-                      className="size-7 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-400 rounded-md cursor-pointer"
-                    >
-                      <Minus className="size-3" />
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      value={cantSeleccionada}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === "") {
-                          setCantSeleccionada("");
-                        } else {
-                          const parsed = parseInt(val);
-                          setCantSeleccionada(isNaN(parsed) ? 1 : Math.max(1, parsed));
-                        }
-                      }}
-                      className="w-full text-center text-sm font-bold bg-transparent border-0 focus:outline-none focus:ring-0 text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setCantSeleccionada((Number(cantSeleccionada) || 0) + 1)}
-                      className="size-7 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-400 rounded-md cursor-pointer"
-                    >
-                      <Plus className="size-3" />
-                    </button>
+              {/* 2. Cantidad + Cliente en una línea */}
+              <div className="flex items-end gap-3">
+                {/* Cantidad Selector + Agregar */}
+                <div className="flex items-end gap-1.5 shrink-0">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 text-left">
+                      Cantidad
+                    </label>
+                    <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-zinc-900 px-1 h-9">
+                      <button
+                        type="button"
+                        onClick={() => setCantSeleccionada(Math.max(1, (Number(cantSeleccionada) || 0) - 1))}
+                        className="size-7 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-400 rounded-md cursor-pointer"
+                      >
+                        <Minus className="size-3" />
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        value={cantSeleccionada}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "") {
+                            setCantSeleccionada("");
+                          } else {
+                            const parsed = parseInt(val);
+                            setCantSeleccionada(isNaN(parsed) ? 1 : Math.max(1, parsed));
+                          }
+                        }}
+                        className="w-12 text-center text-sm font-bold bg-transparent border-0 focus:outline-none focus:ring-0 text-slate-900 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCantSeleccionada((Number(cantSeleccionada) || 0) + 1)}
+                        className="size-7 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-400 rounded-md cursor-pointer"
+                      >
+                        <Plus className="size-3" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                {/* Agregar al carrito */}
-                <div className="md:col-span-1">
                   <button
                     type="button"
                     onClick={handleAgregarAlCarrito}
                     disabled={!productoSeleccionado}
-                    className="w-full h-9 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] font-bold rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs"
+                    className="size-9 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] font-bold rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs shrink-0"
                   >
                     <Plus className="size-5" />
                   </button>
                 </div>
-              </div>
 
-
-              {/* 2. Cliente y NIT */}
-              <div className="w-full relative text-left" ref={cliDropdownRef}>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                  Seleccionar Cliente
-                </label>
-                <div className="flex gap-1.5 items-center">
-                  <div className="relative flex-1">
+                {/* Cliente */}
+                <div className="flex-1 relative text-left" ref={cliDropdownRef}>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                    Seleccionar Cliente
+                  </label>
+                  <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <input
                       type="text"
@@ -1420,52 +1418,44 @@ export function VerVentas() {
                           }
                         }, 200);
                       }}
-                      placeholder="Escribe el nombre o NIT del cliente..."
-                      className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+                      placeholder="Nombre o NIT del cliente..."
+                      className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-9"
                     />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsCrearClienteOpen(true)}
-                    className="px-3 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-lg transition-colors cursor-pointer shrink-0"
-                    title="Registrar nuevo cliente"
-                  >
-                    Nuevo
-                  </button>
-                </div>
 
-                {/* Dropdown sugerencias */}
-                <AnimatePresence>
-                  {mostrarSugerenciasCli && sugerenciasClientes.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 text-left"
-                    >
-                      {sugerenciasClientes.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setClienteSeleccionado(c);
-                            setClienteBusqueda(c.nombre);
-                            setMostrarSugerenciasCli(false);
-                          }}
-                          className="w-full px-4 py-2 border-b border-slate-100 dark:border-slate-900 hover:bg-[#8DA78E]/10 dark:hover:bg-[#8DA78E]/20 text-left flex items-center justify-between text-xs cursor-pointer"
-                        >
-                          <div>
-                            <p className="font-bold text-slate-950 dark:text-white">{c.nombre}</p>
-                            <p className="text-[10px] text-slate-500">Tel: {c.telefono || "Sin Teléfono"}</p>
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
-                            NIT: {c.nit || "C/F"}
-                          </span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                  {/* Dropdown sugerencias */}
+                  <AnimatePresence>
+                    {mostrarSugerenciasCli && sugerenciasClientes.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 text-left"
+                      >
+                        {sugerenciasClientes.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setClienteSeleccionado(c);
+                              setClienteBusqueda(c.nombre);
+                              setMostrarSugerenciasCli(false);
+                            }}
+                            className="w-full px-4 py-2 border-b border-slate-100 dark:border-slate-900 hover:bg-[#8DA78E]/10 dark:hover:bg-[#8DA78E]/20 text-left flex items-center justify-between text-xs cursor-pointer"
+                          >
+                            <div>
+                              <p className="font-bold text-slate-950 dark:text-white">{c.nombre}</p>
+                              <p className="text-[10px] text-slate-500">Tel: {c.telefono || "Sin Teléfono"}</p>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
+                              NIT: {c.nit || "C/F"}
+                            </span>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
               {/* 3. Forma de Pago y Observaciones */}
@@ -1478,7 +1468,7 @@ export function VerVentas() {
                   <button
                     type="button"
                     onClick={() => setMostrarMetodoPagoDropdown(!mostrarMetodoPagoDropdown)}
-                    className="w-full flex items-center justify-between px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-all cursor-pointer h-[38px] hover:border-[#8DA78E]"
+                    className="w-full flex items-center justify-center px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-all cursor-pointer h-[38px] hover:border-[#8DA78E] relative"
                   >
                     <span className="font-bold">
                       {tipoVenta === "Efectivo"
@@ -1487,7 +1477,7 @@ export function VerVentas() {
                         ? "💳 Tarjeta"
                         : "⏳ Crédito"}
                     </span>
-                    <ChevronDown className="size-4 text-slate-400" />
+                    <ChevronDown className="absolute right-3 size-4 text-slate-400" />
                   </button>
 
                   <AnimatePresence>

@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ChevronDown,
   Check,
+  Truck,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import Swal from "sweetalert2";
@@ -32,6 +33,17 @@ interface Producto {
   stock_minimo: number;
   activo: boolean;
   created_at?: string;
+  proveedor_id?: string | null;
+  inv_proveedores?: {
+    nombre: string;
+  } | null;
+  inv_compras_detalles?: {
+    inv_compras?: {
+      inv_proveedores?: {
+        nombre: string;
+      } | null;
+    } | null;
+  }[];
 }
 
 
@@ -71,6 +83,11 @@ function ProductoCard({
           <p className="text-[10px] font-mono text-[#525D53] dark:text-[#A3BEB0] mt-1.5 uppercase tracking-wide">
             Cód: {producto.codigo || "SIN CÓDIGO"}
           </p>
+          {(producto.inv_proveedores?.nombre || producto.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre) && (
+            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-1 uppercase flex items-center gap-1">
+              <Truck className="size-3 text-[#8DA78E] dark:text-[#A3BEB0]" /> {producto.inv_proveedores?.nombre || producto.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre}
+            </p>
+          )}
         </div>
       </div>
 
@@ -170,8 +187,9 @@ function ProductoDetalle({
             { label: "Alerta Mínima", value: producto.stock_minimo, color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
             { label: "Precio Unitario", value: `Q${producto.precio_base.toFixed(2)}`, color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
             { label: "Estado", value: producto.activo ? "Activo" : "Inactivo", color: producto.activo ? "text-[#8DA78E] dark:text-[#A3BEB0]" : "text-slate-400" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white dark:bg-[#525D53]/10 rounded-xl p-3 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10">
+            { label: "Proveedor", value: producto.inv_proveedores?.nombre || producto.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre || "Sin Proveedor", color: "text-[#8DA78E] dark:text-[#A3BEB0] truncate", fullWidth: true },
+          ].map(({ label, value, color, fullWidth }) => (
+            <div key={label} className={cn("bg-white dark:bg-[#525D53]/10 rounded-xl p-3 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10", fullWidth && "col-span-2")}>
               <span className="text-[9px] text-[#525D53] dark:text-[#A3BEB0]/70 font-semibold uppercase tracking-wide block mb-1">{label}</span>
               <p className={`text-sm font-black ${color}`}>{value}</p>
             </div>
@@ -234,7 +252,7 @@ export function VerInventario() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("inv_productos")
-        .select("*")
+        .select("*, inv_proveedores(nombre), inv_compras_detalles(inv_compras(inv_proveedores(nombre)))")
         .order("nombre", { ascending: true });
 
       if (error) {
@@ -261,6 +279,9 @@ export function VerInventario() {
           stock_actual: row.stock_actual || 0,
           stock_minimo: row.stock_minimo || 0,
           activo: row.activo !== false,
+          proveedor_id: row.proveedor_id || null,
+          inv_proveedores: row.inv_proveedores || null,
+          inv_compras_detalles: row.inv_compras_detalles || []
         }));
         setProductos(mapped);
 
@@ -351,10 +372,11 @@ export function VerInventario() {
       // Generar tabla
       autoTable(doc, {
         startY: 42,
-        head: [["Código", "Nombre del Producto", "Stock Actual", "Mínimo", "Precio Venta", "Estado"]],
+        head: [["Código", "Nombre del Producto", "Proveedor", "Stock Actual", "Mínimo", "Precio Venta", "Estado"]],
         body: productosFiltrados.map((p) => [
           p.codigo || "Sin Código",
           p.nombre,
+          p.inv_proveedores?.nombre || p.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre || "—",
           p.stock_actual,
           p.stock_minimo,
           `Q${p.precio_base.toFixed(2)}`,
@@ -480,13 +502,36 @@ export function VerInventario() {
 
         {/* Lista */}
         <div className="flex-1 flex flex-col gap-4 min-w-0">
-          <div className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-3xl overflow-hidden shadow-xs">
+          {/* Mobile: Product Cards */}
+          <div className="md:hidden flex flex-col gap-3">
+            {productosPaginados.length === 0 ? (
+              <div className="text-center py-14 text-slate-400 font-bold text-sm">
+                No se encontraron productos
+              </div>
+            ) : (
+              productosPaginados.map((p) => (
+                <ProductoCard
+                  key={p.id}
+                  producto={p}
+                  onClick={() => setProductoSeleccionado(p)}
+                  onEdit={() => {
+                    setProductoParaEditar(p);
+                    setIsEditOpen(true);
+                  }}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Desktop: Table */}
+          <div className="hidden md:block bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-3xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-[#F5F5F1] dark:bg-[#525D53]/20 text-[#525D53] dark:text-[#A3BEB0] font-black uppercase tracking-wider border-b border-[#C1D1C5]/30">
                     <th className="px-5 py-3.5">Código</th>
                     <th className="px-5 py-3.5">Producto</th>
+                    <th className="px-5 py-3.5">Proveedor</th>
                     <th className="px-5 py-3.5">Existencias</th>
                     <th className="px-5 py-3.5">Estado</th>
                     <th className="px-5 py-3.5 text-right">Precio Venta</th>
@@ -496,7 +541,7 @@ export function VerInventario() {
                 <tbody className="divide-y divide-[#C1D1C5]/15 dark:divide-zinc-800/40 text-slate-700 dark:text-slate-300">
                   {productosPaginados.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-14 text-slate-400 font-bold">
+                      <td colSpan={7} className="text-center py-14 text-slate-400 font-bold">
                         No se encontraron productos
                       </td>
                     </tr>
@@ -508,10 +553,7 @@ export function VerInventario() {
                         <tr
                           key={p.id}
                           onClick={() => {
-                            const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
-                            if (!isMobile) {
-                              setProductoSeleccionado(isSelected ? null : p);
-                            }
+                            setProductoSeleccionado(isSelected ? null : p);
                           }}
                           className={cn(
                             "hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 transition-colors cursor-pointer",
@@ -523,6 +565,9 @@ export function VerInventario() {
                           </td>
                           <td className="px-5 py-3.5 font-bold">
                             {p.nombre}
+                          </td>
+                          <td className="px-5 py-3.5 font-semibold text-slate-500 dark:text-slate-400">
+                            {p.inv_proveedores?.nombre || p.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre || "—"}
                           </td>
                           <td className="px-5 py-3.5">
                             <span className={cn(
