@@ -29,6 +29,7 @@ import {
   obtenerHistorialCompras,
   obtenerDetalleCompra,
   eliminarProveedor,
+  actualizarEstadoPagoCompra,
   ItemCompraInput
 } from "./actions";
 
@@ -379,6 +380,44 @@ export function VerProveedores() {
     }
   };
 
+  const handleCambiarEstadoPago = async (compraId: string, estadoActual: string, actualizarDetalleRef?: boolean) => {
+    const nuevoEstado = estadoActual === "Pagado" ? "Pendiente" : "Pagado";
+    try {
+      const res = await actualizarEstadoPagoCompra(compraId, nuevoEstado);
+      if (res.success) {
+        setCompras((prevCompras) =>
+          prevCompras.map((c) =>
+            c.id === compraId ? { ...c, estado_pago: nuevoEstado } : c
+          )
+        );
+        if (actualizarDetalleRef && compraDetalleSeleccionada && compraDetalleSeleccionada.id === compraId) {
+          setCompraDetalleSeleccionada({
+            ...compraDetalleSeleccionada,
+            estado_pago: nuevoEstado
+          });
+        }
+        Swal.fire({
+          title: "Estado Actualizado",
+          text: `La compra ha sido marcada como ${nuevoEstado.toUpperCase()}.`,
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+          ...getSwalThemeOpts()
+        });
+      } else {
+        throw new Error(res.error);
+      }
+    } catch (err: any) {
+      Swal.fire({
+        title: "Error",
+        text: err.message || "No se pudo cambiar el estado de pago.",
+        icon: "error",
+        ...getSwalThemeOpts(),
+        confirmButtonColor: "#ef4444"
+      });
+    }
+  };
+
   // Eliminar proveedor
   const handleEliminarProveedor = async (id: string, nombre: string) => {
     const confirm = await Swal.fire({
@@ -505,7 +544,7 @@ export function VerProveedores() {
                     {/* Autocomplete Producto */}
                     <div className="md:col-span-6 relative" ref={prodDropdownRef}>
                       <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 text-left">
-                        Buscar Producto / Medicamento
+                        Buscar Producto
                       </label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
@@ -602,21 +641,21 @@ export function VerProveedores() {
                     disabled={!productoSeleccionado}
                     className="py-2.5 px-4 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 text-[#F5F5F1] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98]"
                   >
-                    <Plus className="size-4" /> Agregar Item a la Compra
+                    <Plus className="size-4" /> Agregar Producto a la Compra
                   </button>
                 </div>
 
                 {/* Carrito de Compra (Productos Agregados) */}
                 <div className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 flex flex-col gap-3">
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-[#C1D1C5]/20 pb-2 text-left">
-                    Medicamentos en la Factura
+                    Productos en el Pedido
                   </h3>
 
                   {carrito.length === 0 ? (
                     <div className="py-10 flex flex-col items-center justify-center text-slate-400">
                       <Receipt className="size-10 mb-2 opacity-55 text-slate-400" />
-                      <p className="text-xs font-semibold">Aún no hay medicamentos cargados</p>
-                      <p className="text-[10px] opacity-70">Usa el panel superior para buscar e ingresar medicamentos.</p>
+                      <p className="text-xs font-semibold">Aún no hay productos cargados</p>
+                      <p className="text-[10px] opacity-70">Usa el panel superior para buscar e ingresar productos.</p>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2 max-h-96 overflow-y-auto">
@@ -913,12 +952,23 @@ export function VerProveedores() {
                               <td className="px-5 py-3.5 font-black text-[#8DA78E]">
                                 Q{c.total.toFixed(2)}
                               </td>
-                              <td className="px-5 py-3.5 text-right">
+                              <td className="px-5 py-3.5 text-right flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => cargarDetallesCompra(c)}
-                                  className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
+                                  className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border border-[#8DA78E]/20"
                                 >
                                   Ver Detalle
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCambiarEstadoPago(c.id, c.estado_pago)}
+                                  className={`px-3 py-1.5 font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border ${
+                                    c.estado_pago === "Pagado"
+                                      ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40"
+                                      : "bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/40"
+                                  }`}
+                                >
+                                  {c.estado_pago === "Pagado" ? "Marcar Pendiente" : "Marcar Pagado"}
                                 </button>
                               </td>
                             </tr>
@@ -983,12 +1033,25 @@ export function VerProveedores() {
                                 Q{c.total.toFixed(2)}
                               </span>
                             </div>
-                            <button
-                              onClick={() => cargarDetallesCompra(c)}
-                              className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border border-[#8DA78E]/20"
-                            >
-                              Ver Detalle
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => cargarDetallesCompra(c)}
+                                className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border border-[#8DA78E]/20"
+                              >
+                                Ver Detalle
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCambiarEstadoPago(c.id, c.estado_pago)}
+                                className={`px-3 py-1.5 font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border ${
+                                  c.estado_pago === "Pagado"
+                                    ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40"
+                                    : "bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/40"
+                                }`}
+                              >
+                                {c.estado_pago === "Pagado" ? "Pendiente" : "Pagado"}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1227,13 +1290,22 @@ export function VerProveedores() {
                         </div>
                         <div>
                           <span className="block font-bold text-slate-400">Estado Pago</span>
-                          <span className={`inline-block px-2 py-0.5 mt-0.5 rounded font-bold uppercase text-[9px] ${
-                            compraDetalleSeleccionada.estado_pago === "Pagado"
-                              ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
-                              : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
-                          }`}>
-                            {compraDetalleSeleccionada.estado_pago}
-                          </span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`inline-block px-2 py-0.5 rounded font-bold uppercase text-[9px] ${
+                              compraDetalleSeleccionada.estado_pago === "Pagado"
+                                ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
+                                : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                            }`}>
+                              {compraDetalleSeleccionada.estado_pago}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCambiarEstadoPago(compraDetalleSeleccionada.id, compraDetalleSeleccionada.estado_pago, true)}
+                              className="text-[10px] text-[#8DA78E] hover:underline font-bold cursor-pointer"
+                            >
+                              (Cambiar)
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1254,7 +1326,7 @@ export function VerProveedores() {
                             >
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-slate-900 dark:text-white truncate">
-                                  {d.inv_productos?.nombre || "Medicamento"}
+                                  {d.inv_productos?.nombre || "Pedido"}
                                 </p>
                                 <p className="text-[10px] text-slate-400 mt-0.5">
                                   Costo: Q{d.precio_costo.toFixed(2)} | Cant: {d.cantidad}

@@ -104,7 +104,6 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
                   >
                     <option value="">Rol Real: {realRole.toUpperCase()}</option>
                     <option value="admin">Simular: ADMIN</option>
-                    <option value="proyectos">Simular: DESARROLLADOR</option>
                     <option value="user">Simular: USER</option>
                   </select>
                 </div>

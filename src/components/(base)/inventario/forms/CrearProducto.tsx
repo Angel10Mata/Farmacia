@@ -180,11 +180,11 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
   return (
     <Modal
       title="Nuevo Producto"
-      description="Ingresa los detalles técnicos para registrar un nuevo medicamento o producto."
+      description="Ingresa los detalles técnicos para registrar un nuevo producto."
       isOpen={isOpen}
       onClose={handleClose}
       showCloseButton={false}
-      className="max-w-[90%] sm:max-w-md bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-900 rounded-3xl"
+      className="max-w-[90%] sm:max-w-md bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-900 rounded-3xl max-h-[92vh] overflow-y-auto"
     >
       <form onSubmit={handleSubmit} className="space-y-4 mt-2">
         <div className="flex flex-col gap-3 text-left">
@@ -203,7 +203,6 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
                 }
               }}
               className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
-              placeholder="Ej: D30-4EB"
             />
           </div>
 

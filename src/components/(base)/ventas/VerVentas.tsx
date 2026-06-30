@@ -1079,7 +1079,7 @@ export function VerVentas() {
         head: [["Cant", "Detalle", "Precio", "Sub"]],
         body: detalles.map((d) => [
           d.cantidad,
-          d.inv_productos?.nombre || "Medicamento",
+          d.inv_productos?.nombre || "Pedido",
           `Q${d.precio_aplicado.toFixed(2)}`,
           `Q${d.subtotal.toFixed(2)}`
         ]),
@@ -1208,7 +1208,7 @@ export function VerVentas() {
                         <tr key={idx} className="border-b border-slate-200/50 dark:border-zinc-900/50 last:border-0">
                           <td className="py-1.5 text-center text-slate-900 dark:text-white font-medium">{d.cantidad}</td>
                           <td className="py-1.5 text-slate-800 dark:text-slate-300">
-                            {d.inv_productos?.nombre || "Medicamento"}
+                            {d.inv_productos?.nombre || "Pedido"}
                             {d.inv_productos?.codigo && <span className="block text-[9px] text-slate-400">{d.inv_productos.codigo}</span>}
                           </td>
                           <td className="py-1.5 text-right font-semibold text-slate-900 dark:text-white">Q{d.subtotal.toFixed(2)}</td>
@@ -1434,7 +1434,7 @@ export function VerVentas() {
                 {/* Autocomplete Producto */}
                 <div className="w-full relative text-left" ref={prodDropdownRef}>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                    Buscar Producto / Medicamento
+                    Buscar Producto
                   </label>
                   <div className="relative">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4.5 text-slate-400" />
@@ -2431,7 +2431,7 @@ export function VerVentas() {
               {ticketParaImprimir.detalles.map((d, idx) => (
                 <tr key={idx}>
                   <td className="py-0.5">{d.cantidad}</td>
-                  <td className="py-0.5">{d.inv_productos?.nombre || "Medicamento"}</td>
+                  <td className="py-0.5">{d.inv_productos?.nombre || "Pedido"}</td>
                   <td className="py-0.5 text-right">Q{d.subtotal.toFixed(2)}</td>
                 </tr>
               ))}

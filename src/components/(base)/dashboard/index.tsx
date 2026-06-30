@@ -149,7 +149,7 @@ const MODULES: ModuleConfig[] = [
     subtitle: "Ventas",
     desc: "Punto de venta, control de caja diaria, reportes de ingresos y facturación.",
     href: "/kore/ventas",
-    allowedRoles: ["super", "admin", "ventas"],
+    allowedRoles: ["super", "admin", "ventas", "user"],
     gradientFrom: "#8DA78E",
     gradientTo: "#A3BEB0",
     accent: "text-[#8DA78E] dark:text-[#A3BEB0]",

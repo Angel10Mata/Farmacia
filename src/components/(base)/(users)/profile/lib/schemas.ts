@@ -25,7 +25,7 @@ const baseFields = z.object({
       message: "Tel. Emergencia inválido (mínimo 8 números)",
     })
     .optional(),
-  rol: z.enum(["user", "admin", "super", "proyectos"]).optional(),
+  rol: z.enum(["user", "admin", "super"]).optional(),
   // --- CAMBIOS AQUÍ ---
   username: z
     .string()

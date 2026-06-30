@@ -254,3 +254,31 @@ export async function obtenerDetalleCompra(compraId: string) {
     throw new Error("No se pudo obtener el detalle de la compra.");
   }
 }
+
+export async function actualizarEstadoPagoCompra(compraId: string, nuevoEstado: "Pagado" | "Pendiente") {
+  try {
+    const supabase = await createClient();
+
+    const payload = {
+      estado_pago: nuevoEstado,
+      fecha_pago: nuevoEstado === "Pagado" ? new Date().toISOString() : null,
+    };
+
+    const { error } = await supabase
+      .from("inv_compras")
+      .update(payload)
+      .eq("id", compraId);
+
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/kore/proveedores");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error en actualizarEstadoPagoCompra:", error);
+    return {
+      success: false,
+      error: error.message || "Error al actualizar el estado de pago."
+    };
+  }
+}
+

@@ -55,16 +55,15 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
 
   const roleLabels: Record<string, string> = {
     user: "Usuario (Estándar)",
-    proyectos: "Desarrollador",
     admin: "Administrador",
     super: "Super Admin",
   };
 
   let roleOptions: string[] = [];
   if (sessionRole === "super") {
-    roleOptions = ["super", "admin", "proyectos", "user"];
+    roleOptions = ["super", "admin", "user"];
   } else if (sessionRole === "admin") {
-    roleOptions = ["admin", "proyectos", "user"];
+    roleOptions = ["admin", "user"];
   }
 
   const targetIsSuper = profile?.rol === "super";
@@ -79,7 +78,7 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
   const handleRoleUpdate = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRole = e.target.value;
     try {
-      await updateProfile(targetId, { rol: newRole as "user" | "admin" | "super" | "proyectos" });
+      await updateProfile(targetId, { rol: newRole as "user" | "admin" | "super" });
       await queryClient.invalidateQueries({ queryKey: ["profile", targetId] });
 
       Swal.fire({
