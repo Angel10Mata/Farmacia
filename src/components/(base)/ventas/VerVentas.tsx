@@ -1131,165 +1131,7 @@ export function VerVentas() {
     }
   };
 
-  // Generación de Factura PDF en Tamaño Carta
-  const exportarFacturaCartaPDF = (venta: Venta, detalles: any[], clienteCompleto?: Cliente | null) => {
-    try {
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "letter"
-      });
 
-      const clientName = clienteCompleto?.nombre || venta.ven_clientes?.nombre || "Consumidor Final";
-      const clientNit = clienteCompleto?.nit || venta.ven_clientes?.nit || "C/F";
-      const clientPhone = clienteCompleto?.telefono || "-";
-      const clientAddress = clienteCompleto?.direccion || "-";
-      const clientEmail = clienteCompleto?.email || "-";
-      
-      const dateFormatted = new Date(venta.created_at).toLocaleString("es-GT", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-
-      // Cabecera Premium
-      doc.setFillColor(82, 93, 83); // Olivo #525D53
-      doc.rect(0, 0, 215.9, 15, "F");
-
-      // Nombre Farmacia
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(22);
-      doc.setTextColor(82, 93, 83);
-      doc.text("FARMACIA SALUD", 15, 30);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139);
-      doc.text("Guatemala | Tu Bienestar, Nuestro Compromiso", 15, 36);
-
-      // Bloque del Recibo
-      const codigoRecibo = obtenerCodigoRecibo(venta.id);
-      doc.setFillColor(245, 245, 241);
-      doc.rect(140, 22, 60, 22, "F");
-      doc.setDrawColor(193, 209, 197);
-      doc.rect(140, 22, 60, 22, "D");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(82, 93, 83);
-      doc.text("RECIBO DE VENTA", 170, 28, { align: "center" });
-      
-      doc.setFontSize(14);
-      doc.setTextColor(141, 167, 142); // Salvia #8DA78E
-      doc.text(`#${codigoRecibo}`, 170, 35, { align: "center" });
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
-      doc.text(`Fecha: ${dateFormatted}`, 170, 40, { align: "center" });
-
-      doc.setDrawColor(226, 232, 240);
-      doc.line(15, 48, 200, 48);
-
-      // Datos Cliente
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(82, 93, 83);
-      doc.text("DATOS DEL CLIENTE", 15, 55);
-      doc.text("DETALLES DEL PAGO", 120, 55);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(50, 50, 50);
-      
-      doc.text(`Nombre: ${clientName}`, 15, 61);
-      doc.text(`NIT: ${clientNit}`, 15, 66);
-      doc.text(`Teléfono: ${clientPhone}`, 15, 71);
-      doc.text(`Dirección: ${clientAddress}`, 15, 76);
-      if (clientEmail !== "-") {
-        doc.text(`Email: ${clientEmail}`, 15, 81);
-      }
-
-      doc.text(`Tipo de Venta: ${venta.tipo_venta}`, 120, 61);
-      doc.text(`Estado: PAGADO`, 120, 66);
-      doc.text(`Moneda: Quetzal (Q)`, 120, 71);
-
-      // Tabla
-      autoTable(doc, {
-        startY: 88,
-        head: [["Cant", "Código", "Descripción del Producto", "Precio Unitario", "Subtotal"]],
-        body: detalles.map((d) => [
-          d.cantidad,
-          d.inv_productos?.codigo || "N/A",
-          d.inv_productos?.nombre || "Medicamento",
-          `Q${d.precio_aplicado.toFixed(2)}`,
-          `Q${d.subtotal.toFixed(2)}`
-        ]),
-        theme: "striped",
-        styles: {
-          fontSize: 9,
-          cellPadding: 3,
-          valign: "middle"
-        },
-        columnStyles: {
-          0: { cellWidth: 15, halign: "center" },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 90 },
-          3: { cellWidth: 25, halign: "right" },
-          4: { cellWidth: 25, halign: "right" }
-        },
-        headStyles: {
-          fontStyle: "bold",
-          fillColor: [82, 93, 83],
-          textColor: [245, 245, 241],
-          halign: "left"
-        },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252]
-        },
-        margin: { left: 15, right: 15 }
-      });
-
-      const finalY = (doc as any).lastAutoTable.finalY + 8;
-
-      if (venta.observaciones) {
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        doc.setTextColor(82, 93, 83);
-        doc.text("Observaciones:", 15, finalY);
-
-        doc.setFont("helvetica", "italic");
-        doc.setFontSize(8.5);
-        doc.setTextColor(100, 116, 139);
-        doc.text(venta.observaciones, 15, finalY + 5, { maxWidth: 100 });
-      }
-
-      // Totales
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.setTextColor(82, 93, 83);
-      doc.text("TOTAL A PAGAR:", 145, finalY + 4, { align: "right" });
-      doc.text(`Q${venta.total.toFixed(2)}`, 200, finalY + 4, { align: "right" });
-
-      // Footer
-      const footerY = 262;
-      doc.setDrawColor(226, 232, 240);
-      doc.line(15, footerY, 200, footerY);
-
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
-      doc.text("Este documento es un comprobante de pago digital para el control interno de la farmacia.", 107.9, footerY + 5, { align: "center" });
-      doc.setFont("helvetica", "bold");
-      doc.text("¡Muchas gracias por su preferencia!", 107.9, footerY + 9, { align: "center" });
-
-      doc.save(`Factura_Carta_${codigoRecibo}.pdf`);
-    } catch (error) {
-      console.error("Error al exportar PDF tamaño carta:", error);
-    }
-  };
 
   return (
     <div className="w-full flex flex-col gap-6 p-4 md:p-6 pt-32 md:pt-24 min-h-screen">
@@ -1394,28 +1236,17 @@ export function VerVentas() {
 
               {/* Footer con Acciones */}
               <div className="p-5 bg-[#F5F5F1] dark:bg-zinc-950 border-t border-[#C1D1C5]/30 dark:border-zinc-800 flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => {
-                      setTicketParaImprimir({
-                        venta: reciboModalData.venta,
-                        detalles: reciboModalData.detalles
-                      });
-                    }}
-                    className="py-2.5 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs border border-transparent"
-                  >
-                    <Printer className="size-4" /> Imprimir Ticket
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      exportarFacturaCartaPDF(reciboModalData.venta, reciboModalData.detalles, reciboModalData.clienteCompleto);
-                    }}
-                    className="py-2.5 px-4 rounded-xl bg-slate-800 dark:bg-zinc-800 hover:bg-slate-700 dark:hover:bg-zinc-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs border border-slate-700 dark:border-zinc-700"
-                  >
-                    <FileDown className="size-4" /> PDF (Carta)
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setTicketParaImprimir({
+                      venta: reciboModalData.venta,
+                      detalles: reciboModalData.detalles
+                    });
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs border border-transparent"
+                >
+                  <Printer className="size-4" /> Imprimir Ticket
+                </button>
 
                 <button
                   onClick={() => setReciboModalData(null)}
@@ -1726,7 +1557,7 @@ export function VerVentas() {
                   </div>
                   <button
                     type="button"
-                    onClick={handleAgregarAlCarrito}
+                    onClick={() => handleAgregarAlCarrito()}
                     disabled={!productoSeleccionado}
                     className="w-[60%] h-10 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs shrink-0"
                   >
@@ -2212,40 +2043,9 @@ export function VerVentas() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => cargarDetallesVenta(v)}
-                            className="px-2.5 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
+                            className="px-2.5 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase w-full text-center"
                           >
                             Detalle
-                          </button>
-                          <button
-                            onClick={() => handleEditarVenta(v)}
-                            className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
-                            title="Editar Venta"
-                          >
-                            <Edit className="size-3.5" />
-                          </button>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const details = await obtenerDetalleVenta(v.id);
-                                setTicketParaImprimir({
-                                  venta: v,
-                                  detalles: details
-                                });
-                              } catch (err) {
-                                console.error(err);
-                              }
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
-                            title="Imprimir Recibo"
-                          >
-                            <Printer className="size-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleAnularVenta(v.id)}
-                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
-                            title="Anular Venta"
-                          >
-                            <Trash2 className="size-3.5" />
                           </button>
                         </div>
                       </div>
@@ -2304,43 +2104,12 @@ export function VerVentas() {
                               Q{v.total.toFixed(2)}
                             </td>
                             <td className="px-5 py-3.5 whitespace-nowrap">
-                              <div className="flex items-center justify-center gap-2">
+                              <div className="flex items-center justify-center">
                                 <button
                                   onClick={() => cargarDetallesVenta(v)}
                                   className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
                                 >
                                   Ver Detalle
-                                </button>
-                                <button
-                                  onClick={() => handleEditarVenta(v)}
-                                  className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
-                                  title="Editar Venta"
-                                >
-                                  <Edit className="size-3.5" />
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    try {
-                                      const details = await obtenerDetalleVenta(v.id);
-                                      setTicketParaImprimir({
-                                        venta: v,
-                                        detalles: details
-                                      });
-                                    } catch (err) {
-                                      console.error(err);
-                                    }
-                                  }}
-                                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
-                                  title="Imprimir Recibo"
-                                >
-                                  <Printer className="size-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleAnularVenta(v.id)}
-                                  className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
-                                  title="Anular Venta"
-                                >
-                                  <Trash2 className="size-3.5" />
                                 </button>
                               </div>
                             </td>
@@ -2578,41 +2347,52 @@ export function VerVentas() {
                   </div>
                 </div>
 
-                {/* Footer Print actions */}
+                {/* Footer actions */}
                 <div className="p-4 bg-white dark:bg-zinc-950 border-t border-[#C1D1C5]/30 dark:border-zinc-800 mt-auto">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => {
-                        const v = ventaDetalleSeleccionada;
-                        const details = detallesDeVenta;
-                        setVentaDetalleSeleccionada(null);
-                        setTicketParaImprimir({
-                          venta: v,
-                          detalles: details
-                        });
-                      }}
-                      disabled={isLoadingDetalles}
-                      className="py-2.5 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-50 text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                    >
-                      <Printer className="size-4" /> Imprimir Recibo
-                    </button>
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => {
+                          const v = ventaDetalleSeleccionada;
+                          setVentaDetalleSeleccionada(null);
+                          handleEditarVenta(v);
+                        }}
+                        disabled={isLoadingDetalles}
+                        className="py-2.5 px-4 rounded-xl bg-blue-50/80 hover:bg-blue-100/80 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border border-blue-200/50 dark:border-blue-900/30 text-blue-700 dark:text-blue-450 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                      >
+                        <Edit className="size-4" /> Editar Venta
+                      </button>
 
-                    <button
-                      onClick={() => {
-                        const v = ventaDetalleSeleccionada;
-                        const details = detallesDeVenta;
-                        let fullCli = null;
-                        if (v.cliente_id) {
-                          const found = clientes.find((c) => c.id === v.cliente_id);
-                          if (found) fullCli = found;
-                        }
-                        exportarFacturaCartaPDF(v, details, fullCli);
-                      }}
-                      disabled={isLoadingDetalles}
-                      className="py-2.5 px-4 rounded-xl bg-slate-800 dark:bg-zinc-800 hover:bg-slate-700 dark:hover:bg-zinc-700 disabled:opacity-50 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm border border-slate-700 dark:border-zinc-700"
-                    >
-                      <FileDown className="size-4" /> PDF (Carta)
-                    </button>
+                      <button
+                        onClick={() => {
+                          const v = ventaDetalleSeleccionada;
+                          setVentaDetalleSeleccionada(null);
+                          handleAnularVenta(v.id);
+                        }}
+                        disabled={isLoadingDetalles}
+                        className="py-2.5 px-4 rounded-xl bg-red-50/80 hover:bg-red-100/80 dark:bg-red-950/20 dark:hover:bg-red-950/40 border border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                      >
+                        <Trash2 className="size-4" /> Anular Venta
+                      </button>
+                    </div>
+
+                    <div className="w-full">
+                      <button
+                        onClick={() => {
+                          const v = ventaDetalleSeleccionada;
+                          const details = detallesDeVenta;
+                          setVentaDetalleSeleccionada(null);
+                          setTicketParaImprimir({
+                            venta: v,
+                            detalles: details
+                          });
+                        }}
+                        disabled={isLoadingDetalles}
+                        className="w-full py-2.5 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-50 text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                      >
+                        <Printer className="size-4" /> Imprimir Recibo
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
