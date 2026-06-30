@@ -184,7 +184,7 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
       isOpen={isOpen}
       onClose={handleClose}
       showCloseButton={false}
-      className="max-w-[90%] sm:max-w-md bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-900 rounded-3xl max-h-[92vh] overflow-y-auto"
+      className="max-w-[90%] sm:max-w-md bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-900 rounded-3xl max-h-[78vh] overflow-y-auto !top-24 md:!top-[50%] !translate-y-0 md:!translate-y-[-50%]"
     >
       <form onSubmit={handleSubmit} className="space-y-4 mt-2">
         <div className="flex flex-col gap-3 text-left">
