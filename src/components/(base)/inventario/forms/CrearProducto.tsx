@@ -10,12 +10,11 @@ import { Search, Truck } from "lucide-react";
 import Swal from "sweetalert2";
 
 interface CrearProductoProps {
-  isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps) {
+export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
   const [codigo, setCodigo] = useState("");
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -50,10 +49,8 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
         console.error("Error al cargar proveedores:", err);
       }
     };
-    if (isOpen) {
-      fetchProveedores();
-    }
-  }, [isOpen]);
+    fetchProveedores();
+  }, []);
 
   // Click outside listener para cerrar dropdown de proveedores
   useEffect(() => {
@@ -178,14 +175,11 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
   };
 
   return (
-    <Modal
-      title="Nuevo Producto"
-      description="Ingresa los detalles técnicos para registrar un nuevo producto."
-      isOpen={isOpen}
-      onClose={handleClose}
-      showCloseButton={false}
-      className="max-w-[90%] sm:max-w-md bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-900 rounded-3xl max-h-[78vh] overflow-y-auto !top-24 md:!top-[50%] !translate-y-0 md:!translate-y-[-50%]"
-    >
+    <div className="w-full max-w-2xl mx-auto bg-[#F5F5F1] dark:bg-[#525D53]/10 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-3xl p-6 md:p-8 shadow-sm">
+      <div className="mb-6">
+        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Nuevo Producto</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Ingresa los detalles técnicos para registrar un nuevo producto.</p>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4 mt-2">
         <div className="flex flex-col gap-3 text-left">
           <div>
@@ -310,19 +304,19 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
                 className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-              Stock Mínimo Alerta <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={stockMinimo}
-              onChange={(e) => setStockMinimo(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
-            />
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                Stock Mínimo Alerta <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={stockMinimo}
+                onChange={(e) => setStockMinimo(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+              />
+            </div>
           </div>
         </div>
 
@@ -332,15 +326,6 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
 
         <DialogFooter className="mt-6 flex flex-row justify-end gap-2">
           <Button
-            type="button"
-            variant="outline"
-            onClick={handleClose}
-            disabled={isLoading}
-            className="rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all text-xs"
-          >
-            Cancelar
-          </Button>
-          <Button
             type="submit"
             disabled={isLoading}
             className="rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] font-bold transition-all text-xs"
@@ -349,6 +334,6 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
           </Button>
         </DialogFooter>
       </form>
-    </Modal>
+    </div>
   );
 }

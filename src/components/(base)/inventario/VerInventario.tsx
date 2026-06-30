@@ -19,7 +19,7 @@ import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { cn } from "@/lib/utils";
-import { CrearProducto } from "./forms/CrearProducto";
+import { useRouter } from "next/navigation";
 import { EditarProducto } from "./forms/EditarProducto";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -223,6 +223,7 @@ function ProductoDetalle({
 
 // ─── Componente Principal ─────────────────────────────────────────────────────
 export function VerInventario() {
+  const router = useRouter();
   const [busqueda, setBusqueda] = useState("");
   const [filtroStockBajo, setFiltroStockBajo] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
@@ -238,7 +239,6 @@ export function VerInventario() {
   const pageSizeDropdownRef = useRef<HTMLDivElement>(null);
 
   // Modales
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [productoParaEditar, setProductoParaEditar] = useState<Producto | null>(null);
 
@@ -347,7 +347,7 @@ export function VerInventario() {
 
 
   const handleNuevoProducto = () => {
-    setIsCreateOpen(true);
+    router.push("/kore/inventario/nuevo");
   };
 
   const handleEliminarProducto = async (producto: Producto) => {
@@ -826,12 +826,6 @@ export function VerInventario() {
       </div>
 
       {/* Modales */}
-      <CrearProducto
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onSuccess={loadDbProductos}
-      />
-
       <EditarProducto
         isOpen={isEditOpen}
         onClose={() => {
