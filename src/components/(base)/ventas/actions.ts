@@ -187,3 +187,65 @@ export async function obtenerDetalleVenta(ventaId: string) {
     throw new Error("No se pudo obtener el detalle de la venta.");
   }
 }
+
+export async function anularVenta(ventaId: string) {
+  try {
+    const supabase = await createClient();
+
+    // 1. Obtener detalles de la venta (productos y cantidades)
+    const { data: detalles, error: detError } = await supabase
+      .from("ven_detalles")
+      .select("producto_id, cantidad")
+      .eq("venta_id", ventaId);
+
+    if (detError) throw new Error(detError.message);
+
+    // 2. Devolver las cantidades al stock en inv_productos
+    if (detalles && detalles.length > 0) {
+      for (const item of detalles) {
+        const { data: prod, error: prodError } = await supabase
+          .from("inv_productos")
+          .select("stock_actual")
+          .eq("id", item.producto_id)
+          .single();
+
+        if (!prodError && prod) {
+          const nuevoStock = prod.stock_actual + item.cantidad;
+          await supabase
+            .from("inv_productos")
+            .update({ stock_actual: nuevoStock })
+            .eq("id", item.producto_id);
+        }
+      }
+    }
+
+    // 3. Eliminar los detalles de la venta
+    const { error: delDetallesError } = await supabase
+      .from("ven_detalles")
+      .delete()
+      .eq("venta_id", ventaId);
+
+    if (delDetallesError) throw new Error(delDetallesError.message);
+
+    // 4. Eliminar la venta principal
+    const { error: delVentaError } = await supabase
+      .from("ventas")
+      .delete()
+      .eq("id", ventaId);
+
+    if (delVentaError) throw new Error(delVentaError.message);
+
+    // Revalidar rutas para refrescar cache de inventario y ventas
+    revalidatePath("/kore/inventario");
+    revalidatePath("/kore/ventas");
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error en anularVenta:", error);
+    return {
+      success: false,
+      error: error.message || "Error al anular la venta."
+    };
+  }
+}
+

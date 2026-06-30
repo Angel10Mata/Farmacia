@@ -196,6 +196,12 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
               type="text"
               value={codigo}
               onChange={(e) => setCodigo(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  document.getElementById("nombre_comercial")?.focus();
+                }
+              }}
               className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
               placeholder="Ej: D30-4EB"
             />
@@ -206,6 +212,7 @@ export function CrearProducto({ isOpen, onClose, onSuccess }: CrearProductoProps
               Nombre Comercial <span className="text-red-500">*</span>
             </label>
             <input
+              id="nombre_comercial"
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}

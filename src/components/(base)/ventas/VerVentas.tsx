@@ -16,7 +16,8 @@ import {
   ChevronDown,
   Check,
   ChevronLeft,
-  Calendar
+  Calendar,
+  Edit
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import Swal from "sweetalert2";
@@ -29,6 +30,7 @@ import {
   crearVenta,
   obtenerHistorialVentas,
   obtenerDetalleVenta,
+  anularVenta,
   ItemVentaInput
 } from "./actions";
 
@@ -515,6 +517,55 @@ export function VerVentas() {
     cargarDatos();
   }, []);
 
+  // Global barcode scanner listener
+  useEffect(() => {
+    if (activeTab !== "pos") return;
+    
+    let barcode = "";
+    let lastKeyTime = Date.now();
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input/textarea manually
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+        return;
+      }
+
+      const currentTime = Date.now();
+      // If time between keystrokes is too long (>50ms), it's probably human typing, reset
+      if (currentTime - lastKeyTime > 50) {
+        barcode = ""; 
+      }
+
+      if (e.key === "Enter" && barcode.length > 0) {
+        e.preventDefault();
+        const query = barcode.toLowerCase();
+        barcode = "";
+        
+        const exactMatch = productos.find(p => p.codigo?.toLowerCase() === query);
+        if (exactMatch) {
+          handleAgregarAlCarrito(exactMatch, 1);
+        } else {
+           Swal.fire({
+            title: "Producto no encontrado",
+            text: `No se encontró ningún producto con el código: ${query}`,
+            icon: "error",
+            timer: 2000,
+            showConfirmButton: false,
+            ...getSwalThemeOpts()
+          });
+        }
+      } else if (e.key.length === 1) { 
+        barcode += e.key;
+      }
+      
+      lastKeyTime = currentTime;
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [productos, activeTab]);
+
   // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -576,54 +627,56 @@ export function VerVentas() {
   });
 
   // Agregar item al carrito
-  const handleAgregarAlCarrito = () => {
-    if (!productoSeleccionado) return;
+  const handleAgregarAlCarrito = (productoOverride?: Producto, cantOverride?: number) => {
+    const prod = productoOverride || productoSeleccionado;
+    if (!prod) return;
     
-    const cant = Number(cantSeleccionada) || 0;
+    const cant = cantOverride !== undefined ? cantOverride : (Number(cantSeleccionada) || 0);
     // Validar cantidad
     if (cant <= 0) return;
     
-    const itemExistente = carrito.find((i) => i.producto.id === productoSeleccionado.id);
-    const cantidadFinal = (itemExistente?.cantidad || 0) + cant;
+    setCarrito(prev => {
+      const itemExistente = prev.find((i) => i.producto.id === prod.id);
+      const cantidadFinal = (itemExistente?.cantidad || 0) + cant;
 
-    if (cantidadFinal > productoSeleccionado.stock_actual) {
-      Swal.fire({
-        title: "Stock Insuficiente",
-        text: `No hay suficientes existencias para agregar ${cant} unidad(es). Disponibles en inventario: ${productoSeleccionado.stock_actual}.`,
-        icon: "warning",
-        ...getSwalThemeOpts()
-      });
-      return;
-    }
+      if (cantidadFinal > prod.stock_actual) {
+        Swal.fire({
+          title: "Stock Insuficiente",
+          text: `No hay suficientes existencias para agregar ${cant} unidad(es). Disponibles en inventario: ${prod.stock_actual}.`,
+          icon: "warning",
+          ...getSwalThemeOpts()
+        });
+        return prev;
+      }
 
-    if (itemExistente) {
-      setCarrito(
-        carrito.map((i) =>
-          i.producto.id === productoSeleccionado.id
+      if (itemExistente) {
+        return prev.map((i) =>
+          i.producto.id === prod.id
             ? {
                 ...i,
                 cantidad: cantidadFinal,
                 subtotal: cantidadFinal * i.precio_aplicado
               }
             : i
-        )
-      );
-    } else {
-      setCarrito([
-        ...carrito,
-        {
-          producto: productoSeleccionado,
-          cantidad: cant,
-          precio_aplicado: productoSeleccionado.precio_base,
-          subtotal: cant * productoSeleccionado.precio_base
-        }
-      ]);
-    }
+        );
+      } else {
+        return [
+          ...prev,
+          {
+            producto: prod,
+            cantidad: cant,
+            precio_aplicado: prod.precio_base,
+            subtotal: cant * prod.precio_base
+          }
+        ];
+      }
+    });
 
     // Limpiar selección de producto
     setProductoSeleccionado(null);
     setProductoBusqueda("");
     setCantSeleccionada(1);
+    setMostrarSugerenciasProd(false);
   };
 
   // Ajustar cantidad de item en carrito
@@ -762,6 +815,158 @@ export function VerVentas() {
       });
     } finally {
       setIsProcesandoVenta(false);
+    }
+  };
+
+  const handleAnularVenta = async (ventaId: string) => {
+    const resConfirm = await Swal.fire({
+      title: "¿Anular esta venta?",
+      text: "Esta acción devolverá los productos vendidos al inventario y eliminará el registro de venta. No se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, anular",
+      cancelButtonText: "Cancelar",
+      ...getSwalThemeOpts(),
+      confirmButtonColor: "#ef4444"
+    });
+
+    if (!resConfirm.isConfirmed) return;
+
+    setIsLoading(true);
+    try {
+      const res = await anularVenta(ventaId);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
+
+      Swal.fire({
+        title: "¡Anulada!",
+        text: "La venta ha sido anulada exitosamente y el stock ha sido restablecido.",
+        icon: "success",
+        ...getSwalThemeOpts()
+      });
+
+      cargarDatos();
+    } catch (err: any) {
+      Swal.fire({
+        title: "Error al anular",
+        text: err.message || "No se pudo anular la venta.",
+        icon: "error",
+        ...getSwalThemeOpts(),
+        confirmButtonColor: "#ef4444"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditarVenta = async (venta: Venta) => {
+    if (carrito.length > 0) {
+      const confirmOverwrite = await Swal.fire({
+        title: "Carrito con productos",
+        text: "Tienes productos en el Punto de Venta actual. Editar esta venta los reemplazará.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, reemplazar",
+        cancelButtonText: "Cancelar",
+        ...getSwalThemeOpts()
+      });
+      if (!confirmOverwrite.isConfirmed) return;
+    }
+
+    const resConfirm = await Swal.fire({
+      title: "¿Editar esta venta?",
+      text: "Esto anulará la venta original (devolviendo el stock) y cargará los productos en el Punto de Venta para modificarlos.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sí, editar",
+      cancelButtonText: "Cancelar",
+      ...getSwalThemeOpts()
+    });
+
+    if (!resConfirm.isConfirmed) return;
+
+    setIsLoading(true);
+    try {
+      // 1. Obtener detalles de la venta original antes de borrarla
+      const detalles = await obtenerDetalleVenta(venta.id);
+      if (!detalles || detalles.length === 0) {
+        throw new Error("No se pudieron cargar los detalles de la venta.");
+      }
+
+      // 2. Anular la venta original (esto repone el stock en base de datos)
+      const resAnulacion = await anularVenta(venta.id);
+      if (!resAnulacion.success) {
+        throw new Error(resAnulacion.error);
+      }
+
+      // 3. Recargar datos maestros (productos actualizados con el stock repuesto)
+      const dataMaster = await obtenerProductosYClientes();
+      const nuevosProductos: Producto[] = dataMaster.productos as Producto[];
+      setProductos(nuevosProductos);
+      setClientes(dataMaster.clientes as Cliente[]);
+      
+      // Recargar historial
+      const dataVentas = await obtenerHistorialVentas();
+      setVentas(dataVentas as any[]);
+
+      // 4. Mapear y cargar al carrito
+      const nuevosItemsCarrito: ItemCarrito[] = detalles.map((d: any) => {
+        const prodEncontrado = nuevosProductos.find(p => p.id === d.producto_id);
+        
+        return {
+          producto: prodEncontrado || {
+            id: d.producto_id,
+            codigo: d.inv_productos?.codigo || "",
+            nombre: d.inv_productos?.nombre || "Producto",
+            descripcion: "",
+            precio_base: d.precio_aplicado,
+            stock_actual: d.cantidad,
+            stock_minimo: 0,
+            activo: true
+          },
+          cantidad: d.cantidad,
+          precio_aplicado: d.precio_aplicado,
+          subtotal: d.subtotal
+        };
+      });
+
+      setCarrito(nuevosItemsCarrito);
+      
+      // Cargar datos de cliente si existe
+      if (venta.cliente_id) {
+        const cliente = dataMaster.clientes.find((c: any) => c.id === venta.cliente_id);
+        if (cliente) {
+          setClienteSeleccionado(cliente as Cliente);
+          setClienteBusqueda(cliente.nombre);
+        }
+      } else {
+        setClienteSeleccionado(null);
+        setClienteBusqueda("Consumidor Final");
+      }
+
+      setTipoVenta(venta.tipo_venta === "Crédito" ? "Crédito" : "Contado");
+      setObservaciones(venta.observaciones || "");
+      
+      // Ir a la pestaña de POS
+      setActiveTab("pos");
+
+      Swal.fire({
+        title: "Venta cargada",
+        text: "La venta ha sido cargada en el Punto de Venta. Modifica los productos y finaliza el cobro para guardar los cambios.",
+        icon: "success",
+        ...getSwalThemeOpts()
+      });
+
+    } catch (err: any) {
+      Swal.fire({
+        title: "Error al editar",
+        text: err.message || "No se pudo cargar la venta para edición.",
+        icon: "error",
+        ...getSwalThemeOpts()
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1410,6 +1615,28 @@ export function VerVentas() {
                         setMostrarSugerenciasProd(true);
                       }}
                       onFocus={() => setMostrarSugerenciasProd(true)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const query = e.currentTarget.value.trim().toLowerCase();
+                          if (!query) return;
+                          
+                          const exactMatch = productos.find(p => p.codigo?.toLowerCase() === query);
+                          if (exactMatch) {
+                            handleAgregarAlCarrito(exactMatch, 1);
+                          } else {
+                            Swal.fire({
+                              title: "Producto no encontrado",
+                              text: `No se encontró ningún producto con el código: ${query}`,
+                              icon: "error",
+                              timer: 2000,
+                              showConfirmButton: false,
+                              ...getSwalThemeOpts()
+                            });
+                            setProductoBusqueda("");
+                          }
+                        }
+                      }}
                       placeholder="Nombre o código de barras..."
                       className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-10"
                     />
@@ -1990,6 +2217,13 @@ export function VerVentas() {
                             Detalle
                           </button>
                           <button
+                            onClick={() => handleEditarVenta(v)}
+                            className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
+                            title="Editar Venta"
+                          >
+                            <Edit className="size-3.5" />
+                          </button>
+                          <button
                             onClick={async () => {
                               try {
                                 const details = await obtenerDetalleVenta(v.id);
@@ -2005,6 +2239,13 @@ export function VerVentas() {
                             title="Imprimir Recibo"
                           >
                             <Printer className="size-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleAnularVenta(v.id)}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
+                            title="Anular Venta"
+                          >
+                            <Trash2 className="size-3.5" />
                           </button>
                         </div>
                       </div>
@@ -2071,6 +2312,13 @@ export function VerVentas() {
                                   Ver Detalle
                                 </button>
                                 <button
+                                  onClick={() => handleEditarVenta(v)}
+                                  className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
+                                  title="Editar Venta"
+                                >
+                                  <Edit className="size-3.5" />
+                                </button>
+                                <button
                                   onClick={async () => {
                                     try {
                                       const details = await obtenerDetalleVenta(v.id);
@@ -2086,6 +2334,13 @@ export function VerVentas() {
                                   title="Imprimir Recibo"
                                 >
                                   <Printer className="size-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleAnularVenta(v.id)}
+                                  className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900"
+                                  title="Anular Venta"
+                                >
+                                  <Trash2 className="size-3.5" />
                                 </button>
                               </div>
                             </td>
