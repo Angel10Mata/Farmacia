@@ -448,6 +448,7 @@ export function VerVentas() {
   };
 
   const [fechaDia, setFechaDia] = useState<string>(getLocalDateString());
+  const [imagenAmpliadaUrl, setImagenAmpliadaUrl] = useState<string | null>(null);
   const [fechaRangoDesde, setFechaRangoDesde] = useState<string>("");
   const [fechaRangoHasta, setFechaRangoHasta] = useState<string>("");
 
@@ -1589,40 +1590,19 @@ export function VerVentas() {
                       exit={{ opacity: 0, height: 0 }}
                       className="w-full overflow-hidden mt-1"
                     >
-                      <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm">
+                      <div className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm">
                         {productoSeleccionado.imagen_url ? (
                           <img
-                            src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(productoSeleccionado.imagen_url).data.publicUrl}
+                            src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(productoSeleccionado.imagen_url!).data.publicUrl}
                             alt={productoSeleccionado.nombre}
-                            className="w-16 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-800 shrink-0 shadow-sm"
+                            onClick={() => setImagenAmpliadaUrl(createClient().storage.from("Imagenes_Farmacia").getPublicUrl(productoSeleccionado.imagen_url!).data.publicUrl)}
+                            className="w-24 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-800 shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
                           />
                         ) : (
-                          <div className="w-16 h-16 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-zinc-950 text-slate-400 shrink-0 shadow-sm">
-                            <Package className="size-6 text-slate-300 dark:text-slate-600" />
+                          <div className="w-24 h-24 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-zinc-950 text-slate-400 shadow-sm">
+                            <Package className="size-8 text-slate-300 dark:text-slate-600" />
                           </div>
                         )}
-                        <div className="flex-1 min-w-0 text-left">
-                          <p className="font-bold text-sm text-slate-900 dark:text-white truncate">
-                            {productoSeleccionado.nombre}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
-                            Cód: {productoSeleccionado.codigo || "C/F"}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1.5">
-                            <span className="text-sm font-black text-[#8DA78E] dark:text-[#A3BEB0]">
-                              Q{productoSeleccionado.precio_base.toFixed(2)}
-                            </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                              productoSeleccionado.stock_actual <= 0 
-                                ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400" 
-                                : productoSeleccionado.stock_actual <= productoSeleccionado.stock_minimo
-                                  ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
-                                  : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
-                            }`}>
-                              Stock: {productoSeleccionado.stock_actual}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -1667,19 +1647,8 @@ export function VerVentas() {
                         exit={{ opacity: 0, x: 20 }}
                         className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/20 dark:border-zinc-800 rounded-xl p-3 flex items-center justify-between gap-3 text-left"
                       >
-                        {/* Image, Name and Unit Price */}
+                        {/* Name and Unit Price */}
                         <div className="flex flex-1 items-center gap-3 min-w-0">
-                          {item.producto.imagen_url ? (
-                            <img
-                              src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(item.producto.imagen_url).data.publicUrl}
-                              alt={item.producto.nombre}
-                              className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shrink-0"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-400 shrink-0">
-                              <ShoppingCart className="size-4 opacity-50" />
-                            </div>
-                          )}
                           <div className="flex-1 min-w-0">
                             <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate" title={item.producto.nombre}>
                               {item.producto.nombre}
@@ -2536,6 +2505,29 @@ export function VerVentas() {
           </div>
         </div>
       )}
+
+      {/* Modal para ampliar imagen */}
+      <AnimatePresence>
+        {imagenAmpliadaUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setImagenAmpliadaUrl(null)}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 cursor-zoom-out"
+          >
+            <motion.img
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              src={imagenAmpliadaUrl}
+              alt="Imagen ampliada"
+              className="max-w-full max-h-full rounded-2xl shadow-2xl object-contain bg-white dark:bg-zinc-900"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
