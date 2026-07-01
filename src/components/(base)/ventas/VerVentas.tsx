@@ -17,7 +17,8 @@ import {
   Check,
   ChevronLeft,
   Calendar,
-  Edit
+  Edit,
+  Package
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import Swal from "sweetalert2";
@@ -1578,6 +1579,54 @@ export function VerVentas() {
                     Añadir
                   </button>
                 </div>
+
+                {/* Vista previa de imagen del producto seleccionado */}
+                <AnimatePresence>
+                  {productoSeleccionado && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="w-full overflow-hidden mt-1"
+                    >
+                      <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm">
+                        {productoSeleccionado.imagen_url ? (
+                          <img
+                            src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(productoSeleccionado.imagen_url).data.publicUrl}
+                            alt={productoSeleccionado.nombre}
+                            className="w-16 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-800 shrink-0 shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-zinc-950 text-slate-400 shrink-0 shadow-sm">
+                            <Package className="size-6 text-slate-300 dark:text-slate-600" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                            {productoSeleccionado.nombre}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                            Cód: {productoSeleccionado.codigo || "C/F"}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <span className="text-sm font-black text-[#8DA78E] dark:text-[#A3BEB0]">
+                              Q{productoSeleccionado.precio_base.toFixed(2)}
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              productoSeleccionado.stock_actual <= 0 
+                                ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400" 
+                                : productoSeleccionado.stock_actual <= productoSeleccionado.stock_minimo
+                                  ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+                                  : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                            }`}>
+                              Stock: {productoSeleccionado.stock_actual}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
