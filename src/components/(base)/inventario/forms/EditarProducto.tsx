@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, Truck } from "lucide-react";
+import { Search, Truck, ImageIcon } from "lucide-react";
 import Swal from "sweetalert2";
+import ImageUploader from "@/components/imgs/ImageUploader";
 
 interface Producto {
   id: string;
@@ -21,16 +21,16 @@ interface Producto {
   proveedor_id?: string | null;
   inv_proveedores?: { nombre: string } | null;
   created_at?: string;
+  imagen_url?: string | null;
 }
 
 interface EditarProductoProps {
-  isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   producto: Producto | null;
 }
 
-export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarProductoProps) {
+export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoProps) {
   const [codigo, setCodigo] = useState("");
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -38,6 +38,8 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
   const [stockActual, setStockActual] = useState("");
   const [stockMinimo, setStockMinimo] = useState("");
   const [activo, setActivo] = useState(true);
+  const [imagenUrl, setImagenUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Proveedores state
   const [proveedores, setProveedores] = useState<{ id: string; nombre: string; nit: string | null }[]>([]);
@@ -66,10 +68,8 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
         console.error("Error al cargar proveedores:", err);
       }
     };
-    if (isOpen) {
-      fetchProveedores();
-    }
-  }, [isOpen]);
+    fetchProveedores();
+  }, []);
 
   // Click outside listener para cerrar dropdown de proveedores
   useEffect(() => {
@@ -84,7 +84,7 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
     };
   }, []);
 
-  // Cargar datos cuando cambie el producto o se abra la modal
+  // Cargar datos cuando cambie el producto
   useEffect(() => {
     if (producto) {
       setCodigo(producto.codigo || "");
@@ -94,6 +94,7 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
       setStockActual(producto.stock_actual?.toString() || "0");
       setStockMinimo(producto.stock_minimo?.toString() || "0");
       setActivo(producto.activo !== false);
+      setImagenUrl(producto.imagen_url || null);
 
       if (producto.proveedor_id) {
         const pNombre = producto.inv_proveedores?.nombre || "";
@@ -104,7 +105,7 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
         setProveedorBusqueda("");
       }
     }
-  }, [producto, isOpen]);
+  }, [producto]);
 
   // Sincronizar proveedor seleccionado si se cargan los proveedores después
   useEffect(() => {
@@ -185,6 +186,7 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
           stock_actual: stockActualNum,
           stock_minimo: stockMinimoNum,
           proveedor_id: proveedorSeleccionado?.id || null,
+          imagen_url: imagenUrl,
           activo: activo
         })
         .eq("id", producto.id);
@@ -219,14 +221,11 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
   };
 
   return (
-    <Modal
-      title="Editar Producto"
-      description="Modifica los detalles técnicos o ajusta los niveles de inventario del producto."
-      isOpen={isOpen}
-      onClose={handleClose}
-      showCloseButton={false}
-      className="max-w-[90%] sm:max-w-md bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-900 rounded-3xl"
-    >
+    <div className="w-full max-w-2xl mx-auto bg-[#F5F5F1] dark:bg-[#525D53]/10 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-3xl p-6 md:p-8 shadow-sm">
+      <div className="mb-6">
+        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Editar Producto</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Modifica los detalles técnicos o ajusta los niveles de inventario del producto.</p>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4 mt-2">
         <div className="flex flex-col gap-3 text-left">
           <div>
@@ -266,6 +265,25 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
               onChange={(e) => setDescripcion(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-20 resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+              Imagen del Producto
+            </label>
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2 w-full mx-auto">
+              <ImageUploader
+                bucketName="Imagenes_Farmacia"
+                currentImagePath={imagenUrl}
+                onUploadSuccess={(path) => setImagenUrl(path)}
+                onDeleteSuccess={() => setImagenUrl(null)}
+                aspect={1}
+                aspectLabel="Cuadrado 1:1"
+                permitirTodos={true}
+                onEstadoChange={({ uploading }) => setIsUploadingImage(uploading)}
+                previewClassName="max-h-[150px]"
+              />
+            </div>
           </div>
 
           <div className="relative text-left" ref={provDropdownRef}>
@@ -392,13 +410,13 @@ export function EditarProducto({ isOpen, onClose, onSuccess, producto }: EditarP
           </Button>
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isUploadingImage}
             className="rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] font-bold transition-all text-xs"
           >
             {isLoading ? "Guardando..." : "Guardar Cambios"}
           </Button>
         </DialogFooter>
       </form>
-    </Modal>
+    </div>
   );
 }

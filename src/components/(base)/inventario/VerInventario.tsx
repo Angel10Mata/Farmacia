@@ -20,7 +20,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { EditarProducto } from "./forms/EditarProducto";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Producto {
@@ -237,10 +236,6 @@ export function VerInventario() {
   const [pageSize, setPageSize] = useState(10);
   const [mostrarPageSizeDropdown, setMostrarPageSizeDropdown] = useState(false);
   const pageSizeDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Modales
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [productoParaEditar, setProductoParaEditar] = useState<Producto | null>(null);
 
   // Helper para obtener colores de SweetAlert según el tema activo (claro/oscuro)
   const getSwalThemeOpts = () => {
@@ -571,10 +566,7 @@ export function VerInventario() {
                   key={p.id}
                   producto={p}
                   onClick={() => setProductoSeleccionado(p)}
-                  onEdit={() => {
-                    setProductoParaEditar(p);
-                    setIsEditOpen(true);
-                  }}
+                  onEdit={() => router.push(`/kore/inventario/editar/${p.id}`)}
                   onDelete={() => handleEliminarProducto(p)}
                 />
               ))
@@ -664,10 +656,7 @@ export function VerInventario() {
                                 Ver Detalle
                               </button>
                               <button
-                                onClick={() => {
-                                  setProductoParaEditar(p);
-                                  setIsEditOpen(true);
-                                }}
+                                onClick={() => router.push(`/kore/inventario/editar/${p.id}`)}
                                 className="px-3 py-1.5 bg-slate-800 dark:bg-zinc-800 hover:bg-slate-700 dark:hover:bg-zinc-700 text-white font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
                               >
                                 Editar
@@ -814,27 +803,13 @@ export function VerInventario() {
                 <ProductoDetalle
                   producto={productoSeleccionado}
                   onClose={() => setProductoSeleccionado(null)}
-                  onEdit={() => {
-                    setProductoParaEditar(productoSeleccionado);
-                    setIsEditOpen(true);
-                  }}
+                  onEdit={() => router.push(`/kore/inventario/editar/${productoSeleccionado.id}`)}
                 />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      {/* Modales */}
-      <EditarProducto
-        isOpen={isEditOpen}
-        onClose={() => {
-          setIsEditOpen(false);
-          setProductoParaEditar(null);
-        }}
-        onSuccess={loadDbProductos}
-        producto={productoParaEditar}
-      />
     </div>
   );
 }

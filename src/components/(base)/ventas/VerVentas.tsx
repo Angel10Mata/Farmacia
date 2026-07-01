@@ -348,6 +348,7 @@ interface Producto {
   precio_base: number;
   stock_actual: number;
   stock_minimo: number;
+  imagen_url?: string | null;
   activo: boolean;
 }
 
@@ -1499,9 +1500,22 @@ export function VerVentas() {
                                 isOut ? "opacity-40 cursor-not-allowed" : ""
                               }`}
                             >
-                              <div>
-                                <p className="font-bold text-slate-950 dark:text-white">{p.nombre}</p>
-                                <p className="text-[10px] text-slate-500">Cód: {p.codigo || "C/F"}</p>
+                              <div className="flex items-center gap-3">
+                                {p.imagen_url ? (
+                                  <img
+                                    src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(p.imagen_url).data.publicUrl}
+                                    alt={p.nombre}
+                                    className="w-10 h-10 object-cover rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-800"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-zinc-800 text-slate-400">
+                                    <Search className="size-4" />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-bold text-slate-950 dark:text-white">{p.nombre}</p>
+                                  <p className="text-[10px] text-slate-500">Cód: {p.codigo || "C/F"}</p>
+                                </div>
                               </div>
                               <div className="text-right">
                                 <p className="font-black text-[#8DA78E]">Q{p.precio_base.toFixed(2)}</p>
@@ -1604,14 +1618,27 @@ export function VerVentas() {
                         exit={{ opacity: 0, x: 20 }}
                         className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/20 dark:border-zinc-800 rounded-xl p-3 flex items-center justify-between gap-3 text-left"
                       >
-                        {/* Name and Unit Price */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate" title={item.producto.nombre}>
-                            {item.producto.nombre}
-                          </h4>
-                          <p className="text-[10px] text-slate-500">
-                            Unitario: Q{item.precio_aplicado.toFixed(2)}
-                          </p>
+                        {/* Image, Name and Unit Price */}
+                        <div className="flex flex-1 items-center gap-3 min-w-0">
+                          {item.producto.imagen_url ? (
+                            <img
+                              src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(item.producto.imagen_url).data.publicUrl}
+                              alt={item.producto.nombre}
+                              className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800 text-slate-400 shrink-0">
+                              <ShoppingCart className="size-4 opacity-50" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate" title={item.producto.nombre}>
+                              {item.producto.nombre}
+                            </h4>
+                            <p className="text-[10px] text-slate-500">
+                              Unitario: Q{item.precio_aplicado.toFixed(2)}
+                            </p>
+                          </div>
                         </div>
 
                         {/* Quantity Controls */}
@@ -2316,11 +2343,22 @@ export function VerVentas() {
                         <div className="divide-y divide-slate-150/40 dark:divide-zinc-900">
                           {detallesDeVenta.map((d: any) => (
                             <div key={d.id} className="p-3.5 flex items-center justify-between text-xs">
-                              <div>
-                                <p className="font-bold text-slate-900 dark:text-white">{d.inv_productos?.nombre}</p>
-                                <p className="text-[10px] text-slate-400">
-                                  {d.cantidad} ud(s) x Q{d.precio_aplicado.toFixed(2)}
-                                </p>
+                              <div className="flex items-center gap-3">
+                                {d.inv_productos?.imagen_url ? (
+                                  <img
+                                    src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(d.inv_productos.imagen_url).data.publicUrl}
+                                    alt={d.inv_productos?.nombre}
+                                    className="w-10 h-10 object-cover rounded-lg border border-slate-100 dark:border-zinc-800"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-zinc-800 rounded-lg text-[8px] text-slate-400 font-bold">N/A</div>
+                                )}
+                                <div>
+                                  <p className="font-bold text-slate-900 dark:text-white">{d.inv_productos?.nombre}</p>
+                                  <p className="text-[10px] text-slate-400">
+                                    {d.cantidad} ud(s) x Q{d.precio_aplicado.toFixed(2)}
+                                  </p>
+                                </div>
                               </div>
                               <span className="font-bold text-[#8DA78E]">Q{d.subtotal.toFixed(2)}</span>
                             </div>

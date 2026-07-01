@@ -82,9 +82,9 @@ export default async function RootLayout({
                     transition={{ duration: 0.5 }}
                     className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-4"
                   >
-                    <AuroraText className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em]">
+                    <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400">
                       © 2026 KoreAPP
-                    </AuroraText>
+                    </span>
                     <div className="hidden md:block w-px h-3 bg-zinc-300 dark:bg-zinc-700"></div>
                     <div className="text-[10px] md:text-xs font-bold uppercase tracking-widest flex items-center gap-1">
                       Powered by{" "}
@@ -95,7 +95,7 @@ export default async function RootLayout({
                         className="hover:underline cursor-pointer transition-all inline-flex items-center"
                       >
                         <AuroraText className="text-[10px] md:text-sm whitespace-nowrap">
-                          KoreAPP | Ing. de Software
+                          Kore | Ing. de Software
                         </AuroraText>
                       </a>
                     </div>

@@ -148,7 +148,7 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
                 className="hover:underline cursor-pointer transition-all inline-flex items-center text-zinc-900 dark:text-zinc-100"
               >
                 <AuroraText className="text-xs whitespace-nowrap">
-                  KoreAPP | Ing. de Software
+                  Kore | Ing. de Software
                 </AuroraText>
               </a>
             </div>

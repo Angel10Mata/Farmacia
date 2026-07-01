@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, Truck } from "lucide-react";
+import { Search, Truck, ImageIcon } from "lucide-react";
 import Swal from "sweetalert2";
+import ImageUploader from "@/components/imgs/ImageUploader";
 
 interface CrearProductoProps {
   onClose: () => void;
@@ -21,6 +22,8 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
   const [precioBase, setPrecioBase] = useState("");
   const [stockActual, setStockActual] = useState("");
   const [stockMinimo, setStockMinimo] = useState("");
+  const [imagenUrl, setImagenUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Proveedores state
   const [proveedores, setProveedores] = useState<{ id: string; nombre: string; nit: string | null }[]>([]);
@@ -93,6 +96,7 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
     setPrecioBase("");
     setStockActual("");
     setStockMinimo("");
+    setImagenUrl(null);
     setProveedorBusqueda("");
     setProveedorSeleccionado(null);
     setValidationError(null);
@@ -142,6 +146,7 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
         stock_actual: stockActualNum,
         stock_minimo: stockMinimoNum,
         proveedor_id: proveedorSeleccionado?.id || null,
+        imagen_url: imagenUrl,
         activo: true
       });
 
@@ -225,6 +230,25 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
               onChange={(e) => setDescripcion(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-20 resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+              Imagen del Producto
+            </label>
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2 w-full mx-auto">
+              <ImageUploader
+                bucketName="Imagenes_Farmacia"
+                currentImagePath={imagenUrl}
+                onUploadSuccess={(path) => setImagenUrl(path)}
+                onDeleteSuccess={() => setImagenUrl(null)}
+                aspect={1}
+                aspectLabel="Cuadrado 1:1"
+                permitirTodos={true}
+                onEstadoChange={({ uploading }) => setIsUploadingImage(uploading)}
+                previewClassName="max-h-[150px]"
+              />
+            </div>
           </div>
 
           <div className="relative text-left" ref={provDropdownRef}>
@@ -327,7 +351,7 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
         <DialogFooter className="mt-6 flex flex-row justify-end gap-2">
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isUploadingImage}
             className="rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] font-bold transition-all text-xs"
           >
             {isLoading ? "Registrando..." : "Registrar Producto"}
