@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { createClient } from '@/utils/supabase/client';
 import imageCompression from 'browser-image-compression';
 import ImageEditorModal from './ImageEditorModal';
-import { Loader2, Upload, Camera, Trash2 } from 'lucide-react';
+import { Loader2, Upload, Camera, Trash2, Image as ImageIcon } from 'lucide-react';
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 
 export interface ImageUploaderHandle {
@@ -170,7 +170,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
     setEditingFile(null);
     try {
       const compressed = await imageCompression(editedFile, {
-        maxSizeMB: 0.1,
+        maxSizeMB: 0.2,
         maxWidthOrHeight: 1024,
         useWebWorker: true,
         fileType: 'image/jpeg',
@@ -279,10 +279,10 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
               }`
             : compact 
             ? `w-full h-full flex flex-col items-center justify-center transition-colors relative group ${!currentImagePath && tienePermisoSubir ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-800/50' : ''}`
-            : `border-2 border-dashed rounded-xl p-4 flex flex-col items-center gap-3 transition-colors ${
+            : `border-2 border-dashed rounded-2xl p-6 flex flex-col items-center gap-4 transition-all duration-300 ${
                 isDragging 
-                  ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20' 
-                  : 'border-gray-300 dark:border-neutral-600 bg-gray-50 dark:bg-neutral-800/50'
+                  ? 'border-[#8DA78E] bg-[#8DA78E]/10 dark:bg-[#8DA78E]/5 scale-[1.01]' 
+                  : 'border-[#C1D1C5]/40 dark:border-zinc-800 bg-[#F5F5F1]/50 dark:bg-zinc-900/40 hover:border-[#8DA78E]/60'
               }`
         }
       >
@@ -293,9 +293,9 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
               <Loader2 className="animate-spin text-gray-400" size={28} />
             </div>
           ) : previewUrl ? (
-            <div className={botonesExternos ? 'w-full' : 'w-full flex justify-center'}>
+            <div className={compact ? 'w-full h-full' : botonesExternos ? 'w-full' : 'w-full flex justify-center'}>
               <div 
-                className={`relative ${botonesExternos ? 'w-full cursor-zoom-in' : 'inline-block cursor-zoom-in'}`}
+                className={compact ? 'w-full h-full relative' : `relative ${botonesExternos ? 'w-full cursor-zoom-in' : 'inline-block cursor-zoom-in'}`}
                 onMouseMove={(e) => updateMagnifier(e.clientX, e.clientY)}
                 onMouseLeave={() => setMagnifier(m => ({ ...m, show: false }))}
                 onTouchMove={(e) => {
@@ -310,7 +310,9 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                   src={previewUrl}
                   alt="Vista previa"
                   className={
-                    botonesExternos
+                    compact
+                      ? 'w-full h-full object-cover rounded-xl select-none'
+                      : botonesExternos
                       ? 'w-full max-h-[calc(95vh-11rem)] object-contain select-none block'
                       : `${previewClassName || 'max-h-[460px]'} object-contain rounded-lg shadow-md select-none`
                   }
@@ -326,9 +328,12 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
         ) : null}
 
         {!currentImagePath && !uploading && !botonesExternos && !compact && (
-          <div className="text-center pointer-events-none">
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-              Arrastra una imagen o selecciona una opción
+          <div className="flex flex-col items-center gap-2 text-center pointer-events-none">
+            <div className="size-12 rounded-2xl bg-[#8DA78E]/10 dark:bg-[#8DA78E]/5 border border-[#8DA78E]/20 flex items-center justify-center text-[#8DA78E] mb-1">
+              <ImageIcon className="size-6" />
+            </div>
+            <p className="text-sm text-slate-800 dark:text-slate-200 font-bold">
+              Arrastra y suelta tu imagen
             </p>
           </div>
         )}
@@ -392,7 +397,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
         )}
 
         {!botonesExternos && !compact && (
-        <div className="flex gap-2 flex-wrap justify-center">
+        <div className="flex gap-2.5 flex-wrap justify-center mt-1">
           {tienePermisoSubir && (
             <>
               {!currentImagePath && (
@@ -401,24 +406,24 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isProcessing}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] transition-all shadow-sm hover:shadow active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     {uploading ? (
                       <Loader2 size={14} className="animate-spin" />
                     ) : (
                       <Upload size={14} />
                     )}
-                    Galería
+                    Subir Galería
                   </button>
 
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
                     disabled={isProcessing}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-white dark:bg-zinc-800 border border-[#C1D1C5]/60 dark:border-zinc-700 text-[#525D53] dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
-                    <Camera size={14} />
-                    Cámara
+                    <Camera size={14} className="text-[#8DA78E]" />
+                    Tomar Foto
                   </button>
                 </>
               )}
@@ -428,14 +433,14 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                   type="button"
                   onClick={handleDelete}
                   disabled={isProcessing}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100/70 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   {deleting ? (
                     <Loader2 size={14} className="animate-spin" />
                   ) : (
                     <Trash2 size={14} />
                   )}
-                  Eliminar
+                  Eliminar Imagen
                 </button>
               )}
             </>
@@ -443,9 +448,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
         </div>
         )}
 
-        {!currentImagePath && !uploading && !botonesExternos && !compact && (
-          <p className="text-[10px] text-gray-400 pointer-events-none select-none">JPG · PNG · WEBP</p>
-        )}
+
         {!currentImagePath && !uploading && botonesExternos && (
           <p className="text-sm text-gray-500 dark:text-gray-400 font-medium text-center pointer-events-none select-none">
             Selecciona una imagen desde el pie del modal

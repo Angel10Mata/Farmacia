@@ -36,50 +36,9 @@ import {
   editarDetalleVentaDirecto,
   eliminarDetalleVentaDirecto
 } from "./actions";
-
-const obtenerCodigoRecibo = (id: string) => {
-  if (!id) return "N/A";
-  const cleanId = id.replace(/-/g, "").toUpperCase();
-  return `${cleanId.substring(0, 3)}-${cleanId.substring(3, 6)}`;
-};
-
-const formatFechaRecibo = (dateStr: string) => {
-  const date = new Date(dateStr);
-  const meses = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-  ];
-  const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-  
-  const mes = meses[date.getMonth()];
-  const diaMes = date.getDate();
-  const diaSemana = diasSemana[date.getDay()];
-  
-  return `${mes} ${diaMes} - ${diaSemana} ${diaMes}`;
-};
-
-const shareWhatsApp = (venta: any, detalles: any[], clienteCompleto?: any) => {
-  const code = obtenerCodigoRecibo(venta.id);
-  const clientName = clienteCompleto?.nombre || venta.ven_clientes?.nombre || "Consumidor Final";
-  const dateText = formatFechaRecibo(venta.created_at);
-  
-  let text = `*FARMACIA SALUD*\n`;
-  text += `*Recibo de Venta:* #${code}\n`;
-  text += `*Fecha:* ${dateText}\n`;
-  text += `*Cliente:* ${clientName}\n`;
-  text += `*Forma de Pago:* ${venta.tipo_venta}\n`;
-  text += `---------------------------\n`;
-  text += `*Artículos:*\n`;
-  detalles.forEach((d: any) => {
-    text += `- ${d.cantidad}x ${d.inv_productos?.nombre || "Producto"} (Q${d.precio_aplicado.toFixed(2)}) - Subtotal: Q${d.subtotal.toFixed(2)}\n`;
-  });
-  text += `---------------------------\n`;
-  text += `*TOTAL PAGADO: Q${venta.total.toFixed(2)}*\n\n`;
-  text += `¡Gracias por su preferencia!`;
-  
-  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(url, "_blank");
-};
+import { toBlob } from "html-to-image";
+import { ReciboVenta, buildReciboProps } from "./ReciboVenta";
+import { formatFechaRecibo, obtenerCodigoRecibo } from "./recibo-utils";
 
 interface IntervaloSemana {
   label: string; // e.g. "Lun 1 - Dom 7" o "Lun 29 - Mar 30"
@@ -390,6 +349,8 @@ interface Producto {
   stock_actual: number;
   stock_minimo: number;
   imagen_url?: string | null;
+  imagen_url_2?: string | null;
+  imagen_url_3?: string | null;
   activo: boolean;
 }
 
@@ -422,6 +383,9 @@ interface Venta {
     nombre: string;
     nit: string;
   } | null;
+  profiles?: {
+    nombre: string;
+  } | null;
 }
 
 export function VerVentas() {
@@ -453,9 +417,16 @@ export function VerVentas() {
   const [isProcesandoVenta, setIsProcesandoVenta] = useState(false);
 
   // Impresión de Ticket
+  const reciboCaptureRef = useRef<HTMLDivElement>(null);
   const [ticketParaImprimir, setTicketParaImprimir] = useState<{
     venta: Venta;
     detalles: any[];
+    clienteCompleto?: Cliente | null;
+  } | null>(null);
+  const [reciboCaptura, setReciboCaptura] = useState<{
+    venta: Venta;
+    detalles: any[];
+    clienteCompleto?: Cliente | null;
   } | null>(null);
 
   // Modal de Recibo post-cobro
@@ -1057,7 +1028,7 @@ export function VerVentas() {
 
   const handlePrintDirectly = async (venta: Venta) => {
     try {
-      const details = await obtenerDetalleVenta(venta.id);
+      const detalles = await obtenerDetalleVenta(venta.id);
       setTicketParaImprimir({ venta, detalles });
     } catch (err) {
       console.error("Error al imprimir directamente:", err);
@@ -1066,203 +1037,116 @@ export function VerVentas() {
 
   const shareWhatsAppAsImage = async (venta: any, detalles: any[], clienteCompleto?: any) => {
     try {
-      // Mostrar indicador de carga
       Swal.fire({
-        title: "Generando ticket...",
-        text: "Subiendo imagen del recibo a la nube para compartir...",
+        title: "Generando recibo...",
+        text: "Preparando imagen del recibo para compartir...",
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
         },
-        ...getSwalThemeOpts()
+        ...getSwalThemeOpts(),
       });
 
-      const code = obtenerCodigoRecibo(venta.id);
-      const clientName = clienteCompleto?.nombre || venta.ven_clientes?.nombre || "Consumidor Final";
-      const dateText = formatFechaRecibo(venta.created_at);
-      
-      const rowHeight = 22;
-      const headerHeight = 170;
-      const itemsHeight = detalles.length * rowHeight;
-      const footerHeight = 130;
-      const canvasWidth = 360;
-      const canvasHeight = headerHeight + itemsHeight + footerHeight;
+      setReciboCaptura({ venta, detalles, clienteCompleto });
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
 
-      const canvas = document.createElement("canvas");
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        Swal.close();
-        return;
+      const node = reciboCaptureRef.current;
+      if (!node) {
+        throw new Error("No se pudo renderizar el recibo.");
       }
 
-      // Background
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-      // Title
-      ctx.fillStyle = "#1e293b";
-      ctx.font = "bold 18px Courier New, monospace";
-      ctx.textAlign = "center";
-      ctx.fillText("FARMACIA SALUD", canvasWidth / 2, 30);
-
-      ctx.fillStyle = "#64748b";
-      ctx.font = "12px Courier New, monospace";
-      ctx.fillText("Guatemala", canvasWidth / 2, 48);
-
-      // Divider
-      ctx.strokeStyle = "#cbd5e1";
-      ctx.setLineDash([5, 3]);
-      ctx.beginPath();
-      ctx.moveTo(15, 62);
-      ctx.lineTo(canvasWidth - 15, 62);
-      ctx.stroke();
-
-      // Details
-      ctx.textAlign = "left";
-      ctx.fillStyle = "#1e293b";
-      ctx.font = "bold 13px Courier New, monospace";
-      ctx.fillText(`RECIBO DE VENTA #${code}`, 15, 82);
-
-      ctx.font = "12px Courier New, monospace";
-      ctx.fillStyle = "#334155";
-      ctx.fillText(`Fecha: ${dateText}`, 15, 102);
-      ctx.fillText(`Cliente: ${clientName.substring(0, 24)}`, 15, 118);
-      ctx.fillText(`NIT: ${clienteCompleto?.nit || venta.ven_clientes?.nit || "C/F"}`, 15, 134);
-      ctx.fillText(`Pago: ${venta.tipo_venta}`, 15, 150);
-
-      // Divider
-      ctx.beginPath();
-      ctx.moveTo(15, 162);
-      ctx.lineTo(canvasWidth - 15, 162);
-      ctx.stroke();
-
-      // Table Headers
-      let y = 180;
-      ctx.font = "bold 12px Courier New, monospace";
-      ctx.fillStyle = "#64748b";
-      ctx.fillText("Cant", 15, y);
-      ctx.fillText("Detalle", 60, y);
-      ctx.textAlign = "right";
-      ctx.fillText("Subtotal", canvasWidth - 15, y);
-
-      // Items
-      ctx.font = "12px Courier New, monospace";
-      ctx.fillStyle = "#334155";
-      detalles.forEach((d: any) => {
-        y += rowHeight;
-        ctx.textAlign = "left";
-        ctx.fillText(d.cantidad.toString(), 15, y);
-        ctx.fillText((d.inv_productos?.nombre || "Producto").substring(0, 18), 60, y);
-        ctx.textAlign = "right";
-        ctx.fillText(`Q${d.subtotal.toFixed(2)}`, canvasWidth - 15, y);
+      const blob = await toBlob(node, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#F9F6F0",
       });
 
-      // Divider
-      y += 18;
-      ctx.setLineDash([5, 3]);
-      ctx.beginPath();
-      ctx.moveTo(15, y);
-      ctx.lineTo(canvasWidth - 15, y);
-      ctx.stroke();
+      setReciboCaptura(null);
 
-      // Total
-      y += 24;
-      ctx.textAlign = "left";
-      ctx.font = "bold 13px Courier New, monospace";
-      ctx.fillStyle = "#059669";
-      ctx.fillText("TOTAL PAGADO:", 15, y);
-      ctx.textAlign = "right";
-      ctx.font = "bold 15px Courier New, monospace";
-      ctx.fillText(`Q${venta.total.toFixed(2)}`, canvasWidth - 15, y);
+      if (!blob) {
+        throw new Error("No se pudo generar la imagen del recibo.");
+      }
 
-      // Footer
-      y += 32;
-      ctx.textAlign = "center";
-      ctx.font = "italic 11px Courier New, monospace";
-      ctx.fillStyle = "#64748b";
-      ctx.fillText("¡Gracias por su compra!", canvasWidth / 2, y);
+      const code = obtenerCodigoRecibo(venta.id);
+      const clientName =
+        clienteCompleto?.nombre || venta.ven_clientes?.nombre || "Consumidor final";
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          Swal.close();
-          Swal.fire({
-            title: "Error",
-            text: "No se pudo generar la imagen del ticket.",
-            icon: "error",
-            ...getSwalThemeOpts()
+      try {
+        const supabase = createClient();
+        const filePath = `tickets/recibo_${venta.id}.png`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("Imagenes_Farmacia")
+          .upload(filePath, blob, {
+            cacheControl: "3600",
+            upsert: true,
           });
-          return;
-        }
+
+        if (uploadError) throw uploadError;
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("Imagenes_Farmacia").getPublicUrl(filePath);
+
+        Swal.close();
+
+        const whatsAppText =
+          `*FARMACIA SALUD*\n` +
+          `*Recibo de Venta:* #${code}\n` +
+          `*Cliente:* ${clientName}\n` +
+          `*Total:* Q${venta.total.toFixed(2)}\n\n` +
+          `📄 *Ver recibo:* ${publicUrl}`;
+
+        window.open(`https://wa.me/?text=${encodeURIComponent(whatsAppText)}`, "_blank");
+      } catch (err) {
+        console.error("Error al subir a Supabase Storage:", err);
+        Swal.close();
 
         try {
-          const supabase = createClient();
-          const filePath = `tickets/recibo_${venta.id}.png`;
-          
-          const { error: uploadError } = await supabase.storage
-            .from("Imagenes_Farmacia")
-            .upload(filePath, blob, {
-              cacheControl: "3600",
-              upsert: true
-            });
-
-          if (uploadError) throw uploadError;
-
-          const { data: { publicUrl } } = supabase.storage
-            .from("Imagenes_Farmacia")
-            .getPublicUrl(filePath);
-
-          Swal.close();
-
-          let whatsAppText = `*FARMACIA SALUD*\n`;
-          whatsAppText += `*Recibo de Venta:* #${code}\n`;
-          whatsAppText += `*Cliente:* ${clientName}\n`;
-          whatsAppText += `*Total:* Q${venta.total.toFixed(2)}\n\n`;
-          whatsAppText += `📄 *Ver Ticket de Venta:* ${publicUrl}`;
-
-          window.open(`https://wa.me/?text=${encodeURIComponent(whatsAppText)}`, "_blank");
-        } catch (err) {
-          console.error("Error al subir a Supabase Storage:", err);
-          Swal.close();
-
-          // Fallback a portapapeles
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({
-                "image/png": blob
-              })
-            ]);
-            Swal.fire({
-              title: "Ticket Copiado",
-              text: "No se pudo subir a la nube, pero se copió al portapapeles. Abre WhatsApp y presiona Ctrl + V.",
-              icon: "info",
-              confirmButtonText: "Ir a WhatsApp",
-              ...getSwalThemeOpts()
-            }).then(() => {
-              window.open("https://web.whatsapp.com/", "_blank");
-            });
-          } catch (clipErr) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `Ticket_${code}.png`;
-            a.click();
-            Swal.fire({
-              title: "Ticket Descargado",
-              text: "Se descargó la imagen del ticket. Compártela en WhatsApp.",
-              icon: "info",
-              confirmButtonText: "Ir a WhatsApp",
-              ...getSwalThemeOpts()
-            }).then(() => {
-              window.open("https://web.whatsapp.com/", "_blank");
-            });
-          }
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              "image/png": blob,
+            }),
+          ]);
+          Swal.fire({
+            title: "Recibo copiado",
+            text: "Se copió al portapapeles. Abre WhatsApp y presiona Ctrl + V.",
+            icon: "info",
+            confirmButtonText: "Ir a WhatsApp",
+            ...getSwalThemeOpts(),
+          }).then(() => {
+            window.open("https://web.whatsapp.com/", "_blank");
+          });
+        } catch {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `Recibo_${code}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          Swal.fire({
+            title: "Recibo descargado",
+            text: "Se descargó la imagen del recibo. Compártela en WhatsApp.",
+            icon: "info",
+            confirmButtonText: "Ir a WhatsApp",
+            ...getSwalThemeOpts(),
+          }).then(() => {
+            window.open("https://web.whatsapp.com/", "_blank");
+          });
         }
-      }, "image/png");
+      }
     } catch (error) {
       console.error("Error al generar e iniciar compartir por WhatsApp:", error);
+      setReciboCaptura(null);
       Swal.close();
+      Swal.fire({
+        title: "Error",
+        text: "No se pudo generar la imagen del recibo.",
+        icon: "error",
+        ...getSwalThemeOpts(),
+      });
     }
   };
 
@@ -1589,10 +1473,10 @@ export function VerVentas() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-zinc-900 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+              className="bg-white dark:bg-zinc-900 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh] min-h-0"
             >
               {/* Header del Modal */}
-              <div className="bg-[#8DA78E] dark:bg-[#525D53] p-5 text-white flex items-center justify-between">
+              <div className="shrink-0 bg-[#8DA78E] dark:bg-[#525D53] p-5 text-white flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-black uppercase tracking-wider">¡Cobro Exitoso!</h3>
                   <p className="text-[10px] text-white/80 font-medium">Venta registrada bajo el Recibo #{obtenerCodigoRecibo(reciboModalData.venta.id)}</p>
@@ -1603,83 +1487,28 @@ export function VerVentas() {
               </div>
 
               {/* Contenido / Vista Previa del Recibo */}
-              <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-4 text-slate-900 bg-zinc-50 dark:bg-zinc-950">
-                <div className="border border-dashed border-slate-300 rounded-2xl p-4 bg-white text-slate-900 flex flex-col gap-3 font-mono text-xs leading-normal shadow-sm">
-                  <div className="text-center font-bold text-sm tracking-tight text-slate-950">
-                    FARMACIA SALUD
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-zinc-50 dark:bg-zinc-950">
+                <div className="p-6">
+                  <div className="rounded-2xl overflow-hidden border border-[#525D53]/15 shadow-sm">
+                    <ReciboVenta
+                      {...buildReciboProps(
+                        reciboModalData.venta,
+                        reciboModalData.detalles,
+                        reciboModalData.clienteCompleto,
+                      )}
+                    />
                   </div>
-                  <div className="text-center text-[10px] text-slate-500 -mt-2">
-                    Guatemala
-                  </div>
-                  <div className="border-t border-dashed border-slate-200 my-1"></div>
-                  
-                  {/* Detalles del Recibo */}
-                  <div className="grid grid-cols-2 gap-y-1 text-[11px]">
-                    <span className="text-slate-400">Recibo:</span>
-                    <span className="font-bold text-right text-slate-950">#{obtenerCodigoRecibo(reciboModalData.venta.id)}</span>
-                    
-                    <span className="text-slate-400">Fecha:</span>
-                    <span className="text-right text-slate-800">{formatFechaRecibo(reciboModalData.venta.created_at)}</span>
-                    
-                    <span className="text-slate-400">Cliente:</span>
-                    <span className="text-right font-semibold text-slate-950">{reciboModalData.clienteCompleto?.nombre || reciboModalData.venta.ven_clientes?.nombre || "Consumidor Final"}</span>
-                    
-                    <span className="text-slate-400">NIT:</span>
-                    <span className="text-right text-slate-800">{reciboModalData.clienteCompleto?.nit || reciboModalData.venta.ven_clientes?.nit || "C/F"}</span>
-                    
-                    <span className="text-slate-400">Pago:</span>
-                    <span className="text-right text-slate-800">{reciboModalData.venta.tipo_venta}</span>
-                  </div>
-
-                  <div className="border-t border-dashed border-slate-200 my-1"></div>
-
-                  {/* Tabla de Productos */}
-                  <table className="w-full text-left text-[11px]">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-slate-400 font-bold">
-                        <th className="pb-1 text-center">Cant</th>
-                        <th className="pb-1">Detalle</th>
-                        <th className="pb-1 text-right">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reciboModalData.detalles.map((d, idx) => (
-                        <tr key={idx} className="border-b border-slate-100 last:border-0">
-                          <td className="py-1.5 text-center text-slate-900 font-medium">{d.cantidad}</td>
-                          <td className="py-1.5 text-slate-800">
-                            {d.inv_productos?.nombre || "Pedido"}
-                            {d.inv_productos?.codigo && <span className="block text-[9px] text-slate-400">{d.inv_productos.codigo}</span>}
-                          </td>
-                          <td className="py-1.5 text-right font-semibold text-slate-900">Q{d.subtotal.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  <div className="border-t border-dashed border-slate-200 my-1"></div>
-
-                  {/* Total */}
-                  <div className="flex justify-between items-center font-bold text-sm text-slate-900 pt-1">
-                    <span>TOTAL PAGADO:</span>
-                    <span className="text-base font-black text-emerald-600">Q{reciboModalData.venta.total.toFixed(2)}</span>
-                  </div>
-
-                  {reciboModalData.venta.observaciones && (
-                    <div className="text-[10px] text-slate-500 italic mt-2 border-t border-dashed border-slate-100 pt-2">
-                      <span className="font-bold block not-italic text-slate-400">Notas:</span>
-                      {reciboModalData.venta.observaciones}
-                    </div>
-                  )}
                 </div>
               </div>
 
               {/* Footer con Acciones */}
-              <div className="p-5 bg-zinc-50 dark:bg-zinc-950 border-t border-slate-200 dark:border-zinc-800 flex flex-col gap-3">
+              <div className="shrink-0 p-5 bg-zinc-50 dark:bg-zinc-950 border-t border-slate-200 dark:border-zinc-800 flex flex-col gap-3">
                 <button
                   onClick={() => {
                     setTicketParaImprimir({
                       venta: reciboModalData.venta,
-                      detalles: reciboModalData.detalles
+                      detalles: reciboModalData.detalles,
+                      clienteCompleto: reciboModalData.clienteCompleto,
                     });
                   }}
                   className="w-full py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white dark:bg-zinc-200 dark:hover:bg-zinc-300 dark:text-zinc-900 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs border border-transparent"
@@ -2952,9 +2781,9 @@ export function VerVentas() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs border-t border-slate-100 dark:border-zinc-900 pt-2 mt-1">
-                      <span className="text-slate-500 font-semibold uppercase">ID de Vendedor:</span>
-                      <span className="text-slate-900 dark:text-white font-mono text-[10px] break-all font-bold">
-                        {ventaDetalleSeleccionada.usuario_id || "N/A"}
+                      <span className="text-slate-500 font-semibold uppercase">Vendedor:</span>
+                      <span className="text-slate-900 dark:text-white font-bold text-right">
+                        {ventaDetalleSeleccionada.profiles?.nombre || "N/A"}
                       </span>
                     </div>
                   </div>
@@ -3121,75 +2950,31 @@ export function VerVentas() {
         )}
       </AnimatePresence>
 
-      {/* Ticket de Impresión (Solo visible al imprimir) */}
+      {/* Ticket de Impresión (altura dinámica según productos) */}
       {ticketParaImprimir && (
-        <div id="print-receipt-ticket" className="hidden print:block w-[80mm] p-4 bg-white text-black font-mono text-[11px] leading-tight text-left">
-          <style>{`
-            @media print {
-              body * {
-                visibility: hidden !important;
-              }
-              #print-receipt-ticket, #print-receipt-ticket * {
-                visibility: visible !important;
-              }
-              #print-receipt-ticket {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                padding: 10px !important;
-                margin: 0 !important;
-                background: white !important;
-                color: black !important;
-              }
-              @page {
-                margin: 0;
-                size: auto;
-              }
-            }
-          `}</style>
-          <div className="text-center font-bold text-[13px] mb-0.5">
-            FARMACIA SALUD
-          </div>
-          <div className="text-center text-[9px] text-slate-500 mb-2">
-            Guatemala
-          </div>
-          <div className="border-t border-dashed border-black my-1.5"></div>
-          <div className="space-y-0.5 mb-2 text-[10px]">
-            <p className="font-bold">RECIBO DE VENTA #{obtenerCodigoRecibo(ticketParaImprimir.venta.id)}</p>
-            <p>Fecha: {formatFechaRecibo(ticketParaImprimir.venta.created_at)}</p>
-            <p>Cliente: {ticketParaImprimir.venta.ven_clientes?.nombre || "Consumidor Final"}</p>
-            <p>NIT: {ticketParaImprimir.venta.ven_clientes?.nit || "C/F"}</p>
-            <p>Pago: {ticketParaImprimir.venta.tipo_venta}</p>
-          </div>
-          <div className="border-t border-dashed border-black my-1.5"></div>
-          <table className="w-full text-left text-[10px] mb-2">
-            <thead>
-              <tr className="border-b border-black">
-                <th className="py-0.5">Cant</th>
-                <th className="py-0.5">Detalle</th>
-                <th className="py-0.5 text-right">Sub</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ticketParaImprimir.detalles.map((d, idx) => (
-                <tr key={idx}>
-                  <td className="py-0.5">{d.cantidad}</td>
-                  <td className="py-0.5">{d.inv_productos?.nombre || "Pedido"}</td>
-                  <td className="py-0.5 text-right">Q{d.subtotal.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="border-t border-dashed border-black my-1.5"></div>
-          <div className="text-right font-bold text-xs mb-2">
-            TOTAL A PAGAR: Q{ticketParaImprimir.venta.total.toFixed(2)}
-          </div>
-          {ticketParaImprimir.venta.observaciones && (
-            <p className="italic text-[9px] mb-2">Notas: {ticketParaImprimir.venta.observaciones}</p>
-          )}
-          <div className="text-center text-[9px] text-slate-500 mt-3">
-            ¡Gracias por su compra!
+        <div id="print-receipt-ticket" className="hidden print:block">
+          <ReciboVenta
+            {...buildReciboProps(
+              ticketParaImprimir.venta,
+              ticketParaImprimir.detalles,
+              ticketParaImprimir.clienteCompleto,
+            )}
+            className="max-w-none"
+          />
+        </div>
+      )}
+
+      {/* Recibo oculto para captura de imagen (WhatsApp) */}
+      {reciboCaptura && (
+        <div className="pointer-events-none fixed left-[-9999px] top-0 z-[-1]">
+          <div ref={reciboCaptureRef} className="w-[480px]">
+            <ReciboVenta
+              {...buildReciboProps(
+                reciboCaptura.venta,
+                reciboCaptura.detalles,
+                reciboCaptura.clienteCompleto,
+              )}
+            />
           </div>
         </div>
       )}

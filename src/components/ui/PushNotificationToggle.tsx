@@ -21,7 +21,7 @@ export function PushNotificationToggle() {
   const isDark = theme === 'dark'
 
   useEffect(() => {
-    if (!IS_PRODUCTION) return
+    // Allow running in dev for testing
     const checkStatus = async () => {
       if ('serviceWorker' in navigator && userId) {
         try {
@@ -57,7 +57,7 @@ export function PushNotificationToggle() {
     checkStatus()
   }, [userId, supabase])
 
-  if (!IS_PRODUCTION || !userId) return null
+  if (!userId) return null
 
   if (isInitializing) {
     return (
@@ -138,8 +138,8 @@ export function PushNotificationToggle() {
 
         setIsSubscribed(true)
       }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Fallo al activar notificaciones'
+    } catch (error: any) {
+      const message = error?.message || error?.toString() || 'Fallo al activar notificaciones'
       console.error('Detalles del fallo en Push:', error)
       alert(`Error: ${message}`)
     } finally {

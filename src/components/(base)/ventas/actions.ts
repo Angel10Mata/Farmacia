@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendPushNotification } from "@/utils/pushServer";
 
 export interface ItemVentaInput {
   producto_id: string;
@@ -118,7 +119,7 @@ export async function crearVenta(params: {
     for (const item of items) {
       const { data: prod } = await supabase
         .from("inv_productos")
-        .select("stock_actual")
+        .select("nombre, stock_actual, stock_minimo")
         .eq("id", item.producto_id)
         .single();
 
@@ -132,11 +133,43 @@ export async function crearVenta(params: {
       if (stockError) {
         throw new Error(`Error al actualizar el stock del producto ID ${item.producto_id}: ${stockError.message}`);
       }
+
+      // Enviar notificación si cae por debajo del mínimo (o igual)
+      if (prod && nuevoStock <= prod.stock_minimo) {
+        await sendPushNotification(
+          {
+            title: '⚠️ Alerta de Inventario',
+            body: `El producto "${prod.nombre}" ha llegado a su stock mínimo (${nuevoStock} unidades restantes).`,
+            url: '/kore/inventario'
+          },
+          ['all']
+        );
+      }
     }
 
-    // Revalidar rutas para refrescar cache de inventario y ventas
+    // 5. Registrar el ingreso en Finanzas
+    if (tipo_venta === "al contado" || tipo_venta === "transferencia" || tipo_venta === "tarjeta") {
+      const { error: finError } = await supabase
+        .from("fin_transacciones")
+        .insert({
+          tipo: "ingreso",
+          categoria: "venta",
+          monto: total,
+          descripcion: `Venta #${venta.numero_recibo} - ${tipo_venta.toUpperCase()}`,
+          usuario_id: user.id,
+          referencia_id: venta.id
+        });
+        
+      if (finError) {
+        console.error("Error al registrar en finanzas:", finError);
+        // No lanzamos error para no revertir la venta, pero queda logueado
+      }
+    }
+
+    // Revalidar rutas para refrescar cache
     revalidatePath("/kore/inventario");
     revalidatePath("/kore/ventas");
+    revalidatePath("/kore/finanzas");
 
     return {
       success: true,
@@ -163,7 +196,33 @@ export async function obtenerHistorialVentas() {
 
     if (error) throw new Error(error.message);
 
-    return data || [];
+    const ventas = data || [];
+    const usuarioIds = [
+      ...new Set(ventas.map((v) => v.usuario_id).filter(Boolean)),
+    ] as string[];
+
+    let perfilesPorId: Record<string, { nombre: string }> = {};
+
+    if (usuarioIds.length > 0) {
+      const { data: perfiles, error: perfilesError } = await supabase
+        .from("profiles")
+        .select("id, nombre")
+        .in("id", usuarioIds);
+
+      if (perfilesError) throw new Error(perfilesError.message);
+
+      perfilesPorId = Object.fromEntries(
+        (perfiles || []).map((p) => [
+          p.id,
+          { nombre: p.nombre?.trim() || "Sin nombre" },
+        ])
+      );
+    }
+
+    return ventas.map((venta) => ({
+      ...venta,
+      profiles: venta.usuario_id ? perfilesPorId[venta.usuario_id] ?? null : null,
+    }));
   } catch (error: any) {
     console.error("Error en obtenerHistorialVentas:", error);
     throw new Error("No se pudo obtener el historial de ventas.");
@@ -416,6 +475,16 @@ export async function eliminarDetalleVentaDirecto(params: {
     if (updateVentaError) {
       throw new Error(`Error al actualizar el total de la venta: ${updateVentaError.message}`);
     }
+
+    // Enviar notificación de movimiento sospechoso a admins y supers
+    await sendPushNotification(
+      {
+        title: '🚨 Movimiento Sospechoso',
+        body: `Se ha anulado/eliminado un producto de la venta #${ventaId.slice(0, 8)}. Revisa las finanzas.`,
+        url: '/kore/ventas'
+      },
+      ['admin', 'super']
+    );
 
     return { success: true, nuevoTotal: nuevoTotalVenta };
   } catch (error: any) {

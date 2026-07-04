@@ -243,7 +243,7 @@ function ProductoDetalle({
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 24 }}
-      className="bg-zinc-100 dark:bg-zinc-800 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-2xl p-3 flex flex-col gap-2.5 h-full overflow-y-auto w-full animate-fade-in"
+      className="bg-zinc-100 dark:bg-zinc-800 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-2xl p-3 flex flex-col gap-2.5 h-fit max-h-full overflow-y-auto w-full animate-fade-in shadow-2xl"
     >
       {/* Cabecera */}
       <div className="flex items-center justify-between pb-2 border-b border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 shrink-0">
@@ -421,7 +421,7 @@ function ProductoDetalle({
                 { field: "imagen_url_2", val: formData.imagen_url_2 },
                 { field: "imagen_url_3", val: formData.imagen_url_3 },
               ].map((imgInfo, idx) => (
-                <div key={idx} className="aspect-[3/4] rounded-xl bg-white dark:bg-zinc-900/60 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 overflow-hidden relative">
+                <div key={idx} className="aspect-[3/4] rounded-xl bg-white dark:bg-zinc-900/60 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 overflow-hidden relative shadow-sm">
                   <ImageUploader
                     bucketName="Imagenes_Farmacia"
                     currentImagePath={imgInfo.val ?? null}
@@ -440,7 +440,7 @@ function ProductoDetalle({
               {[producto.imagen_url, producto.imagen_url_2, producto.imagen_url_3].map((imgUrl, idx) => {
                 const publicUrl = imgUrl ? createClient().storage.from("Imagenes_Farmacia").getPublicUrl(imgUrl).data.publicUrl : null;
                 return (
-                  <div key={idx} className="aspect-[3/4] rounded-xl bg-white dark:bg-zinc-900/60 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/20 flex items-center justify-center overflow-hidden">
+                  <div key={idx} className="aspect-[3/4] rounded-xl bg-white dark:bg-zinc-900/60 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/20 flex items-center justify-center overflow-hidden shadow-xs">
                     {publicUrl ? (
                       <img src={publicUrl} alt={`${producto.nombre} - img ${idx + 1}`} className="w-full h-full object-cover" />
                     ) : (
@@ -828,9 +828,9 @@ export function VerInventario() {
             }}
             className={`w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border text-[11px] md:text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer ${
               filtroStockBajo
-                ? "border-red-300 bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/40"
-                : "border-[#C1D1C5] dark:border-[#A3BEB0]/30 text-[#525D53] dark:text-[#A3BEB0] hover:bg-[#C1D1C5]/10"
-            } ${hayStockBajoGlobal && !filtroStockBajo ? "animate-pulse border-red-300 text-red-500" : ""}`}
+                ? "border-red-400 bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800"
+                : "border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+            } ${hayStockBajoGlobal && !filtroStockBajo ? "animate-pulse" : ""}`}
           >
             <AlertTriangle className="size-3 md:size-3.5" /> Stock Bajo
           </button>
@@ -845,7 +845,7 @@ export function VerInventario() {
       </div>
 
       {/* Grid de productos + detalle */}
-      <div className="flex gap-4 flex-1 relative">
+      <div className="flex gap-4 flex-1 relative min-h-[800px]">
         {isLoading && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center z-50 rounded-2xl">
             <div className="flex flex-col items-center gap-3">
@@ -1069,9 +1069,9 @@ export function VerInventario() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "100%", opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="hidden md:block absolute top-0 right-0 h-full w-[750px] z-20 shadow-2xl"
+              className="hidden md:block absolute top-[-110px] right-0 h-[calc(100%+110px)] w-[750px] z-20"
             >
-              <div className="h-full">
+              <div className="h-fit max-h-full">
                 <ProductoDetalle
                   producto={productoSeleccionado}
                   onClose={() => setProductoSeleccionado(null)}

@@ -198,7 +198,7 @@ input[type=number] {
   appearance: textfield;
 }
 
-/* Estilos de Impresión para Tickets */
+/* Estilos de Impresión para Recibo de Venta */
 @media print {
   body * {
     visibility: hidden;
@@ -211,16 +211,23 @@ input[type=number] {
     position: absolute;
     left: 0;
     top: 0;
-    width: 80mm;
+    width: 100%;
+    max-width: 100%;
     margin: 0;
-    padding: 10px;
-    background: white !important;
-    color: black !important;
-    font-family: monospace;
-    font-size: 11px;
+    padding: 0;
+    background: #F9F6F0 !important;
+    color: #1a1a1a !important;
+  }
+  .recibo-venta {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    page-break-inside: avoid;
   }
   @page {
-    margin: 0;
+    margin: 8mm;
+    size: auto;
   }
 }
 

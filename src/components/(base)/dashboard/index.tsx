@@ -7,6 +7,9 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { MagicCard } from "@/components/ui/magic-card";
+import AnimatedIcon from "@/components/ui/AnimatedIcon";
+import { createClient } from "@/utils/supabase/client";
+import { AlertCircle } from "lucide-react";
 
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import PassKeysModal from "@/components/(base)/layout/modals/PassKeysModal";
@@ -23,7 +26,39 @@ import {
   Smartphone,
   ArrowUpRight,
   Settings,
+  Wallet,
 } from "lucide-react";
+
+function VentasIllustration({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <rect x="18" y="12" width="8" height="8" fill="#F472B6" rx="1" transform="rotate(-6 18 12)" />
+      <rect x="25" y="10" width="9" height="10" fill="#34D399" rx="1" transform="rotate(8 25 10)" />
+      <rect x="21" y="15" width="10" height="7" fill="#FBBF24" rx="1" />
+      <path d="M8 12H13.5L17.5 31H34.5L38.5 16H15" fill="none" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="20" cy="37" r="4.5" fill="#1F2937" />
+      <circle cx="20" cy="37" r="1.5" fill="#E5E7EB" />
+      <circle cx="32" cy="37" r="4.5" fill="#1F2937" />
+      <circle cx="32" cy="37" r="1.5" fill="#E5E7EB" />
+    </svg>
+  );
+}
+
+function ProveedoresIllustration({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      <path d="M30 20H37L42 26V35H30V20Z" fill="#60A5FA" />
+      <polygon points="35 22 39 26 35 26" fill="#EFF6FF" />
+      <rect x="8" y="14" width="22" height="21" rx="1.5" fill="#F59E0B" />
+      <line x1="12" y1="14" x2="12" y2="35" stroke="#D97706" strokeWidth="1" />
+      <line x1="16" y1="14" x2="16" y2="35" stroke="#D97706" strokeWidth="1" />
+      <circle cx="16" cy="36" r="5" fill="#1F2937" />
+      <circle cx="16" cy="36" r="2" fill="#FFF" />
+      <circle cx="34" cy="36" r="5" fill="#1F2937" />
+      <circle cx="34" cy="36" r="2" fill="#FFF" />
+    </svg>
+  );
+}
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   proyectos: FolderKanban,
@@ -34,6 +69,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   dispositivos: Smartphone,
   clientes: Users,
   admin: FolderKanban,
+  finanzas: Wallet,
 };
 
 interface ModuleConfig {
@@ -54,6 +90,11 @@ interface ModuleConfig {
   tag: string;
   cardBg: string;        // Tailwind background classes
   cardBorder: string;    // border color class
+  lordIcon?: string;     // Lordicon ID
+  lordIconPrimary?: string;
+  lordIconSecondary?: string;
+  illustration?: React.ComponentType<{ className?: string }>;
+  illustrationSize?: string;
 }
 
 
@@ -75,6 +116,8 @@ const MODULES: ModuleConfig[] = [
     tag: "Facturación · Caja",
     cardBg: "bg-[#f4f7f5] dark:bg-[#151f19] hover:bg-[#e9f0eb] dark:hover:bg-[#1b2a21]",
     cardBorder: "border-[#8DA78E]/20 dark:border-[#A3BEB0]/20",
+    illustration: VentasIllustration,
+    illustrationSize: "size-24 md:size-32",
   },
   {
     id: "clientes",
@@ -93,6 +136,7 @@ const MODULES: ModuleConfig[] = [
     tag: "Directorio · Historial",
     cardBg: "bg-[#f4f7f5] dark:bg-[#151f19] hover:bg-[#e9f0eb] dark:hover:bg-[#1b2a21]",
     cardBorder: "border-[#8DA78E]/20 dark:border-[#A3BEB0]/20",
+    lordIcon: "zdwrqfmb",
   },
   {
     id: "proveedores",
@@ -111,6 +155,26 @@ const MODULES: ModuleConfig[] = [
     tag: "Contacto · Compras",
     cardBg: "bg-[#f4f7f5] dark:bg-[#151f19] hover:bg-[#e9f0eb] dark:hover:bg-[#1b2a21]",
     cardBorder: "border-[#8DA78E]/20 dark:border-[#A3BEB0]/20",
+    illustration: ProveedoresIllustration,
+  },
+  {
+    id: "finanzas",
+    title: "Control de",
+    subtitle: "Finanzas",
+    desc: "Ingresos, egresos, control de gastos fijos y pagos de clientes.",
+    href: "/kore/finanzas",
+    allowedRoles: ["super", "admin"],
+    gradientFrom: "#8DA78E",
+    gradientTo: "#A3BEB0",
+    accent: "text-[#8DA78E] dark:text-[#A3BEB0]",
+    accentHover: "group-hover:text-[#525D53] dark:group-hover:text-white",
+    activeBorder: "ring-[#8DA78E]/40",
+    bento: "col-span-1 row-span-1 md:col-span-3 md:row-span-1",
+    size: "wide" as const,
+    tag: "Ingresos · Egresos",
+    cardBg: "bg-[#f4f7f5] dark:bg-[#151f19] hover:bg-[#e9f0eb] dark:hover:bg-[#1b2a21]",
+    cardBorder: "border-[#8DA78E]/20 dark:border-[#A3BEB0]/20",
+    lordIcon: "hrxrggwa",
   },
   {
     id: "inventario",
@@ -129,6 +193,7 @@ const MODULES: ModuleConfig[] = [
     tag: "Existencias · Lotes",
     cardBg: "bg-[#fffbeb] dark:bg-[#2b1f15] hover:bg-[#fef3c7] dark:hover:bg-[#3d2c1e]",
     cardBorder: "border-amber-200 dark:border-amber-800/40",
+    lordIcon: "gbzbfgyf",
   },
   {
     id: "admin",
@@ -147,6 +212,9 @@ const MODULES: ModuleConfig[] = [
     tag: "Sistema · Control",
     cardBg: "bg-[#fffbeb] dark:bg-[#2b1f15] hover:bg-[#fef3c7] dark:hover:bg-[#3d2c1e]",
     cardBorder: "border-amber-200 dark:border-amber-800/40",
+    lordIcon: "yrtftktn",
+    lordIconPrimary: "#eeca66",
+    lordIconSecondary: "#ffffff",
   },
   {
     id: "perfil",
@@ -164,6 +232,7 @@ const MODULES: ModuleConfig[] = [
     tag: "Credenciales",
     cardBg: "bg-[#fffbeb] dark:bg-[#2b1f15] hover:bg-[#fef3c7] dark:hover:bg-[#3d2c1e]",
     cardBorder: "border-amber-200 dark:border-amber-800/40",
+    lordIcon: "daeumrty",
   },
 ];
 
@@ -189,7 +258,22 @@ export function Dashboard() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isPasskeysOpen, setIsPasskeysOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [lowStockCount, setLowStockCount] = useState(0);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchLowStock = async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase.from("inv_productos").select("stock_actual, stock_minimo");
+      if (data) {
+        const count = data.filter((p: any) => p.stock_actual <= p.stock_minimo).length;
+        setLowStockCount(count);
+      } else if (error) {
+        console.error("Error fetching low stock:", error);
+      }
+    };
+    fetchLowStock();
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -221,9 +305,11 @@ export function Dashboard() {
   // Agrupar módulos por área
   const AREA_COMERCIAL = ["ventas", "clientes", "proveedores"];
   const AREA_OPERATIVA = ["inventario", "admin", "perfil"];
+  const AREA_FINANCIERA = ["finanzas"];
 
   const comercialModules = visibleModules.filter((m) => AREA_COMERCIAL.includes(m.id));
   const operativaModules = visibleModules.filter((m) => AREA_OPERATIVA.includes(m.id));
+  const financieraModules = visibleModules.filter((m) => AREA_FINANCIERA.includes(m.id));
 
   const AreaLabel = ({ children, color = "violet" }: { children: React.ReactNode; color?: string }) => (
     <div className="flex items-center gap-3 w-full max-w-5xl mx-auto px-1 mb-3">
@@ -240,6 +326,15 @@ export function Dashboard() {
     const isActive = isMobile && activeId === mod.id;
     const isModuleActive = isActive || (mod.id === 'perfil' && expandedPerfil);
     const IconComponent = ICON_MAP[mod.id] || FolderKanban;
+    const IllustrationComponent = mod.illustration;
+    const iconSizeClass =
+      mod.size === "hero"
+        ? "size-16 md:size-20"
+        : mod.size === "tall"
+          ? "size-14 md:size-16"
+          : mod.size === "wide"
+            ? "size-12 md:size-14"
+            : "size-10 md:size-12";
     return (
 
           <motion.div
@@ -338,10 +433,29 @@ export function Dashboard() {
                   <div className={cn("relative z-10 flex flex-row items-center justify-start gap-4 w-full", mod.size === "compact" || mod.size === "wide" ? "md:flex-1" : "flex-1")}>
                     {/* Icon Container */}
                     <div className="shrink-0 flex items-center justify-center relative">
-                      <IconComponent className={cn(
-                        "transition-transform duration-500 group-hover:scale-110 drop-shadow-sm",
-                        mod.size === "hero" ? "size-16 md:size-20" : mod.size === "tall" ? "size-14 md:size-16" : mod.size === "wide" ? "size-12 md:size-14" : "size-10 md:size-12"
-                      )} />
+                      {mod.lordIcon ? (
+                        <AnimatedIcon 
+                          iconKey={mod.lordIcon}
+                          className="drop-shadow-sm group-hover:scale-110 transition-transform duration-500"
+                          size={mod.size === "hero" ? 90 : mod.size === "tall" ? 75 : mod.size === "wide" ? 65 : 55}
+                          trigger="hover"
+                          primaryColor={mod.lordIconPrimary}
+                          secondaryColor={mod.lordIconSecondary}
+                        />
+                      ) : IllustrationComponent ? (
+                        <IllustrationComponent
+                          className={cn(
+                            "transition-transform duration-500 group-hover:scale-110 drop-shadow-sm shrink-0",
+                            mod.illustrationSize ?? iconSizeClass,
+                          )}
+                        />
+                      ) : (
+                        <IconComponent className={cn(
+                          "transition-transform duration-500 group-hover:scale-110 drop-shadow-sm",
+                          mod.accent,
+                          iconSizeClass,
+                        )} />
+                      )}
                     </div>
 
                     {/* Text details */}
@@ -364,15 +478,22 @@ export function Dashboard() {
 
                   {/* Footer */}
                   <div className={cn("relative z-10 flex items-center justify-between border-t border-slate-200/50 dark:border-slate-800/30 transition-colors duration-500", mod.size === "compact" || mod.size === "wide" ? "pt-2 md:pt-2.5 md:mt-2" : "pt-2.5 mt-2")}>
-                    <span className={cn(
-                      "text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500",
-                      mod.accent,
-                      mod.accentHover
-                    )}>
-                      Entrar al módulo
-                    </span>
-                    <ArrowUpRight className={cn("size-4 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5", mod.accent, mod.accentHover)} />
+                    <div className="flex items-center justify-between mt-auto">
+                      <span className="text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors inline-flex items-center gap-1.5">
+                        Entrar al Módulo
+                        <ArrowUpRight className="size-3.5 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                      </span>
+                    </div>
                   </div>
+                </div>
+              )}
+              {/* Low Stock Alert - Simple Red Dot */}
+              {mod.id === "inventario" && lowStockCount > 0 && (
+                <div className="absolute top-4 right-4 flex items-center justify-center">
+                  <span className="relative flex h-3 w-3" title={`¡${lowStockCount} productos en stock mínimo!`}>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
                 </div>
               )}
             </MagicCard>
@@ -398,6 +519,16 @@ export function Dashboard() {
           <AreaLabel color="emerald">Área Operativa</AreaLabel>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-auto sm:auto-rows-[160px]">
             {operativaModules.map(renderModuleCard)}
+          </div>
+        </div>
+      )}
+
+      {/* Área Financiera */}
+      {financieraModules.length > 0 && (
+        <div className="flex flex-col">
+          <AreaLabel color="violet">Área Financiera</AreaLabel>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-auto sm:auto-rows-[160px]">
+            {financieraModules.map(renderModuleCard)}
           </div>
         </div>
       )}
