@@ -38,6 +38,8 @@ interface ImageUploaderProps {
   previewClassName?: string;
   /** Modo compacto: solo íconos, sin textos y área clickeable */
   compact?: boolean;
+  /** Variante visual optimizada para foto de producto (cuadrado, drop zone ampliada) */
+  variant?: 'default' | 'product';
 }
 
 const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(function ImageUploader({
@@ -54,6 +56,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
   onEstadoChange,
   previewClassName,
   compact = false,
+  variant = 'default',
 }, ref) {
   const supabase = createClient();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -239,6 +242,12 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
     puedeSubir: tienePermisoSubir,
   }), [isProcessing, uploading, deleting, currentImagePath, tienePermisoSubir]);
 
+  const isProductVariant = variant === 'product' && !compact && !botonesExternos;
+  const canOpenGallery = tienePermisoSubir && !isProcessing && !currentImagePath;
+
+  const openGallery = () => fileInputRef.current?.click();
+  const openCamera = () => cameraInputRef.current?.click();
+
   return (
     <>
       {/* Hidden file inputs */}
@@ -266,10 +275,22 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
         onClick={(e) => {
           if (compact) {
             e.stopPropagation();
+            return;
+          }
+          if (isProductVariant && canOpenGallery) {
+            openGallery();
           }
         }}
         className={
-          botonesExternos
+          isProductVariant
+            ? `relative w-full h-[156px] rounded-2xl overflow-hidden transition-all duration-300 ${
+                canOpenGallery ? 'cursor-pointer' : ''
+              } ${
+                isDragging
+                  ? 'ring-2 ring-[#8DA78E] ring-offset-2 ring-offset-white dark:ring-offset-zinc-950 scale-[1.02]'
+                  : ''
+              }`
+            : botonesExternos
             ? `flex flex-col items-center transition-colors ${
                 currentImagePath
                   ? 'w-full'
@@ -286,8 +307,72 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
               }`
         }
       >
-        {/* Preview o placeholder */}
-        {currentImagePath ? (
+        {isProductVariant && !currentImagePath && (
+          <div
+            className={`absolute inset-0 bg-gradient-to-br from-[#F5F5F1] via-white to-[#8DA78E]/10 dark:from-zinc-900 dark:via-zinc-950 dark:to-[#8DA78E]/5 border border-dashed rounded-2xl transition-colors ${
+              isDragging
+                ? 'border-[#8DA78E] bg-[#8DA78E]/15 dark:bg-[#8DA78E]/10'
+                : 'border-[#C1D1C5]/50 dark:border-zinc-700/80'
+            }`}
+          />
+        )}
+
+        {isProductVariant && currentImagePath && previewUrl && !loadingPreview && (
+          <div className="absolute inset-0 rounded-2xl ring-1 ring-[#C1D1C5]/30 dark:ring-zinc-800 overflow-hidden bg-zinc-100 dark:bg-zinc-900">
+            <img
+              ref={imgRef}
+              src={previewUrl}
+              alt="Vista previa del producto"
+              className="w-full h-full object-contain select-none"
+              draggable={false}
+              onMouseMove={(e) => updateMagnifier(e.clientX, e.clientY)}
+              onMouseLeave={() => setMagnifier(m => ({ ...m, show: false }))}
+            />
+            <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 via-black/40 to-transparent">
+              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={openGallery}
+                  disabled={isProcessing}
+                  className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/95 text-[#525D53] hover:bg-white transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  <Upload size={12} />
+                  Cambiar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isProcessing}
+                  className="flex items-center justify-center px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-red-500/90 text-white hover:bg-red-600 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isProductVariant && currentImagePath && loadingPreview && (
+          <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-900 rounded-2xl">
+            <Loader2 className="animate-spin text-[#8DA78E]" size={28} />
+          </div>
+        )}
+
+        {isProductVariant && currentImagePath && !loadingPreview && !previewUrl && (
+          <div className="absolute inset-0 flex items-center justify-center p-4 text-center bg-zinc-100 dark:bg-zinc-900 rounded-2xl">
+            <p className="text-xs text-red-500 font-medium">No se pudo cargar la vista previa.</p>
+          </div>
+        )}
+
+        {isProductVariant && uploading && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm rounded-2xl">
+            <Loader2 className="animate-spin text-[#8DA78E]" size={28} />
+            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">Subiendo imagen...</span>
+          </div>
+        )}
+
+        {/* Preview o placeholder (modos default / compact / botonesExternos) */}
+        {!isProductVariant && currentImagePath ? (
           loadingPreview ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="animate-spin text-gray-400" size={28} />
@@ -327,7 +412,47 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
           )
         ) : null}
 
-        {!currentImagePath && !uploading && !botonesExternos && !compact && (
+        {isProductVariant && !currentImagePath && !uploading && (
+          <div className="relative z-10 flex items-center gap-3 h-full w-full px-4 py-3 pointer-events-none">
+            <div className={`size-11 shrink-0 rounded-xl flex items-center justify-center transition-transform duration-300 ${
+              isDragging ? 'scale-105' : ''
+            } bg-[#8DA78E]/15 dark:bg-[#8DA78E]/10 border border-[#8DA78E]/25 text-[#8DA78E]`}>
+              <ImageIcon className="size-5" />
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+                {isDragging ? 'Suelta la imagen aquí' : 'Arrastra tu imagen'}
+              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                4:3 vertical · JPG, PNG o WebP
+              </p>
+            </div>
+            {tienePermisoSubir && (
+              <div className="flex shrink-0 gap-2 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={openGallery}
+                  disabled={isProcessing}
+                  className="flex items-center justify-center gap-1 px-3 py-2 text-[10px] font-bold rounded-lg bg-[#8DA78E] hover:bg-[#525D53] text-white transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  <Upload size={13} />
+                  Galería
+                </button>
+                <button
+                  type="button"
+                  onClick={openCamera}
+                  disabled={isProcessing}
+                  className="flex items-center justify-center gap-1 px-3 py-2 text-[10px] font-bold rounded-lg bg-white/90 dark:bg-zinc-800/90 border border-[#C1D1C5]/60 dark:border-zinc-700 text-[#525D53] dark:text-slate-200 hover:bg-white dark:hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                >
+                  <Camera size={13} className="text-[#8DA78E]" />
+                  Cámara
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isProductVariant && !currentImagePath && !uploading && !botonesExternos && !compact && (
           <div className="flex flex-col items-center gap-2 text-center pointer-events-none">
             <div className="size-12 rounded-2xl bg-[#8DA78E]/10 dark:bg-[#8DA78E]/5 border border-[#8DA78E]/20 flex items-center justify-center text-[#8DA78E] mb-1">
               <ImageIcon className="size-6" />
@@ -396,7 +521,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
           </button>
         )}
 
-        {!botonesExternos && !compact && (
+        {!botonesExternos && !compact && !isProductVariant && (
         <div className="flex gap-2.5 flex-wrap justify-center mt-1">
           {tienePermisoSubir && (
             <>
@@ -404,7 +529,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                 <>
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={openGallery}
                     disabled={isProcessing}
                     className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] transition-all shadow-sm hover:shadow active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
@@ -418,7 +543,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
 
                   <button
                     type="button"
-                    onClick={() => cameraInputRef.current?.click()}
+                    onClick={openCamera}
                     disabled={isProcessing}
                     className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-white dark:bg-zinc-800 border border-[#C1D1C5]/60 dark:border-zinc-700 text-[#525D53] dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                   >

@@ -271,19 +271,20 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
               Imagen del Producto
             </label>
-            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2 w-full mx-auto">
-              <ImageUploader
-                bucketName="Imagenes_Farmacia"
-                currentImagePath={imagenUrl}
-                onUploadSuccess={(path) => setImagenUrl(path)}
-                onDeleteSuccess={() => setImagenUrl(null)}
-                aspect={1}
-                aspectLabel="Cuadrado 1:1"
-                permitirTodos={true}
-                onEstadoChange={({ uploading }) => setIsUploadingImage(uploading)}
-                previewClassName="max-h-[150px]"
-              />
-            </div>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">
+              Formato vertical 4:3 (ancho 3 × alto 4).
+            </p>
+            <ImageUploader
+              bucketName="Imagenes_Farmacia"
+              currentImagePath={imagenUrl}
+              onUploadSuccess={(path) => setImagenUrl(path)}
+              onDeleteSuccess={() => setImagenUrl(null)}
+              aspect={3 / 4}
+              aspectLabel="4:3 vertical"
+              permitirTodos={true}
+              variant="product"
+              onEstadoChange={({ uploading }) => setIsUploadingImage(uploading)}
+            />
           </div>
 
           <div className="relative text-left" ref={provDropdownRef}>
