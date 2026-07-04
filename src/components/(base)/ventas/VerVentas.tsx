@@ -32,13 +32,53 @@ import {
   obtenerHistorialVentas,
   obtenerDetalleVenta,
   anularVenta,
-  ItemVentaInput
+  ItemVentaInput,
+  editarDetalleVentaDirecto,
+  eliminarDetalleVentaDirecto
 } from "./actions";
 
 const obtenerCodigoRecibo = (id: string) => {
   if (!id) return "N/A";
   const cleanId = id.replace(/-/g, "").toUpperCase();
   return `${cleanId.substring(0, 3)}-${cleanId.substring(3, 6)}`;
+};
+
+const formatFechaRecibo = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const meses = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+  const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  
+  const mes = meses[date.getMonth()];
+  const diaMes = date.getDate();
+  const diaSemana = diasSemana[date.getDay()];
+  
+  return `${mes} ${diaMes} - ${diaSemana} ${diaMes}`;
+};
+
+const shareWhatsApp = (venta: any, detalles: any[], clienteCompleto?: any) => {
+  const code = obtenerCodigoRecibo(venta.id);
+  const clientName = clienteCompleto?.nombre || venta.ven_clientes?.nombre || "Consumidor Final";
+  const dateText = formatFechaRecibo(venta.created_at);
+  
+  let text = `*FARMACIA SALUD*\n`;
+  text += `*Recibo de Venta:* #${code}\n`;
+  text += `*Fecha:* ${dateText}\n`;
+  text += `*Cliente:* ${clientName}\n`;
+  text += `*Forma de Pago:* ${venta.tipo_venta}\n`;
+  text += `---------------------------\n`;
+  text += `*Artículos:*\n`;
+  detalles.forEach((d: any) => {
+    text += `- ${d.cantidad}x ${d.inv_productos?.nombre || "Producto"} (Q${d.precio_aplicado.toFixed(2)}) - Subtotal: Q${d.subtotal.toFixed(2)}\n`;
+  });
+  text += `---------------------------\n`;
+  text += `*TOTAL PAGADO: Q${venta.total.toFixed(2)}*\n\n`;
+  text += `¡Gracias por su preferencia!`;
+  
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, "_blank");
 };
 
 interface IntervaloSemana {
@@ -465,6 +505,14 @@ export function VerVentas() {
   const [ventaDetalleSeleccionada, setVentaDetalleSeleccionada] = useState<Venta | null>(null);
   const [detallesDeVenta, setDetallesDeVenta] = useState<any[]>([]);
   const [isLoadingDetalles, setIsLoadingDetalles] = useState(false);
+  const [editingDetalleId, setEditingDetalleId] = useState<string | null>(null);
+  const [editingDetalleQty, setEditingDetalleQty] = useState<number>(0);
+  const [editingDetallePrice, setEditingDetallePrice] = useState<number>(0);
+  const [isSavingDetalle, setIsSavingDetalle] = useState(false);
+  const [editingCartItemIndex, setEditingCartItemIndex] = useState<number | null>(null);
+  const [editingPrice, setEditingPrice] = useState<string>("");
+  const [editingQty, setEditingQty] = useState<string>("");
+  const [animateCart, setAnimateCart] = useState(false);
 
   const prodDropdownRef = useRef<HTMLDivElement>(null);
   const cliDropdownRef = useRef<HTMLDivElement>(null);
@@ -549,13 +597,17 @@ export function VerVentas() {
         if (exactMatch) {
           handleAgregarAlCarrito(exactMatch, 1);
         } else {
-           Swal.fire({
+          Swal.fire({
+            toast: true,
+            position: "top-end",
             title: "Producto no encontrado",
-            text: `No se encontró ningún producto con el código: ${query}`,
+            text: `No se encontró el código: ${query}`,
             icon: "error",
-            timer: 2000,
+            background: "#ef4444",
+            color: "#ffffff",
             showConfirmButton: false,
-            ...getSwalThemeOpts()
+            timer: 3000,
+            iconColor: "#ffffff"
           });
         }
       } else if (e.key.length === 1) { 
@@ -675,6 +727,23 @@ export function VerVentas() {
       }
     });
 
+    // Disparar animación de carrito
+    setAnimateCart(true);
+    setTimeout(() => setAnimateCart(false), 500);
+
+    // Toast de confirmación
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      title: `Se añadió ${prod.nombre}`,
+      icon: "success",
+      background: "#22c55e",
+      color: "#ffffff",
+      showConfirmButton: false,
+      timer: 3000,
+      iconColor: "#ffffff"
+    });
+
     // Limpiar selección de producto
     setProductoSeleccionado(null);
     setProductoBusqueda("");
@@ -715,8 +784,21 @@ export function VerVentas() {
     );
   };
 
-  const handleEliminarDelCarrito = (index: number) => {
-    setCarrito(carrito.filter((_, idx) => idx !== index));
+  const handleEliminarDelCarrito = async (index: number) => {
+    const item = carrito[index];
+    const confirm = await Swal.fire({
+      title: "¿Eliminar del carrito?",
+      text: `¿Estás seguro de que deseas eliminar "${item.producto.nombre}" de esta venta?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      ...getSwalThemeOpts()
+    });
+
+    if (confirm.isConfirmed) {
+      setCarrito(carrito.filter((_, idx) => idx !== index));
+    }
   };
 
   const totalCarrito = carrito.reduce((sum, item) => sum + item.subtotal, 0);
@@ -973,6 +1055,353 @@ export function VerVentas() {
     }
   };
 
+  const handlePrintDirectly = async (venta: Venta) => {
+    try {
+      const details = await obtenerDetalleVenta(venta.id);
+      setTicketParaImprimir({ venta, detalles });
+    } catch (err) {
+      console.error("Error al imprimir directamente:", err);
+    }
+  };
+
+  const shareWhatsAppAsImage = async (venta: any, detalles: any[], clienteCompleto?: any) => {
+    try {
+      // Mostrar indicador de carga
+      Swal.fire({
+        title: "Generando ticket...",
+        text: "Subiendo imagen del recibo a la nube para compartir...",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        ...getSwalThemeOpts()
+      });
+
+      const code = obtenerCodigoRecibo(venta.id);
+      const clientName = clienteCompleto?.nombre || venta.ven_clientes?.nombre || "Consumidor Final";
+      const dateText = formatFechaRecibo(venta.created_at);
+      
+      const rowHeight = 22;
+      const headerHeight = 170;
+      const itemsHeight = detalles.length * rowHeight;
+      const footerHeight = 130;
+      const canvasWidth = 360;
+      const canvasHeight = headerHeight + itemsHeight + footerHeight;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        Swal.close();
+        return;
+      }
+
+      // Background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      // Title
+      ctx.fillStyle = "#1e293b";
+      ctx.font = "bold 18px Courier New, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("FARMACIA SALUD", canvasWidth / 2, 30);
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "12px Courier New, monospace";
+      ctx.fillText("Guatemala", canvasWidth / 2, 48);
+
+      // Divider
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath();
+      ctx.moveTo(15, 62);
+      ctx.lineTo(canvasWidth - 15, 62);
+      ctx.stroke();
+
+      // Details
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#1e293b";
+      ctx.font = "bold 13px Courier New, monospace";
+      ctx.fillText(`RECIBO DE VENTA #${code}`, 15, 82);
+
+      ctx.font = "12px Courier New, monospace";
+      ctx.fillStyle = "#334155";
+      ctx.fillText(`Fecha: ${dateText}`, 15, 102);
+      ctx.fillText(`Cliente: ${clientName.substring(0, 24)}`, 15, 118);
+      ctx.fillText(`NIT: ${clienteCompleto?.nit || venta.ven_clientes?.nit || "C/F"}`, 15, 134);
+      ctx.fillText(`Pago: ${venta.tipo_venta}`, 15, 150);
+
+      // Divider
+      ctx.beginPath();
+      ctx.moveTo(15, 162);
+      ctx.lineTo(canvasWidth - 15, 162);
+      ctx.stroke();
+
+      // Table Headers
+      let y = 180;
+      ctx.font = "bold 12px Courier New, monospace";
+      ctx.fillStyle = "#64748b";
+      ctx.fillText("Cant", 15, y);
+      ctx.fillText("Detalle", 60, y);
+      ctx.textAlign = "right";
+      ctx.fillText("Subtotal", canvasWidth - 15, y);
+
+      // Items
+      ctx.font = "12px Courier New, monospace";
+      ctx.fillStyle = "#334155";
+      detalles.forEach((d: any) => {
+        y += rowHeight;
+        ctx.textAlign = "left";
+        ctx.fillText(d.cantidad.toString(), 15, y);
+        ctx.fillText((d.inv_productos?.nombre || "Producto").substring(0, 18), 60, y);
+        ctx.textAlign = "right";
+        ctx.fillText(`Q${d.subtotal.toFixed(2)}`, canvasWidth - 15, y);
+      });
+
+      // Divider
+      y += 18;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath();
+      ctx.moveTo(15, y);
+      ctx.lineTo(canvasWidth - 15, y);
+      ctx.stroke();
+
+      // Total
+      y += 24;
+      ctx.textAlign = "left";
+      ctx.font = "bold 13px Courier New, monospace";
+      ctx.fillStyle = "#059669";
+      ctx.fillText("TOTAL PAGADO:", 15, y);
+      ctx.textAlign = "right";
+      ctx.font = "bold 15px Courier New, monospace";
+      ctx.fillText(`Q${venta.total.toFixed(2)}`, canvasWidth - 15, y);
+
+      // Footer
+      y += 32;
+      ctx.textAlign = "center";
+      ctx.font = "italic 11px Courier New, monospace";
+      ctx.fillStyle = "#64748b";
+      ctx.fillText("¡Gracias por su compra!", canvasWidth / 2, y);
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          Swal.close();
+          Swal.fire({
+            title: "Error",
+            text: "No se pudo generar la imagen del ticket.",
+            icon: "error",
+            ...getSwalThemeOpts()
+          });
+          return;
+        }
+
+        try {
+          const supabase = createClient();
+          const filePath = `tickets/recibo_${venta.id}.png`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from("Imagenes_Farmacia")
+            .upload(filePath, blob, {
+              cacheControl: "3600",
+              upsert: true
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from("Imagenes_Farmacia")
+            .getPublicUrl(filePath);
+
+          Swal.close();
+
+          let whatsAppText = `*FARMACIA SALUD*\n`;
+          whatsAppText += `*Recibo de Venta:* #${code}\n`;
+          whatsAppText += `*Cliente:* ${clientName}\n`;
+          whatsAppText += `*Total:* Q${venta.total.toFixed(2)}\n\n`;
+          whatsAppText += `📄 *Ver Ticket de Venta:* ${publicUrl}`;
+
+          window.open(`https://wa.me/?text=${encodeURIComponent(whatsAppText)}`, "_blank");
+        } catch (err) {
+          console.error("Error al subir a Supabase Storage:", err);
+          Swal.close();
+
+          // Fallback a portapapeles
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                "image/png": blob
+              })
+            ]);
+            Swal.fire({
+              title: "Ticket Copiado",
+              text: "No se pudo subir a la nube, pero se copió al portapapeles. Abre WhatsApp y presiona Ctrl + V.",
+              icon: "info",
+              confirmButtonText: "Ir a WhatsApp",
+              ...getSwalThemeOpts()
+            }).then(() => {
+              window.open("https://web.whatsapp.com/", "_blank");
+            });
+          } catch (clipErr) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Ticket_${code}.png`;
+            a.click();
+            Swal.fire({
+              title: "Ticket Descargado",
+              text: "Se descargó la imagen del ticket. Compártela en WhatsApp.",
+              icon: "info",
+              confirmButtonText: "Ir a WhatsApp",
+              ...getSwalThemeOpts()
+            }).then(() => {
+              window.open("https://web.whatsapp.com/", "_blank");
+            });
+          }
+        }
+      }, "image/png");
+    } catch (error) {
+      console.error("Error al generar e iniciar compartir por WhatsApp:", error);
+      Swal.close();
+    }
+  };
+
+  const handleShareWhatsAppDirectly = async (venta: Venta) => {
+    try {
+      const details = await obtenerDetalleVenta(venta.id);
+      await shareWhatsAppAsImage(venta, details);
+    } catch (err) {
+      console.error("Error al compartir por WhatsApp:", err);
+    }
+  };
+
+  const handleSaveDetalleVentaDirecto = async (detalle: any) => {
+    if (editingDetalleQty <= 0 || editingDetallePrice < 0) {
+      Swal.fire({
+        title: "Valores inválidos",
+        text: "La cantidad debe ser mayor a 0 y el precio no puede ser negativo.",
+        icon: "error",
+        ...getSwalThemeOpts()
+      });
+      return;
+    }
+
+    setIsSavingDetalle(true);
+    try {
+      const res = await editarDetalleVentaDirecto({
+        detalleId: detalle.id,
+        ventaId: ventaDetalleSeleccionada!.id,
+        productoId: detalle.producto_id,
+        nuevaCantidad: editingDetalleQty,
+        nuevoPrecio: editingDetallePrice
+      });
+
+      if (!res.success) {
+        throw new Error(res.error);
+      }
+
+      // Actualizar total localmente
+      setVentaDetalleSeleccionada((prev) => prev ? { ...prev, total: res.nuevoTotal! } : null);
+      
+      // Volver a cargar detalles para refrescar listado
+      const details = await obtenerDetalleVenta(ventaDetalleSeleccionada!.id);
+      setDetallesDeVenta(details);
+
+      // Recargar datos principales para actualizar la tabla del historial y stock
+      cargarDatos();
+
+      Swal.fire({
+        title: "¡Guardado!",
+        text: "El producto de la venta ha sido editado correctamente sin anular la venta.",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+        ...getSwalThemeOpts()
+      });
+
+      setEditingDetalleId(null);
+    } catch (err: any) {
+      Swal.fire({
+        title: "Error al guardar",
+        text: err.message || "No se pudo actualizar el producto en la venta.",
+        icon: "error",
+        ...getSwalThemeOpts()
+      });
+    } finally {
+      setIsSavingDetalle(false);
+    }
+  };
+
+  const handleEliminarProductoDeVenta = async (detalle: any) => {
+    Swal.fire({
+      title: "¿Eliminar producto?",
+      text: `¿Estás seguro de que deseas eliminar "${detalle.inv_productos?.nombre}" de esta venta? Se devolverán ${detalle.cantidad} unidades al stock del inventario.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      ...getSwalThemeOpts()
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          Swal.fire({
+            title: "Procesando...",
+            text: "Eliminando producto y devolviendo stock...",
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            },
+            ...getSwalThemeOpts()
+          });
+
+          const res = await eliminarDetalleVentaDirecto({
+            detalleId: detalle.id,
+            ventaId: ventaDetalleSeleccionada!.id,
+            productoId: detalle.producto_id,
+            cantidadADevolver: detalle.cantidad
+          });
+
+          Swal.close();
+
+          if (res.success) {
+            Swal.fire({
+              title: "¡Eliminado!",
+              text: "El producto ha sido removido y las unidades se devolvieron al stock.",
+              icon: "success",
+              ...getSwalThemeOpts()
+            });
+
+            // Actualizar detalles locales
+            const updatedDetails = detallesDeVenta.filter((d: any) => d.id !== detalle.id);
+            setDetallesDeVenta(updatedDetails);
+
+            // Actualizar cabecera local de la venta
+            setVentaDetalleSeleccionada((prev) => prev ? { ...prev, total: res.nuevoTotal! } : null);
+
+            // Recargar datos principales para actualizar la tabla e inventarios
+            cargarDatos();
+          } else {
+            Swal.fire({
+              title: "Error",
+              text: res.error || "No se pudo eliminar el producto.",
+              icon: "error",
+              ...getSwalThemeOpts()
+            });
+          }
+        } catch (err: any) {
+          Swal.close();
+          console.error("Error al eliminar producto del detalle:", err);
+          Swal.fire({
+            title: "Error",
+            text: err.message || "Ocurrió un error inesperado.",
+            icon: "error",
+            ...getSwalThemeOpts()
+          });
+        }
+      }
+    });
+  };
+
   // Filtrado de Historial
   const ventasFiltradas = ventas.filter((v) => {
     const query = busquedaHistorial.toLowerCase();
@@ -998,10 +1427,17 @@ export function VerVentas() {
       if (tipoFiltroFecha === "dia") {
         matchesFecha = vLocalDateStr === fechaDia;
       } else if (tipoFiltroFecha === "semana") {
-        const semanas = obtenerSemanasDelMes(activeMonth, activeYear);
-        const sem = semanas[selectedWeekIndex];
-        if (sem) {
-          matchesFecha = vLocalDateStr >= sem.desde && vLocalDateStr <= sem.hasta;
+        if (selectedWeekIndex === -1) {
+          // Todo el mes
+          const mesStr = String(activeMonth + 1).padStart(2, "0");
+          const prefix = `${activeYear}-${mesStr}`;
+          matchesFecha = vLocalDateStr.startsWith(prefix);
+        } else {
+          const semanas = obtenerSemanasDelMes(activeMonth, activeYear);
+          const sem = semanas[selectedWeekIndex];
+          if (sem) {
+            matchesFecha = vLocalDateStr >= sem.desde && vLocalDateStr <= sem.hasta;
+          }
         }
       } else if (tipoFiltroFecha === "rango") {
         const desde = fechaRangoDesde || "0000-00-00";
@@ -1167,40 +1603,40 @@ export function VerVentas() {
               </div>
 
               {/* Contenido / Vista Previa del Recibo */}
-              <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-4 text-slate-800 dark:text-slate-200">
-                <div className="border border-dashed border-[#C1D1C5]/50 dark:border-zinc-800 rounded-2xl p-4 bg-[#F5F5F1]/50 dark:bg-zinc-950/40 flex flex-col gap-3 font-mono text-xs leading-normal">
-                  <div className="text-center font-bold text-sm tracking-tight text-slate-900 dark:text-white">
+              <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-4 text-slate-900 bg-zinc-50 dark:bg-zinc-950">
+                <div className="border border-dashed border-slate-300 rounded-2xl p-4 bg-white text-slate-900 flex flex-col gap-3 font-mono text-xs leading-normal shadow-sm">
+                  <div className="text-center font-bold text-sm tracking-tight text-slate-950">
                     FARMACIA SALUD
                   </div>
                   <div className="text-center text-[10px] text-slate-500 -mt-2">
                     Guatemala
                   </div>
-                  <div className="border-t border-dashed border-slate-300 dark:border-zinc-800 my-1"></div>
+                  <div className="border-t border-dashed border-slate-200 my-1"></div>
                   
                   {/* Detalles del Recibo */}
                   <div className="grid grid-cols-2 gap-y-1 text-[11px]">
                     <span className="text-slate-400">Recibo:</span>
-                    <span className="font-bold text-right text-slate-900 dark:text-white">#{obtenerCodigoRecibo(reciboModalData.venta.id)}</span>
+                    <span className="font-bold text-right text-slate-950">#{obtenerCodigoRecibo(reciboModalData.venta.id)}</span>
                     
                     <span className="text-slate-400">Fecha:</span>
-                    <span className="text-right">{new Date(reciboModalData.venta.created_at).toLocaleString("es-GT")}</span>
+                    <span className="text-right text-slate-800">{formatFechaRecibo(reciboModalData.venta.created_at)}</span>
                     
                     <span className="text-slate-400">Cliente:</span>
-                    <span className="text-right font-semibold">{reciboModalData.clienteCompleto?.nombre || reciboModalData.venta.ven_clientes?.nombre || "Consumidor Final"}</span>
+                    <span className="text-right font-semibold text-slate-950">{reciboModalData.clienteCompleto?.nombre || reciboModalData.venta.ven_clientes?.nombre || "Consumidor Final"}</span>
                     
                     <span className="text-slate-400">NIT:</span>
-                    <span className="text-right">{reciboModalData.clienteCompleto?.nit || reciboModalData.venta.ven_clientes?.nit || "C/F"}</span>
+                    <span className="text-right text-slate-800">{reciboModalData.clienteCompleto?.nit || reciboModalData.venta.ven_clientes?.nit || "C/F"}</span>
                     
                     <span className="text-slate-400">Pago:</span>
-                    <span className="text-right">{reciboModalData.venta.tipo_venta}</span>
+                    <span className="text-right text-slate-800">{reciboModalData.venta.tipo_venta}</span>
                   </div>
 
-                  <div className="border-t border-dashed border-slate-300 dark:border-zinc-800 my-1"></div>
+                  <div className="border-t border-dashed border-slate-200 my-1"></div>
 
                   {/* Tabla de Productos */}
                   <table className="w-full text-left text-[11px]">
                     <thead>
-                      <tr className="border-b border-slate-300 dark:border-zinc-800 text-slate-400 font-bold">
+                      <tr className="border-b border-slate-200 text-slate-400 font-bold">
                         <th className="pb-1 text-center">Cant</th>
                         <th className="pb-1">Detalle</th>
                         <th className="pb-1 text-right">Subtotal</th>
@@ -1208,28 +1644,28 @@ export function VerVentas() {
                     </thead>
                     <tbody>
                       {reciboModalData.detalles.map((d, idx) => (
-                        <tr key={idx} className="border-b border-slate-200/50 dark:border-zinc-900/50 last:border-0">
-                          <td className="py-1.5 text-center text-slate-900 dark:text-white font-medium">{d.cantidad}</td>
-                          <td className="py-1.5 text-slate-800 dark:text-slate-300">
+                        <tr key={idx} className="border-b border-slate-100 last:border-0">
+                          <td className="py-1.5 text-center text-slate-900 font-medium">{d.cantidad}</td>
+                          <td className="py-1.5 text-slate-800">
                             {d.inv_productos?.nombre || "Pedido"}
                             {d.inv_productos?.codigo && <span className="block text-[9px] text-slate-400">{d.inv_productos.codigo}</span>}
                           </td>
-                          <td className="py-1.5 text-right font-semibold text-slate-900 dark:text-white">Q{d.subtotal.toFixed(2)}</td>
+                          <td className="py-1.5 text-right font-semibold text-slate-900">Q{d.subtotal.toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
 
-                  <div className="border-t border-dashed border-slate-300 dark:border-zinc-800 my-1"></div>
+                  <div className="border-t border-dashed border-slate-200 my-1"></div>
 
                   {/* Total */}
-                  <div className="flex justify-between items-center font-bold text-sm text-[#8DA78E] dark:text-[#A3BEB0] pt-1">
+                  <div className="flex justify-between items-center font-bold text-sm text-slate-900 pt-1">
                     <span>TOTAL PAGADO:</span>
-                    <span className="text-base font-black">Q{reciboModalData.venta.total.toFixed(2)}</span>
+                    <span className="text-base font-black text-emerald-600">Q{reciboModalData.venta.total.toFixed(2)}</span>
                   </div>
 
                   {reciboModalData.venta.observaciones && (
-                    <div className="text-[10px] text-slate-500 italic mt-2 border-t border-dashed border-slate-200 dark:border-zinc-900 pt-2">
+                    <div className="text-[10px] text-slate-500 italic mt-2 border-t border-dashed border-slate-100 pt-2">
                       <span className="font-bold block not-italic text-slate-400">Notas:</span>
                       {reciboModalData.venta.observaciones}
                     </div>
@@ -1238,7 +1674,7 @@ export function VerVentas() {
               </div>
 
               {/* Footer con Acciones */}
-              <div className="p-5 bg-[#F5F5F1] dark:bg-zinc-950 border-t border-[#C1D1C5]/30 dark:border-zinc-800 flex flex-col gap-3">
+              <div className="p-5 bg-zinc-50 dark:bg-zinc-950 border-t border-slate-200 dark:border-zinc-800 flex flex-col gap-3">
                 <button
                   onClick={() => {
                     setTicketParaImprimir({
@@ -1246,14 +1682,36 @@ export function VerVentas() {
                       detalles: reciboModalData.detalles
                     });
                   }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs border border-transparent"
+                  className="w-full py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white dark:bg-zinc-200 dark:hover:bg-zinc-300 dark:text-zinc-900 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs border border-transparent"
                 >
                   <Printer className="size-4" /> Imprimir Ticket
                 </button>
 
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      exportarFacturaPDF(reciboModalData.venta, reciboModalData.detalles);
+                    }}
+                    className="py-2 px-3 rounded-lg border border-slate-350 dark:border-zinc-850 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <FileDown className="size-4" /> Descargar PDF
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      shareWhatsAppAsImage(reciboModalData.venta, reciboModalData.detalles, reciboModalData.clienteCompleto);
+                    }}
+                    className="py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <svg className="size-4 fill-current" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.458 5.704 1.46h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg> WhatsApp
+                  </button>
+                </div>
+
                 <button
                   onClick={() => setReciboModalData(null)}
-                  className="w-full py-2.5 px-4 rounded-xl border border-slate-300 dark:border-zinc-800 hover:bg-slate-200/50 dark:hover:bg-zinc-900/50 text-slate-600 dark:text-slate-400 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl border border-slate-300 dark:border-zinc-800 hover:bg-slate-200/50 dark:hover:bg-zinc-900/50 text-slate-700 dark:text-slate-350 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   Nueva Venta / Cerrar
                 </button>
@@ -1391,8 +1849,8 @@ export function VerVentas() {
                 >
                   <span className="font-bold">
                     {tipoVenta === "Contado"
-                      ? "💵 Contado"
-                      : "⏳ Crédito"}
+                      ? "Contado"
+                      : "Crédito"}
                   </span>
                   <ChevronDown className="absolute right-3 size-4 text-slate-400" />
                 </button>
@@ -1407,8 +1865,8 @@ export function VerVentas() {
                       className="absolute left-0 right-0 mt-1 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5"
                     >
                       {[
-                        { id: "Contado", label: "💵 Contado" },
-                        { id: "Crédito", label: "⏳ Crédito" }
+                        { id: "Contado", label: "Contado" },
+                        { id: "Crédito", label: "Crédito" }
                       ].map((opt) => (
                         <button
                           key={opt.id}
@@ -1437,10 +1895,10 @@ export function VerVentas() {
                 {/* Autocomplete Producto */}
                 <div className="w-full relative text-left" ref={prodDropdownRef}>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                    Buscar Producto
+                    Búsqueda manual de producto
                   </label>
                   <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4.5 text-slate-400" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
                     <input
                       type="text"
                       value={productoBusqueda}
@@ -1460,19 +1918,23 @@ export function VerVentas() {
                             handleAgregarAlCarrito(exactMatch, 1);
                           } else {
                             Swal.fire({
+                              toast: true,
+                              position: "top-end",
                               title: "Producto no encontrado",
-                              text: `No se encontró ningún producto con el código: ${query}`,
+                              text: `No se encontró el código: ${query}`,
                               icon: "error",
-                              timer: 2000,
+                              background: "#ef4444",
+                              color: "#ffffff",
                               showConfirmButton: false,
-                              ...getSwalThemeOpts()
+                              timer: 3000,
+                              iconColor: "#ffffff"
                             });
                             setProductoBusqueda("");
                           }
                         }
                       }}
                       placeholder="Nombre o código de barras..."
-                      className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-10"
+                      className="w-full pl-12 pr-4 py-4 border rounded-xl text-base bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-14"
                     />
                   </div>
 
@@ -1483,7 +1945,7 @@ export function VerVentas() {
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        className="absolute left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 text-left"
+                        className="absolute left-0 right-0 mt-1 max-h-[380px] overflow-y-auto bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 text-left"
                       >
                         {sugerenciasProductos.map((p) => {
                           const isLow = p.stock_actual <= p.stock_minimo;
@@ -1590,19 +2052,34 @@ export function VerVentas() {
                       exit={{ opacity: 0, height: 0 }}
                       className="w-full overflow-hidden mt-1"
                     >
-                      <div className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm">
-                        {productoSeleccionado.imagen_url ? (
-                          <img
-                            src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(productoSeleccionado.imagen_url!).data.publicUrl}
-                            alt={productoSeleccionado.nombre}
-                            onClick={() => setImagenAmpliadaUrl(createClient().storage.from("Imagenes_Farmacia").getPublicUrl(productoSeleccionado.imagen_url!).data.publicUrl)}
-                            className="w-24 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-800 shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
-                          />
-                        ) : (
-                          <div className="w-24 h-24 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-zinc-950 text-slate-400 shadow-sm">
-                            <Package className="size-8 text-slate-300 dark:text-slate-600" />
-                          </div>
-                        )}
+                      <div className="flex flex-col gap-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm w-full">
+                        <span className="text-[9px] uppercase tracking-widest font-black text-slate-400">Galería de Imágenes (3 Máx)</span>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            productoSeleccionado.imagen_url,
+                            productoSeleccionado.imagen_url_2,
+                            productoSeleccionado.imagen_url_3
+                          ].map((imgUrl, imgIdx) => {
+                            if (imgUrl) {
+                              const fullUrl = createClient().storage.from("Imagenes_Farmacia").getPublicUrl(imgUrl).data.publicUrl;
+                              return (
+                                <img
+                                  key={imgIdx}
+                                  src={fullUrl}
+                                  alt={`${productoSeleccionado.nombre} ${imgIdx + 1}`}
+                                  onClick={() => setImagenAmpliadaUrl(fullUrl)}
+                                  className="aspect-square w-full object-cover rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-800 shadow-xs cursor-pointer hover:opacity-85 transition-opacity"
+                                />
+                              );
+                            } else {
+                              return (
+                                <div key={imgIdx} className="aspect-square w-full flex items-center justify-center rounded-lg border border-dashed border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-zinc-950 text-slate-400">
+                                  <Package className="size-4 opacity-50" />
+                                </div>
+                              );
+                            }
+                          })}
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -1613,7 +2090,11 @@ export function VerVentas() {
 
           {/* Carrito de Compras */}
           <div className="w-full lg:w-[70%] flex flex-col gap-4 font-mono">
-            <div className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-3xl p-5 shadow-xs flex flex-col gap-4 h-full min-h-[750px]">
+            <motion.div
+              animate={{ scale: animateCart ? [1, 1.02, 1] : 1 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-3xl p-5 shadow-xs flex flex-col gap-4 min-h-[380px] h-auto"
+            >
               <div className="flex items-center justify-between border-b border-[#C1D1C5]/30 pb-2">
                 <h2 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
                   <ShoppingCart className="size-4 text-[#8DA78E]" /> Venta
@@ -1630,11 +2111,11 @@ export function VerVentas() {
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="h-full flex flex-col items-center justify-center py-20 text-slate-400"
+                      className="h-full flex flex-col items-center justify-center py-8"
                     >
-                      <ShoppingCart className="size-10 text-slate-300 dark:text-slate-700 mb-2" />
-                      <p className="text-xs font-bold">Venta vacía</p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 max-w-[150px] leading-normal mt-1 text-center">
+                      <ShoppingCart className="size-10 text-slate-400 dark:text-slate-600 mb-2" />
+                      <p className="text-sm font-black text-slate-800 dark:text-slate-200">Venta vacía</p>
+                      <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 max-w-[200px] leading-normal mt-1.5 text-center">
                         Busca y agrega productos desde el panel izquierdo.
                       </p>
                     </motion.div>
@@ -1645,51 +2126,141 @@ export function VerVentas() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, x: 20 }}
-                        className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/20 dark:border-zinc-800 rounded-xl p-3 flex items-center justify-between gap-3 text-left"
+                        className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/20 dark:border-zinc-800 rounded-xl p-3 flex flex-col gap-2.5 text-left"
                       >
-                        {/* Name and Unit Price */}
-                        <div className="flex flex-1 items-center gap-3 min-w-0">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate" title={item.producto.nombre}>
-                              {item.producto.nombre}
+                        {editingCartItemIndex === idx ? (
+                          <div className="flex flex-col gap-2.5 w-full">
+                            <h4 className="text-sm font-black text-slate-800 dark:text-white truncate">
+                              Editar: {item.producto.nombre}
                             </h4>
-                            <p className="text-[10px] text-slate-500">
-                              Unitario: Q{item.precio_aplicado.toFixed(2)}
-                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-black uppercase text-slate-500">Precio Unitario</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={editingPrice}
+                                  onChange={(e) => setEditingPrice(e.target.value)}
+                                  className="w-full px-2.5 py-1.5 text-sm border rounded-lg bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#8DA78E]"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-black uppercase text-slate-500">Cantidad</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={editingQty}
+                                  onChange={(e) => setEditingQty(e.target.value)}
+                                  className="w-full px-2.5 py-1.5 text-sm border rounded-lg bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#8DA78E]"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-2 mt-1">
+                              <button
+                                type="button"
+                                onClick={() => setEditingCartItemIndex(null)}
+                                className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900/60 cursor-pointer"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newPrice = parseFloat(editingPrice);
+                                  const newQty = parseInt(editingQty);
+                                  if (isNaN(newPrice) || newPrice < 0 || isNaN(newQty) || newQty <= 0) {
+                                    Swal.fire({
+                                      title: "Valores inválidos",
+                                      text: "Por favor ingresa un precio y una cantidad válidos.",
+                                      icon: "error",
+                                      ...getSwalThemeOpts()
+                                    });
+                                    return;
+                                  }
+                                  if (newQty > item.producto.stock_actual) {
+                                    Swal.fire({
+                                      title: "Stock Insuficiente",
+                                      text: `Solo hay ${item.producto.stock_actual} unidades en inventario.`,
+                                      icon: "warning",
+                                      ...getSwalThemeOpts()
+                                    });
+                                    return;
+                                  }
+                                  setCarrito(prev => prev.map((it, i) => i === idx ? {
+                                    ...it,
+                                    cantidad: newQty,
+                                    precio_aplicado: newPrice,
+                                    subtotal: newQty * newPrice
+                                  } : it));
+                                  setEditingCartItemIndex(null);
+                                }}
+                                className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#8DA78E] text-[#F5F5F1] hover:bg-[#525D53] cursor-pointer transition-colors"
+                              >
+                                Guardar
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-3 w-full">
+                            {/* Product First Image */}
+                            <div className="size-11 rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shrink-0 flex items-center justify-center">
+                              {item.producto.imagen_url ? (
+                                <img
+                                  src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(item.producto.imagen_url).data.publicUrl}
+                                  alt={item.producto.nombre}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Package className="size-5 text-slate-400 opacity-60" />
+                              )}
+                            </div>
 
-                        {/* Quantity Controls */}
-                        <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-800 rounded-md bg-white dark:bg-zinc-900 px-1 py-0.5 shrink-0">
-                          <button
-                            onClick={() => handleAjustarCantidad(idx, -1)}
-                            className="size-5 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-500 rounded cursor-pointer"
-                          >
-                            <Minus className="size-2.5" />
-                          </button>
-                          <span className="w-6 text-center text-[11px] font-bold text-slate-900 dark:text-white">
-                            {item.cantidad}
-                          </span>
-                          <button
-                            onClick={() => handleAjustarCantidad(idx, 1)}
-                            className="size-5 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-500 rounded cursor-pointer"
-                          >
-                            <Plus className="size-2.5" />
-                          </button>
-                        </div>
+                            {/* Name and Unit Price */}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate" title={item.producto.nombre}>
+                                {item.producto.nombre}
+                              </h4>
+                              <p className="text-[10px] text-slate-500 font-medium">
+                                Unitario: Q{item.precio_aplicado.toFixed(2)}
+                              </p>
+                            </div>
 
-                        {/* Subtotal */}
-                        <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0] min-w-[75px] text-right shrink-0">
-                          Q{item.subtotal.toFixed(2)}
-                        </span>
+                            {/* Quantity Controls */}
+                            <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-800 rounded-md bg-white dark:bg-zinc-900 px-1 py-0.5 shrink-0">
+                              <button
+                                onClick={() => handleAjustarCantidad(idx, -1)}
+                                className="size-5 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-500 rounded cursor-pointer"
+                              >
+                                <Minus className="size-2.5" />
+                              </button>
+                              <span className="w-6 text-center text-[11px] font-bold text-slate-900 dark:text-white">
+                                {item.cantidad}
+                              </span>
+                              <button
+                                onClick={() => handleAjustarCantidad(idx, 1)}
+                                className="size-5 flex items-center justify-center hover:bg-slate-150 dark:hover:bg-zinc-800 text-slate-500 rounded cursor-pointer"
+                              >
+                                <Plus className="size-2.5" />
+                              </button>
+                            </div>
 
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => handleEliminarDelCarrito(idx)}
-                          className="text-slate-400 hover:text-red-500 transition-colors cursor-pointer p-1 shrink-0"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
+                            {/* Subtotal */}
+                            <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0] min-w-[75px] text-right shrink-0">
+                              Q{item.subtotal.toFixed(2)}
+                            </span>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                onClick={() => handleEliminarDelCarrito(idx)}
+                                className="text-slate-400 hover:text-red-500 transition-colors cursor-pointer p-1"
+                                title="Eliminar item"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </motion.div>
                     ))
                   )}
@@ -1737,7 +2308,7 @@ export function VerVentas() {
                   )}
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       ) : (
@@ -1789,7 +2360,7 @@ export function VerVentas() {
             <div className="flex items-center gap-1.5 flex-wrap">
               {[
                 { id: "dia", label: "Día" },
-                { id: "semana", label: "Semana" },
+                { id: "semana", label: "Mes" },
                 { id: "rango", label: "Rango" }
               ].map((opt) => (
                 <button
@@ -1955,7 +2526,7 @@ export function VerVentas() {
                               onClick={() => setMostrarSemanaDropdown(!mostrarSemanaDropdown)}
                               className="px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 text-[11px] font-bold text-[#525D53] dark:text-[#A3BEB0] transition-all cursor-pointer flex items-center gap-1.5 justify-between min-w-[130px] h-[34px]"
                             >
-                              <span>{semSeleccionada ? semSeleccionada.label : "Seleccionar semana"}</span>
+                              <span>{selectedWeekIndex === -1 ? "Todas las semanas" : (semSeleccionada ? semSeleccionada.label : "Seleccionar semana")}</span>
                               <ChevronDown className="size-3.5 text-slate-400" />
                             </button>
 
@@ -1967,6 +2538,26 @@ export function VerVentas() {
                                   exit={{ opacity: 0, y: -4 }}
                                   className="absolute left-0 mt-1 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5 min-w-[220px]"
                                 >
+                                  {/* Opción: Todas las semanas */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedWeekIndex(-1);
+                                      setCurrentPageVentas(1);
+                                      setMostrarSemanaDropdown(false);
+                                    }}
+                                    className={`w-full px-3 py-2 rounded-lg text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
+                                      selectedWeekIndex === -1
+                                        ? "bg-[#8DA78E]/10 text-[#8DA78E]"
+                                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/60"
+                                    }`}
+                                  >
+                                    <span>Todas las semanas</span>
+                                    {selectedWeekIndex === -1 && <Check className="size-3.5" />}
+                                  </button>
+                                  {/* Separador */}
+                                  <div className="border-t border-slate-200 dark:border-zinc-800 my-0.5" />
+                                  {/* Semanas individuales */}
                                   {semanas.map((s, idx) => (
                                     <button
                                       key={idx}
@@ -2085,12 +2676,28 @@ export function VerVentas() {
                           {v.tipo_venta}
                         </span>
                         
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => cargarDetallesVenta(v)}
-                            className="px-2.5 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase w-full text-center"
+                            className="px-2.5 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-xs uppercase"
                           >
                             Detalle
+                          </button>
+                          <button
+                            onClick={() => handlePrintDirectly(v)}
+                            className="p-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors cursor-pointer"
+                            title="Imprimir directamente"
+                          >
+                            <Printer className="size-4" />
+                          </button>
+                          <button
+                            onClick={() => handleShareWhatsAppDirectly(v)}
+                            className="p-1.5 bg-emerald-100 hover:bg-emerald-250 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-450 rounded-lg transition-colors cursor-pointer"
+                            title="WhatsApp"
+                          >
+                            <svg className="size-4 fill-current" viewBox="0 0 24 24">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.458 5.704 1.46h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
                           </button>
                         </div>
                       </div>
@@ -2149,12 +2756,28 @@ export function VerVentas() {
                               Q{v.total.toFixed(2)}
                             </td>
                             <td className="px-5 py-3.5 whitespace-nowrap">
-                              <div className="flex items-center justify-center">
+                              <div className="flex items-center justify-center gap-2">
                                 <button
                                   onClick={() => cargarDetallesVenta(v)}
                                   className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
                                 >
                                   Ver Detalle
+                                </button>
+                                <button
+                                  onClick={() => handlePrintDirectly(v)}
+                                  className="p-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors cursor-pointer"
+                                  title="Imprimir directamente"
+                                >
+                                  <Printer className="size-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleShareWhatsAppDirectly(v)}
+                                  className="p-1.5 bg-emerald-100 hover:bg-emerald-250 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-450 rounded-lg transition-colors cursor-pointer"
+                                  title="Compartir por WhatsApp"
+                                >
+                                  <svg className="size-4 fill-current" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.458 5.704 1.46h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                  </svg>
                                 </button>
                               </div>
                             </td>
@@ -2173,7 +2796,7 @@ export function VerVentas() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 px-1 text-slate-600 dark:text-slate-400">
               <div className="flex items-center gap-4 text-xs font-medium">
                 <div className="flex items-center gap-1.5 relative" ref={pageSizeDropdownVentasRef}>
-                  <span>Mostrar</span>
+
                   <button
                     type="button"
                     onClick={() => setMostrarPageSizeDropdownVentas(!mostrarPageSizeDropdownVentas)}
@@ -2214,7 +2837,7 @@ export function VerVentas() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  <span>registros</span>
+
                 </div>
               </div>
 
@@ -2320,30 +2943,18 @@ export function VerVentas() {
 
                 {/* Body Content */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-5 text-left">
-                  {/* Encabezado info */}
+                  {/* Encabezado info (solo datos adicionales no visibles en la tabla principal) */}
                   <div className="bg-white dark:bg-zinc-950 p-4 border border-[#C1D1C5]/30 dark:border-zinc-800 rounded-2xl flex flex-col gap-2">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-500 font-semibold uppercase">Fecha de Emisión:</span>
-                      <span className="text-slate-900 dark:text-white font-bold">
-                        {new Date(ventaDetalleSeleccionada.created_at).toLocaleString("es-GT")}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs border-t border-slate-100 dark:border-zinc-900 pt-2 mt-1">
-                      <span className="text-slate-500 font-semibold uppercase">Cliente:</span>
-                      <span className="text-slate-900 dark:text-white font-bold">
-                        {ventaDetalleSeleccionada.ven_clientes?.nombre || "Consumidor Final"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs border-t border-slate-100 dark:border-zinc-900 pt-2 mt-1">
                       <span className="text-slate-500 font-semibold uppercase">NIT de Cliente:</span>
                       <span className="text-slate-900 dark:text-white font-bold">
                         {ventaDetalleSeleccionada.ven_clientes?.nit || "C/F"}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs border-t border-slate-100 dark:border-zinc-900 pt-2 mt-1">
-                      <span className="text-slate-500 font-semibold uppercase">Forma de Pago:</span>
-                      <span className="text-slate-900 dark:text-white font-bold">
-                        {ventaDetalleSeleccionada.tipo_venta}
+                      <span className="text-slate-500 font-semibold uppercase">ID de Vendedor:</span>
+                      <span className="text-slate-900 dark:text-white font-mono text-[10px] break-all font-bold">
+                        {ventaDetalleSeleccionada.usuario_id || "N/A"}
                       </span>
                     </div>
                   </div>
@@ -2361,24 +2972,89 @@ export function VerVentas() {
                         <div className="divide-y divide-slate-150/40 dark:divide-zinc-900">
                           {detallesDeVenta.map((d: any) => (
                             <div key={d.id} className="p-3.5 flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-3">
-                                {d.inv_productos?.imagen_url ? (
-                                  <img
-                                    src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(d.inv_productos.imagen_url).data.publicUrl}
-                                    alt={d.inv_productos?.nombre}
-                                    className="w-10 h-10 object-cover rounded-lg border border-slate-100 dark:border-zinc-800"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-zinc-800 rounded-lg text-[8px] text-slate-400 font-bold">N/A</div>
-                                )}
-                                <div>
-                                  <p className="font-bold text-slate-900 dark:text-white">{d.inv_productos?.nombre}</p>
-                                  <p className="text-[10px] text-slate-400">
-                                    {d.cantidad} ud(s) x Q{d.precio_aplicado.toFixed(2)}
-                                  </p>
+                              {editingDetalleId === d.id ? (
+                                <div className="flex flex-col gap-1 text-xs w-full bg-slate-50 dark:bg-zinc-900/40 p-2.5 rounded-lg">
+                                  <p className="font-bold text-slate-800 dark:text-white mb-1.5">{d.inv_productos?.nombre}</p>
+                                  <div className="flex gap-2">
+                                    <div className="flex-1">
+                                      <label className="text-[9px] uppercase font-bold text-slate-400">Cant</label>
+                                      <input
+                                        type="number"
+                                        value={editingDetalleQty}
+                                        onChange={(e) => setEditingDetalleQty(parseInt(e.target.value) || 0)}
+                                        className="w-full px-2 py-1 bg-white dark:bg-zinc-950 border rounded text-slate-900 dark:text-white"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <label className="text-[9px] uppercase font-bold text-slate-400">Precio</label>
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editingDetallePrice}
+                                        onChange={(e) => setEditingDetallePrice(parseFloat(e.target.value) || 0)}
+                                        className="w-full px-2 py-1 bg-white dark:bg-zinc-950 border rounded text-slate-900 dark:text-white"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end gap-1.5 mt-2">
+                                    <button
+                                      onClick={() => setEditingDetalleId(null)}
+                                      disabled={isSavingDetalle}
+                                      className="px-2 py-1 text-[10px] font-bold rounded border cursor-pointer text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    <button
+                                      onClick={() => handleSaveDetalleVentaDirecto(d)}
+                                      disabled={isSavingDetalle}
+                                      className="px-2 py-1 text-[10px] font-bold rounded bg-[#8DA78E] text-[#F5F5F1] cursor-pointer hover:bg-[#525D53]"
+                                    >
+                                      {isSavingDetalle ? "Guardando..." : "Guardar"}
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                              <span className="font-bold text-[#8DA78E]">Q{d.subtotal.toFixed(2)}</span>
+                              ) : (
+                                <div className="flex items-center justify-between text-xs w-full">
+                                  <div className="flex items-center gap-3">
+                                    {d.inv_productos?.imagen_url ? (
+                                      <img
+                                        src={createClient().storage.from("Imagenes_Farmacia").getPublicUrl(d.inv_productos.imagen_url).data.publicUrl}
+                                        alt={d.inv_productos?.nombre}
+                                        className="w-10 h-10 object-cover rounded-lg border border-slate-100 dark:border-zinc-800"
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-zinc-800 rounded-lg text-[8px] text-slate-400 font-bold">N/A</div>
+                                    )}
+                                    <div>
+                                      <p className="font-bold text-slate-900 dark:text-white">{d.inv_productos?.nombre}</p>
+                                      <p className="text-[10px] text-slate-400">
+                                        {d.cantidad} ud(s) x Q{d.precio_aplicado.toFixed(2)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-[#8DA78E]">Q{d.subtotal.toFixed(2)}</span>
+                                    <button
+                                      onClick={() => {
+                                        setEditingDetalleId(d.id);
+                                        setEditingDetalleQty(d.cantidad);
+                                        setEditingDetallePrice(d.precio_aplicado);
+                                      }}
+                                      className="text-slate-400 hover:text-blue-500 p-1 cursor-pointer transition-colors"
+                                      title="Editar artículo en venta"
+                                    >
+                                      <Edit className="size-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleEliminarProductoDeVenta(d)}
+                                      className="text-slate-400 hover:text-red-500 p-1 cursor-pointer transition-colors"
+                                      title="Eliminar artículo y devolver a stock"
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -2406,19 +3082,7 @@ export function VerVentas() {
                 {/* Footer actions */}
                 <div className="p-4 bg-white dark:bg-zinc-950 border-t border-[#C1D1C5]/30 dark:border-zinc-800 mt-auto">
                   <div className="flex flex-col gap-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => {
-                          const v = ventaDetalleSeleccionada;
-                          setVentaDetalleSeleccionada(null);
-                          handleEditarVenta(v);
-                        }}
-                        disabled={isLoadingDetalles}
-                        className="py-2.5 px-4 rounded-xl bg-blue-50/80 hover:bg-blue-100/80 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border border-blue-200/50 dark:border-blue-900/30 text-blue-700 dark:text-blue-450 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
-                      >
-                        <Edit className="size-4" /> Editar Venta
-                      </button>
-
+                    <div className="w-full">
                       <button
                         onClick={() => {
                           const v = ventaDetalleSeleccionada;
@@ -2426,7 +3090,7 @@ export function VerVentas() {
                           handleAnularVenta(v.id);
                         }}
                         disabled={isLoadingDetalles}
-                        className="py-2.5 px-4 rounded-xl bg-red-50/80 hover:bg-red-100/80 dark:bg-red-950/20 dark:hover:bg-red-950/40 border border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+                        className="w-full py-2.5 px-4 rounded-xl bg-red-50/80 hover:bg-red-100/80 dark:bg-red-950/20 dark:hover:bg-red-950/40 border border-red-200/50 dark:border-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
                       >
                         <Trash2 className="size-4" /> Anular Venta
                       </button>
@@ -2460,6 +3124,30 @@ export function VerVentas() {
       {/* Ticket de Impresión (Solo visible al imprimir) */}
       {ticketParaImprimir && (
         <div id="print-receipt-ticket" className="hidden print:block w-[80mm] p-4 bg-white text-black font-mono text-[11px] leading-tight text-left">
+          <style>{`
+            @media print {
+              body * {
+                visibility: hidden !important;
+              }
+              #print-receipt-ticket, #print-receipt-ticket * {
+                visibility: visible !important;
+              }
+              #print-receipt-ticket {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                padding: 10px !important;
+                margin: 0 !important;
+                background: white !important;
+                color: black !important;
+              }
+              @page {
+                margin: 0;
+                size: auto;
+              }
+            }
+          `}</style>
           <div className="text-center font-bold text-[13px] mb-0.5">
             FARMACIA SALUD
           </div>
@@ -2469,7 +3157,7 @@ export function VerVentas() {
           <div className="border-t border-dashed border-black my-1.5"></div>
           <div className="space-y-0.5 mb-2 text-[10px]">
             <p className="font-bold">RECIBO DE VENTA #{obtenerCodigoRecibo(ticketParaImprimir.venta.id)}</p>
-            <p>Fecha: {new Date(ticketParaImprimir.venta.created_at).toLocaleString("es-GT")}</p>
+            <p>Fecha: {formatFechaRecibo(ticketParaImprimir.venta.created_at)}</p>
             <p>Cliente: {ticketParaImprimir.venta.ven_clientes?.nombre || "Consumidor Final"}</p>
             <p>NIT: {ticketParaImprimir.venta.ven_clientes?.nit || "C/F"}</p>
             <p>Pago: {ticketParaImprimir.venta.tipo_venta}</p>

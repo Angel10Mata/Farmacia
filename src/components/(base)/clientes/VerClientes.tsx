@@ -23,6 +23,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CrearCliente } from "./forms/CrearCliente";
 import { EditarCliente } from "./forms/EditarCliente";
+import { formatPhoneDisplay, getWhatsappUrl } from "../proveedores/forms/ProveedorDetalle";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Cliente {
@@ -38,147 +39,6 @@ interface Cliente {
   activo: boolean;
 }
 
-// ─── Datos de ejemplo ─────────────────────────────────────────────────────────
-const CLIENTES_EJEMPLO: Cliente[] = [
-  {
-    id: "1",
-    nombre: "María García López",
-    email: "maria.garcia@email.com",
-    telefono: "5555-1234",
-    direccion: "Zona 10, Ciudad de Guatemala",
-    nit: "1234567-8",
-    totalCompras: 15,
-    ultimaCompra: "2026-06-20",
-    saldo: 250.00,
-    activo: true,
-  },
-  {
-    id: "2",
-    nombre: "Carlos Mendoza Ruiz",
-    email: "carlos.m@gmail.com",
-    telefono: "4444-5678",
-    direccion: "Zona 5, Ciudad de Guatemala",
-    nit: "9876543-2",
-    totalCompras: 8,
-    ultimaCompra: "2026-06-18",
-    saldo: 0,
-    activo: true,
-  },
-  {
-    id: "3",
-    nombre: "Ana Sofía Pérez",
-    email: "ana.perez@hotmail.com",
-    telefono: "3333-9012",
-    direccion: "Mixco, Guatemala",
-    nit: "5555444-1",
-    totalCompras: 2,
-    ultimaCompra: "2026-06-22",
-    saldo: 50.00,
-    activo: true,
-  },
-  {
-    id: "4",
-    nombre: "Roberto Cifuentes",
-    email: "roberto.c@empresa.com",
-    telefono: "2222-3456",
-    direccion: "Villa Nueva, Guatemala",
-    nit: "3333222-5",
-    totalCompras: 25,
-    ultimaCompra: "2026-06-15",
-    saldo: 750.00,
-    activo: true,
-  },
-  {
-    id: "5",
-    nombre: "Lucía Hernández",
-    email: "lucia.hdz@gmail.com",
-    telefono: "7777-8901",
-    direccion: "Zona 12, Ciudad de Guatemala",
-    nit: "7777666-3",
-    totalCompras: 5,
-    ultimaCompra: "2026-06-10",
-    saldo: 0,
-    activo: false,
-  },
-];
-
-// ─── Tarjeta de cliente ────────────────────────────────────────────────────────
-function ClienteCard({
-  cliente,
-  onClick,
-  onEdit,
-}: {
-  cliente: Cliente;
-  onClick: () => void;
-  onEdit: () => void;
-}) {
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      whileHover={{ y: -2 }}
-      onClick={onClick}
-      className="group relative bg-[#F5F5F1] dark:bg-[#525D53]/10 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-2xl p-4 cursor-pointer transition-shadow hover:shadow-md hover:shadow-black/5 hover:border-[#8DA78E] dark:hover:border-[#A3BEB0]/60"
-    >
-      {/* Status dot */}
-      <div className={`absolute top-4 right-4 size-2 rounded-full ${cliente.activo ? "bg-[#8DA78E]" : "bg-slate-400"}`} />
-
-      <div className="flex items-start">
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate leading-none">
-              {cliente.nombre}
-            </h3>
-          </div>
-          <p className="text-[11px] text-[#525D53] dark:text-[#A3BEB0] mt-1 flex items-center gap-1 truncate">
-            <Mail className="size-3 shrink-0 text-[#8DA78E]" />
-            {cliente.email}
-          </p>
-          <p className="text-[11px] text-[#525D53] dark:text-[#A3BEB0] mt-0.5 flex items-center gap-1">
-            <Phone className="size-3 shrink-0 text-[#8DA78E]" />
-            {cliente.telefono}
-          </p>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="mt-3 pt-3 border-t border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 grid grid-cols-2 gap-2">
-        <div className="text-center">
-          <p className="text-[10px] text-[#525D53] dark:text-[#A3BEB0]/70 uppercase tracking-wide font-semibold">Compras</p>
-          <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">{cliente.totalCompras}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] text-[#525D53] dark:text-[#A3BEB0]/70 uppercase tracking-wide font-semibold">Saldo</p>
-          <p className="text-sm font-black text-[#8DA78E] dark:text-[#A3BEB0] mt-0.5">
-            Q{cliente.saldo.toFixed(2)}
-          </p>
-        </div>
-      </div>
-
-      {/* Mobile Actions: only visible on mobile (md:hidden) */}
-      <div className="flex md:hidden items-center justify-end mt-3 pt-2 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="px-3 py-1.5 rounded-lg bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-[11px] font-bold transition-all shadow-xs"
-        >
-          Editar
-        </button>
-      </div>
-
-      {/* Desktop Actions: only visible on desktop (md:flex) */}
-      <div className="hidden md:flex mt-2 items-center justify-end gap-1 text-[10px] font-bold text-[#8DA78E] dark:text-[#A3BEB0] uppercase tracking-wide group-hover:gap-2 transition-all">
-        Ver detalle <ChevronRight className="size-3" />
-      </div>
-    </motion.div>
-  );
-}
-
 // ─── Panel de detalle ──────────────────────────────────────────────────────────
 function ClienteDetalle({
   cliente,
@@ -189,17 +49,56 @@ function ClienteDetalle({
   onClose: () => void;
   onEdit: () => void;
 }) {
+  const [ventas, setVentas] = useState<any[]>([]);
+  const [loadingVentas, setLoadingVentas] = useState(false);
+
+  useEffect(() => {
+    async function loadVentas() {
+      setLoadingVentas(true);
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("ventas")
+          .select("id, created_at, tipo_venta, total, observaciones")
+          .eq("cliente_id", cliente.id)
+          .order("created_at", { ascending: false });
+        if (data) {
+          setVentas(data);
+        }
+      } catch (err) {
+        console.error("Error al cargar ventas de cliente:", err);
+      } finally {
+        setLoadingVentas(false);
+      }
+    }
+    loadVentas();
+  }, [cliente.id]);
+
+  // Helper para obtener colores de SweetAlert según el tema activo (claro/oscuro)
+  const getSwalThemeOpts = () => {
+    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    return {
+      background: isDark ? "#18181b" : "#F5F5F1",
+      color: isDark ? "#F5F5F1" : "#525D53",
+      confirmButtonColor: "#8DA78E",
+      cancelButtonColor: "#525D53",
+      customClass: {
+        popup: "!rounded-3xl border-0",
+      }
+    };
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 24 }}
-      className="bg-[#F5F5F1] dark:bg-zinc-900/90 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-2xl p-5 flex flex-col gap-4 h-full"
+      className="bg-[#F5F5F1] dark:bg-zinc-900/90 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-2xl p-5 flex flex-col gap-4 h-full overflow-y-auto"
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="size-12 rounded-xl bg-gradient-to-br from-[#C1D1C5] to-[#8DA78E] flex items-center justify-center text-white font-black shadow-sm">
-            {cliente.nombre.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+        <div className="flex items-center gap-2.5">
+          <div className="shrink-0 size-8 rounded-lg bg-[#8DA78E]/10 border border-[#8DA78E]/20 flex items-center justify-center">
+            <Users className="size-4.5 text-[#8DA78E]" />
           </div>
           <div>
             <h2 className="font-black text-slate-900 dark:text-white text-base leading-none">{cliente.nombre}</h2>
@@ -207,7 +106,7 @@ function ClienteDetalle({
         </div>
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-[#525D53] dark:hover:text-[#A3BEB0] transition-colors text-lg font-bold px-2"
+          className="text-slate-400 hover:text-[#525D53] dark:hover:text-[#A3BEB0] transition-colors text-lg font-bold px-2 cursor-pointer"
         >
           ✕
         </button>
@@ -216,17 +115,97 @@ function ClienteDetalle({
       {/* Datos de contacto */}
       <div className="space-y-2">
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Contacto</h4>
-        {[
-          { icon: Mail, label: cliente.email },
-          { icon: Phone, label: cliente.telefono },
-          { icon: MapPin, label: cliente.direccion },
-          { icon: CreditCard, label: `NIT: ${cliente.nit}` },
-        ].map(({ icon: Icon, label }) => (
-          <div key={label} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-            <Icon className="size-4 text-[#8DA78E] shrink-0" />
-            <span className="truncate">{label}</span>
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <Mail className="size-4 text-[#8DA78E] shrink-0" />
+          <span className="truncate">{cliente.email || "No registrado"}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <Phone className="size-4 text-[#8DA78E] shrink-0" />
+          {cliente.telefono && cliente.telefono !== "No registrado" ? (
+            <a
+              href={getWhatsappUrl(cliente.telefono)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-green-600 dark:text-green-400 hover:underline font-bold inline-flex items-center gap-1"
+            >
+              {formatPhoneDisplay(cliente.telefono)}
+            </a>
+          ) : (
+            <span className="truncate text-slate-400">No registrado</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <MapPin className="size-4 text-[#8DA78E] shrink-0" />
+          <span className="truncate">{cliente.direccion || "No registrada"}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <CreditCard className="size-4 text-[#8DA78E] shrink-0" />
+          <span className="truncate">NIT: {cliente.nit || "C/F"}</span>
+        </div>
+      </div>
+
+      {/* Estado Financiero */}
+      <div className="space-y-3 pt-2 border-t border-[#C1D1C5]/20">
+        <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Estado Financiero</h4>
+        {loadingVentas ? (
+          <p className="text-xs text-slate-400">Cargando transacciones...</p>
+        ) : ventas.length === 0 ? (
+          <p className="text-xs text-slate-400 italic">Sin transacciones registradas.</p>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-emerald-50 dark:bg-emerald-950/15 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-2.5">
+                <span className="text-[9px] uppercase font-bold text-emerald-700 dark:text-emerald-400">Cancelado (Total)</span>
+                <p className="text-xs font-black text-emerald-800 dark:text-emerald-300">
+                  Q{ventas
+                    .filter((v) => v.tipo_venta !== "Crédito")
+                    .reduce((sum, v) => sum + (v.total || 0), 0)
+                    .toFixed(2)}
+                </p>
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-950/15 border border-amber-100 dark:border-amber-900/30 rounded-xl p-2.5">
+                <span className="text-[9px] uppercase font-bold text-amber-700 dark:text-amber-400">Pendiente (Total)</span>
+                <p className="text-xs font-black text-amber-800 dark:text-amber-300">
+                  Q{ventas
+                    .filter((v) => v.tipo_venta === "Crédito")
+                    .reduce((sum, v) => sum + (v.total || 0), 0)
+                    .toFixed(2)}
+                </p>
+              </div>
+            </div>
+
+            <div className="border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
+              <div className="max-h-[160px] overflow-y-auto divide-y divide-slate-100 dark:divide-zinc-800">
+                {ventas.map((v) => {
+                  const isPaid = v.tipo_venta !== "Crédito";
+                  const dateStr = new Date(v.created_at).toLocaleDateString("es-GT", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric"
+                  });
+                  return (
+                    <div key={v.id} className="p-2 flex items-center justify-between text-[11px] hover:bg-slate-50 dark:hover:bg-zinc-900/40 transition-colors">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          Recibo #{v.id.substring(0, 6).toUpperCase()}
+                        </span>
+                        <span className="text-[9px] text-slate-400">{dateStr} ({v.tipo_venta})</span>
+                      </div>
+                      <div className="text-right flex flex-col items-end">
+                        <span className="font-black text-slate-900 dark:text-white">Q{v.total.toFixed(2)}</span>
+                        <span className={`text-[8px] font-bold uppercase tracking-wider ${
+                          isPaid ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                        }`}>
+                          {isPaid ? "Cancelado" : "Pendiente"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Estadísticas */}
@@ -251,10 +230,10 @@ function ClienteDetalle({
       </div>
 
       {/* Acciones */}
-      <div className="mt-auto space-y-2">
+      <div className="mt-auto pt-3 border-t border-[#C1D1C5]/20 flex flex-col gap-2">
         <button
           onClick={onEdit}
-          className="w-full py-2.5 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-xs"
+          className="w-full py-2 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
         >
           Editar Cliente
         </button>
@@ -274,6 +253,9 @@ export function VerClientes() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [clienteParaEditar, setClienteParaEditar] = useState<Cliente | null>(null);
+  
+  // Criterio de Orden
+  const [criterioOrden, setCriterioOrden] = useState<"nombre-asc" | "nombre-desc" | "compras-desc" | "saldo-asc" | "saldo-desc">("nombre-asc");
 
   // Helper para obtener colores de SweetAlert según el tema activo (claro/oscuro)
   const getSwalThemeOpts = () => {
@@ -294,27 +276,49 @@ export function VerClientes() {
     setIsLoading(true);
     try {
       const supabase = createClient();
-      const { data, error } = await supabase
+      
+      // 1. Obtener todos los clientes
+      const { data: clientesData, error: cliError } = await supabase
         .from("ven_clientes")
         .select("*")
         .order("nombre", { ascending: true });
 
-      if (error) {
-        console.error("Error al cargar clientes desde Supabase:", error);
-        Swal.fire({
-          title: "Error de Conexión",
-          text: "No se pudieron obtener los clientes desde Supabase: " + error.message,
-          icon: "error",
-          toast: true,
-          position: "top-end",
-          showConfirmButton: false,
-          timer: 4000,
-          ...getSwalThemeOpts()
+      if (cliError) throw cliError;
+
+      // 2. Obtener todas las ventas para calcular estadísticas de consumo y saldos
+      const { data: ventasData, error: ventasError } = await supabase
+        .from("ventas")
+        .select("id, cliente_id, total, tipo_venta, created_at")
+        .not("cliente_id", "is", null);
+
+      if (ventasError) throw ventasError;
+
+      const clientSalesMap = new Map<string, any[]>();
+      if (ventasData) {
+        ventasData.forEach((v) => {
+          if (v.cliente_id) {
+            const list = clientSalesMap.get(v.cliente_id) || [];
+            list.push(v);
+            clientSalesMap.set(v.cliente_id, list);
+          }
         });
-        setClientes([]);
-      } else if (data) {
-        // Mapear datos de BD a la interfaz del frontend
-        const mapped: Cliente[] = data.map((row: any) => {
+      }
+
+      if (clientesData) {
+        const mapped: Cliente[] = clientesData.map((row: any) => {
+          const clientSales = clientSalesMap.get(row.id) || [];
+          const totalCompras = clientSales.length;
+
+          let ultimaCompra = "";
+          if (totalCompras > 0) {
+            const sorted = [...clientSales].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            ultimaCompra = sorted[0].created_at;
+          }
+
+          const saldo = clientSales
+            .filter((v) => v.tipo_venta === "Crédito")
+            .reduce((sum, v) => sum + (v.total || 0), 0);
+
           return {
             id: row.id,
             nombre: row.nombre || "Cliente sin nombre",
@@ -322,12 +326,13 @@ export function VerClientes() {
             telefono: row.telefono || "No registrado",
             direccion: row.direccion || "No registrada",
             nit: row.nit || "C/F",
-            totalCompras: 0,
-            ultimaCompra: "",
-            saldo: 0,
+            totalCompras,
+            ultimaCompra,
+            saldo,
             activo: true,
           };
         });
+
         setClientes(mapped);
         setClienteSeleccionado((prev) => {
           if (!prev) return null;
@@ -337,6 +342,17 @@ export function VerClientes() {
       }
     } catch (err: any) {
       console.error("Error en loadDbClientes:", err);
+      Swal.fire({
+        title: "Error de Conexión",
+        text: "No se pudieron obtener los clientes desde Supabase: " + err.message,
+        icon: "error",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 4000,
+        ...getSwalThemeOpts()
+      });
+      setClientes([]);
     } finally {
       setIsLoading(false);
     }
@@ -357,146 +373,47 @@ export function VerClientes() {
     );
   });
 
+  // Ordenamiento de Clientes
+  const clientesOrdenados = [...clientesFiltrados].sort((a, b) => {
+    if (criterioOrden === "nombre-asc") {
+      return a.nombre.localeCompare(b.nombre);
+    } else if (criterioOrden === "nombre-desc") {
+      return b.nombre.localeCompare(a.nombre);
+    } else if (criterioOrden === "compras-desc") {
+      return b.totalCompras - a.totalCompras;
+    } else if (criterioOrden === "saldo-asc") {
+      return a.saldo - b.saldo;
+    } else if (criterioOrden === "saldo-desc") {
+      return b.saldo - a.saldo;
+    }
+    return 0;
+  });
+
   // Función para agregar nuevo cliente interactivo
   const handleNuevoCliente = () => {
     setIsCreateOpen(true);
   };
 
-  // Función para poblar la BD de Supabase con datos semilla
-  const handleSeedData = async () => {
-    const result = await Swal.fire({
-      title: "¿Generar clientes de ejemplo?",
-      text: "Esto insertará 5 clientes ficticios preconfigurados en la base de datos de Supabase.",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Sí, generar",
-      cancelButtonText: "Cancelar",
-      ...getSwalThemeOpts()
-    });
-
-    if (!result.isConfirmed) return;
-
-    setIsLoading(true);
-    try {
-      const supabase = createClient();
-      const rows = CLIENTES_EJEMPLO.map(c => ({
-        nombre: c.nombre,
-        email: c.email,
-        telefono: c.telefono,
-        direccion: c.direccion,
-        nit: c.nit
-      }));
-      const { error } = await supabase.from("ven_clientes").insert(rows);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      Swal.fire({
-        title: "¡Datos Generados!",
-        text: "Se han insertado los clientes de prueba en Supabase.",
-        icon: "success",
-        ...getSwalThemeOpts()
-      });
-      await loadDbClientes();
-    } catch (err: any) {
-      Swal.fire({
-        title: "Error al generar datos",
-        text: err.message,
-        icon: "error",
-        ...getSwalThemeOpts(),
-        confirmButtonColor: "#ef4444"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Función para vaciar por completo la tabla de Supabase (ven_clientes)
-  const handleClearDb = async () => {
-    const result = await Swal.fire({
-      title: "¿Estás seguro de vaciar la tabla?",
-      text: "Esto eliminará permanentemente todos los registros de clientes de la base de datos de Supabase.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sí, vaciar tabla",
-      cancelButtonText: "Cancelar",
-      ...getSwalThemeOpts()
-    });
-
-    if (!result.isConfirmed) return;
-
-    setIsLoading(true);
-    try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("ven_clientes")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      Swal.fire({
-        title: "Tabla vaciada",
-        text: "Todos los registros de clientes han sido eliminados de Supabase.",
-        icon: "success",
-        ...getSwalThemeOpts()
-      });
-      await loadDbClientes();
-    } catch (err: any) {
-      Swal.fire({
-        title: "Error al vaciar",
-        text: err.message,
-        icon: "error",
-        ...getSwalThemeOpts(),
-        confirmButtonColor: "#ef4444"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Función para exportar la lista de clientes a PDF
+  // Función para exportar PDF
   const handleExportarPDF = () => {
     try {
       const doc = new jsPDF();
+      doc.text("Reporte General de Clientes", 14, 15);
       
-      // Encabezado del PDF
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.setTextColor(82, 93, 83); // #525D53 (Olivo Oscuro)
-      doc.text("FARMACIA SALUD - REPORTE DE CLIENTES", 14, 20);
+      const tableData = clientesOrdenados.map((c) => [
+        c.nombre,
+        c.telefono,
+        c.email,
+        c.nit,
+        c.totalCompras.toString(),
+        `Q${c.saldo.toFixed(2)}`
+      ]);
       
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(100, 116, 139);
-      const fecha = new Date().toLocaleDateString("es-GT", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-      doc.text(`Fecha de generación: ${fecha}`, 14, 27);
-      doc.text(`Total de clientes: ${clientesFiltrados.length}`, 14, 33);
-      
-      // Línea divisoria
-      doc.setDrawColor(193, 209, 197); // #C1D1C5
-      doc.line(14, 38, 196, 38);
-      
-      // Generar tabla
       autoTable(doc, {
-        startY: 42,
-        head: [["Nombre", "NIT", "Teléfono", "Email", "Dirección"]],
-        body: clientesFiltrados.map((c) => [
-          c.nombre,
-          c.nit || "C/F",
-          c.telefono || "No registrado",
-          c.email || "No registrado",
-          c.direccion || "No registrada"
-        ]),
+        head: [["Nombre", "Teléfono", "Email", "NIT", "Compras", "Saldo Pendiente"]],
+        body: tableData,
+        startY: 22,
+        theme: "striped",
         headStyles: {
           fillColor: [141, 167, 142], // #8DA78E (Salvia Menta)
           textColor: [245, 245, 241], // #F5F5F1 (Blanco Hueso)
@@ -558,15 +475,15 @@ export function VerClientes() {
           {/* Botón Nuevo Cliente */}
           <button
             onClick={handleNuevoCliente}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-sm font-bold transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-sm font-bold transition-all shadow-sm cursor-pointer"
           >
             <Plus className="size-4" /> Nuevo Cliente
           </button>
         </div>
       </div>
 
-      {/* Buscador y Exportar */}
-      <div className="flex gap-3">
+      {/* Buscador, Ordenamiento y Exportar */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
           <input
@@ -577,16 +494,29 @@ export function VerClientes() {
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-zinc-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/30 focus:border-[#8DA78E] transition-all"
           />
         </div>
-        <button
-          onClick={handleExportarPDF}
-          className="px-4 py-2.5 rounded-xl border border-[#C1D1C5] dark:border-[#A3BEB0]/30 text-[#525D53] dark:text-[#A3BEB0] hover:bg-[#C1D1C5]/10 transition-all flex items-center gap-1.5 text-xs font-bold shrink-0"
-        >
-          <Download className="size-3.5" /> Exportar PDF
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <select
+            value={criterioOrden}
+            onChange={(e) => setCriterioOrden(e.target.value as any)}
+            className="px-3 py-2 border rounded-xl text-xs font-bold bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors cursor-pointer"
+          >
+            <option value="nombre-asc">Nombre (A-Z)</option>
+            <option value="nombre-desc">Nombre (Z-A)</option>
+            <option value="compras-desc">Nivel de Consumo (Compras)</option>
+            <option value="saldo-asc">Saldo Pendiente (Menor a Mayor)</option>
+            <option value="saldo-desc">Saldo Pendiente (Mayor a Menor)</option>
+          </select>
+          <button
+            onClick={handleExportarPDF}
+            className="px-4 py-2.5 rounded-xl border border-[#C1D1C5] dark:border-[#A3BEB0]/30 text-[#525D53] dark:text-[#A3BEB0] hover:bg-[#C1D1C5]/10 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+          >
+            <Download className="size-3.5" /> Exportar PDF
+          </button>
+        </div>
       </div>
 
       {/* Grid de clientes + detalle */}
-      <div className="flex gap-4 flex-1 relative">
+      <div className="flex gap-4 flex-1 relative min-h-[550px] overflow-x-hidden p-1">
         {isLoading && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center z-50 rounded-2xl">
             <div className="flex flex-col items-center gap-3">
@@ -596,41 +526,87 @@ export function VerClientes() {
           </div>
         )}
 
-        {/* Lista */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 content-start">
-          <AnimatePresence mode="popLayout">
-            {clientesFiltrados.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="col-span-full w-full flex flex-col items-center justify-center py-16 text-center bg-white/40 dark:bg-zinc-900/20 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl"
-              >
-                <Users className="size-10 text-slate-300 dark:text-slate-600 mb-3" />
-                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">No se encontraron clientes</p>
-                
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs leading-normal">
-                  Intenta registrar un nuevo cliente o ajustar tus filtros de búsqueda.
-                </p>
-              </motion.div>
-            ) : (
-              clientesFiltrados.map((cliente) => (
-                <ClienteCard
-                  key={cliente.id}
-                  cliente={cliente}
-                  onClick={() => {
-                    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
-                    if (!isMobile) {
-                      setClienteSeleccionado(clienteSeleccionado?.id === cliente.id ? null : cliente);
-                    }
-                  }}
-                  onEdit={() => {
-                    setClienteParaEditar(cliente);
-                    setIsEditOpen(true);
-                  }}
-                />
-              ))
-            )}
-          </AnimatePresence>
+        {/* Tabla principal */}
+        <div className="flex-1 min-w-0 bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 flex flex-col gap-4 overflow-hidden">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-[#C1D1C5]/30 dark:border-zinc-800 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <th className="px-5 py-3.5">Nombre Completo</th>
+                  <th className="px-5 py-3.5">Teléfono</th>
+                  <th className="px-5 py-3.5">Correo Electrónico</th>
+                  <th className="px-5 py-3.5">NIT</th>
+                  <th className="px-5 py-3.5 text-right">Compras</th>
+                  <th className="px-5 py-3.5 text-right">Saldo Pendiente</th>
+                  <th className="px-5 py-3.5 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#C1D1C5]/15 dark:divide-zinc-800/40 text-slate-700 dark:text-slate-300">
+                {clientesOrdenados.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-slate-400">
+                      No se encontraron clientes.
+                    </td>
+                  </tr>
+                ) : (
+                  clientesOrdenados.map((cliente) => (
+                    <tr
+                      key={cliente.id}
+                      onClick={() => {
+                        const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+                        if (!isMobile) {
+                          setClienteSeleccionado(clienteSeleccionado?.id === cliente.id ? null : cliente);
+                        }
+                      }}
+                      className={cn(
+                        "hover:bg-[#8DA78E]/10 dark:hover:bg-[#A3BEB0]/15 transition-all cursor-pointer",
+                        clienteSeleccionado?.id === cliente.id && "bg-[#8DA78E]/20 dark:bg-[#8DA78E]/25"
+                      )}
+                    >
+                      <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
+                        {cliente.nombre}
+                      </td>
+                      <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+                        {cliente.telefono && cliente.telefono !== "No registrado" ? (
+                          <a
+                            href={getWhatsappUrl(cliente.telefono)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline font-bold"
+                          >
+                            <Phone className="size-3" /> {formatPhoneDisplay(cliente.telefono)}
+                          </a>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-500">{cliente.email}</td>
+                      <td className="px-5 py-3.5 font-mono text-slate-500">{cliente.nit}</td>
+                      <td className="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-white">
+                        {cliente.totalCompras}
+                      </td>
+                      <td className="px-5 py-3.5 text-right font-black text-[#8DA78E] dark:text-[#A3BEB0]">
+                        Q{cliente.saldo.toFixed(2)}
+                      </td>
+                      <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => {
+                              setClienteParaEditar(cliente);
+                              setIsEditOpen(true);
+                            }}
+                            className="px-3 py-1.5 bg-[#A3BEB0]/20 hover:bg-[#A3BEB0]/40 text-[#525D53] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
+                          >
+                            Editar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Panel de detalle */}
@@ -641,7 +617,7 @@ export function VerClientes() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "100%", opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="hidden md:block absolute top-0 right-0 h-full w-80 z-20 shadow-2xl"
+              className="hidden md:block absolute top-0 right-0 h-full w-[450px] z-20 shadow-2xl"
             >
               <div className="h-full">
                 <ClienteDetalle

@@ -10,6 +10,9 @@ import {
   Minus,
   Trash2,
   ChevronRight,
+  ChevronLeft,
+  ChevronDown,
+  Check,
   User,
   Mail,
   Phone,
@@ -21,8 +24,10 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { createClient } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
 import { CrearProveedor } from "./forms/CrearProveedor";
 import { EditarProveedor } from "./forms/EditarProveedor";
+import { ProveedorDetalle, formatPhoneDisplay, getWhatsappUrl } from "./forms/ProveedorDetalle";
 import {
   obtenerProveedoresYProductos,
   crearCompra,
@@ -38,6 +43,305 @@ const obtenerCodigoCompra = (id: string) => {
   if (!id) return "N/A";
   const cleanId = id.replace(/-/g, "").toUpperCase();
   return `${cleanId.substring(0, 3)}-${cleanId.substring(3, 6)}`;
+};
+
+interface IntervaloSemana {
+  label: string; // e.g. "Lun 1 - Dom 7" o "Lun 29 - Mar 30"
+  desde: string; // YYYY-MM-DD
+  hasta: string; // YYYY-MM-DD
+}
+
+function obtenerSemanasDelMes(month: number, year: number): IntervaloSemana[] {
+  const semanas: IntervaloSemana[] = [];
+  const ultimoDia = new Date(year, month + 1, 0);
+  const totalDias = ultimoDia.getDate();
+
+  let diaInicio = 1;
+
+  while (diaInicio <= totalDias) {
+    const fechaInicio = new Date(year, month, diaInicio);
+    const diasHastaDomingo = fechaInicio.getDay() === 0 ? 0 : 7 - fechaInicio.getDay();
+    let diaFin = diaInicio + diasHastaDomingo;
+    if (diaFin > totalDias) {
+      diaFin = totalDias;
+    }
+
+    const fechaFin = new Date(year, month, diaFin);
+
+    const formatDia = (d: Date) => {
+      const nombresDias = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+      return `${nombresDias[d.getDay()]} ${d.getDate()}`;
+    };
+
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const desdeStr = `${year}-${pad(month + 1)}-${pad(diaInicio)}`;
+    const hastaStr = `${year}-${pad(month + 1)}-${pad(diaFin)}`;
+
+    semanas.push({
+      label: `${formatDia(fechaInicio)} - ${formatDia(fechaFin)}`,
+      desde: desdeStr,
+      hasta: hastaStr
+    });
+
+    diaInicio = diaFin + 1;
+  }
+
+  return semanas;
+}
+
+interface CalendarioCell {
+  day: number;
+  month: number;
+  year: number;
+  isCurrentMonth: boolean;
+}
+
+function obtenerDiasDelMes(month: number, year: number): CalendarioCell[] {
+  const cells: CalendarioCell[] = [];
+  const primerDiaSemana = new Date(year, month, 1).getDay();
+  const diasMesActual = new Date(year, month + 1, 0).getDate();
+  const diasMesAnterior = new Date(year, month, 0).getDate();
+
+  for (let i = primerDiaSemana - 1; i >= 0; i--) {
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    cells.push({
+      day: diasMesAnterior - i,
+      month: prevMonth,
+      year: prevYear,
+      isCurrentMonth: false
+    });
+  }
+
+  for (let i = 1; i <= diasMesActual; i++) {
+    cells.push({
+      day: i,
+      month: month,
+      year: year,
+      isCurrentMonth: true
+    });
+  }
+
+  const totalCeldas = cells.length;
+  const celdasRestantes = 42 - totalCeldas;
+  for (let i = 1; i <= celdasRestantes; i++) {
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    cells.push({
+      day: i,
+      month: nextMonth,
+      year: nextYear,
+      isCurrentMonth: false
+    });
+  }
+
+  return cells;
+}
+
+const CustomDatePicker = ({
+  value,
+  onChange,
+  placeholder,
+  align = "left"
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  align?: "left" | "right";
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const getParsedDate = () => {
+    if (!value) return new Date();
+    const [y, m, d] = value.split("-").map(Number);
+    if (isNaN(y) || isNaN(m) || isNaN(d)) return new Date();
+    return new Date(y, m - 1, d);
+  };
+
+  const parsedDate = getParsedDate();
+  const [navMonth, setNavMonth] = useState(parsedDate.getMonth());
+  const [navYear, setNavYear] = useState(parsedDate.getFullYear());
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const p = getParsedDate();
+    setNavMonth(p.getMonth());
+    setNavYear(p.getFullYear());
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handlePrevMonth = () => {
+    if (navMonth === 0) {
+      setNavMonth(11);
+      setNavYear(navYear - 1);
+    } else {
+      setNavMonth(navMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (navMonth === 11) {
+      setNavMonth(0);
+      setNavYear(navYear + 1);
+    } else {
+      setNavMonth(navMonth + 1);
+    }
+  };
+
+  const handleSelectDay = (cell: CalendarioCell) => {
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const valStr = `${cell.year}-${pad(cell.month + 1)}-${pad(cell.day)}`;
+    onChange(valStr);
+    setIsOpen(false);
+  };
+
+  const getDisplayDate = () => {
+    if (!value) return placeholder || "Seleccionar...";
+    const [y, m, d] = value.split("-");
+    if (!y || !m || !d) return placeholder || "Seleccionar...";
+    return `${d}/${m}/${y}`;
+  };
+
+  const cells = obtenerDiasDelMes(navMonth, navYear);
+  const nombresMeses = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 hover:border-[#8DA78E] rounded-xl px-2.5 py-1.5 cursor-pointer select-none transition-all shadow-xs h-[34px] min-w-[130px] text-left focus:outline-none focus:ring-1 focus:ring-[#8DA78E]"
+      >
+        <div className="flex items-center">
+          <Calendar className="size-3.5 text-[#8DA78E] mr-1.5 shrink-0" />
+          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+            {getDisplayDate()}
+          </span>
+        </div>
+        <ChevronDown className="size-3 text-slate-400 ml-1.5 shrink-0" />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className={cn(
+              "absolute mt-2 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl shadow-slate-100/50 dark:shadow-none z-50 p-4 min-w-[280px]",
+              align === "left" ? "left-0" : "right-0"
+            )}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4 pb-2.5 border-b border-slate-100 dark:border-slate-900/60">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg cursor-pointer text-slate-500 hover:text-[#8DA78E] dark:hover:text-[#A3BEB0] transition-colors"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              
+              <span className="text-xs font-bold text-slate-700 dark:text-[#A3BEB0] tracking-wide select-none">
+                {nombresMeses[navMonth]} {navYear}
+              </span>
+
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg cursor-pointer text-slate-500 hover:text-[#8DA78E] dark:hover:text-[#A3BEB0] transition-colors"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+
+            {/* Weekdays */}
+            <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none">
+              {["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"].map((dayName) => (
+                <div key={dayName} className="py-1">{dayName}</div>
+              ))}
+            </div>
+
+            {/* Days Grid */}
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {cells.map((cell, idx) => {
+                const pad = (n: number) => n.toString().padStart(2, "0");
+                const cellValStr = `${cell.year}-${pad(cell.month + 1)}-${pad(cell.day)}`;
+                const isSelected = value === cellValStr;
+                const isToday = () => {
+                  const today = new Date();
+                  return (
+                    today.getDate() === cell.day &&
+                    today.getMonth() === cell.month &&
+                    today.getFullYear() === cell.year
+                  );
+                };
+
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectDay(cell)}
+                    className={`py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
+                      isSelected
+                        ? "bg-[#8DA78E] text-white shadow-sm shadow-[#8DA78E]/30 scale-105 font-bold"
+                        : cell.isCurrentMonth
+                        ? isToday()
+                          ? "border border-[#8DA78E] text-[#8DA78E] dark:text-[#A3BEB0] font-bold bg-[#8DA78E]/5 hover:bg-[#8DA78E]/10"
+                          : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-900/60"
+                        : "text-slate-400/50 dark:text-slate-650/30 hover:bg-slate-50/50 dark:hover:bg-zinc-900/10"
+                    }`}
+                  >
+                    {cell.day}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-900/60 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("");
+                  setIsOpen(false);
+                }}
+                className="px-2.5 py-1 text-slate-500 hover:text-red-500 dark:hover:text-red-400 font-bold transition-colors cursor-pointer rounded-md hover:bg-red-50 dark:hover:bg-red-950/20"
+              >
+                Borrar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const pad = (n: number) => n.toString().padStart(2, "0");
+                  const todayObj = new Date();
+                  const todayStr = `${todayObj.getFullYear()}-${pad(todayObj.getMonth() + 1)}-${pad(todayObj.getDate())}`;
+                  onChange(todayStr);
+                  setIsOpen(false);
+                }}
+                className="px-2.5 py-1 text-[#8DA78E] dark:text-[#A3BEB0] hover:bg-[#8DA78E]/10 font-bold transition-colors cursor-pointer rounded-md"
+              >
+                Hoy
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
 
 interface Proveedor {
@@ -92,6 +396,8 @@ export function VerProveedores() {
   const [isCrearOpen, setIsCrearOpen] = useState(false);
   const [isEditarOpen, setIsEditarOpen] = useState(false);
   const [proveedorAEditar, setProveedorAEditar] = useState<Proveedor | null>(null);
+  const [proveedorSeleccionadoTab3, setProveedorSeleccionadoTab3] = useState<Proveedor | null>(null);
+  const [modoEdicionProveedor, setModoEdicionProveedor] = useState(false);
 
   // Carrito de compras
   const [carrito, setCarrito] = useState<ItemCarritoCompra[]>([]);
@@ -118,8 +424,31 @@ export function VerProveedores() {
   const [detallesDeCompra, setDetallesDeCompra] = useState<any[]>([]);
   const [isLoadingDetalles, setIsLoadingDetalles] = useState(false);
 
+  // Date filters for compras (matching ventas design)
+  const [tipoFiltroFechaCompras, setTipoFiltroFechaCompras] = useState<"dia" | "mes" | "rango">("dia");
+  const [fechaDiaCompras, setFechaDiaCompras] = useState(() => {
+    const t = new Date();
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+  });
+  const [activeMonthCompras, setActiveMonthCompras] = useState(new Date().getMonth());
+  const [activeYearCompras, setActiveYearCompras] = useState(new Date().getFullYear());
+  const [selectedWeekIndexCompras, setSelectedWeekIndexCompras] = useState(0);
+  const [fechaRangoDesdeCompras, setFechaRangoDesdeCompras] = useState("");
+  const [fechaRangoHastaCompras, setFechaRangoHastaCompras] = useState("");
+  const [mostrarSemanaDropdownCompras, setMostrarSemanaDropdownCompras] = useState(false);
+  const [mostrarMesDropdownCompras, setMostrarMesDropdownCompras] = useState(false);
+
+  // Pagination for compras
+  const [currentPageCompras, setCurrentPageCompras] = useState(1);
+  const [pageSizeCompras, setPageSizeCompras] = useState(10);
+  const [mostrarPageSizeDropdownCompras, setMostrarPageSizeDropdownCompras] = useState(false);
+
   const provDropdownRef = useRef<HTMLDivElement>(null);
   const prodDropdownRef = useRef<HTMLDivElement>(null);
+  const semanaDropdownComprasRef = useRef<HTMLDivElement>(null);
+  const mesDropdownComprasRef = useRef<HTMLDivElement>(null);
+  const pageSizeDropdownComprasRef = useRef<HTMLDivElement>(null);
 
   // Cargar datos
   const cargarDatos = async () => {
@@ -150,6 +479,15 @@ export function VerProveedores() {
       }
       if (prodDropdownRef.current && !prodDropdownRef.current.contains(event.target as Node)) {
         setMostrarSugerenciasProd(false);
+      }
+      if (semanaDropdownComprasRef.current && !semanaDropdownComprasRef.current.contains(event.target as Node)) {
+        setMostrarSemanaDropdownCompras(false);
+      }
+      if (mesDropdownComprasRef.current && !mesDropdownComprasRef.current.contains(event.target as Node)) {
+        setMostrarMesDropdownCompras(false);
+      }
+      if (pageSizeDropdownComprasRef.current && !pageSizeDropdownComprasRef.current.contains(event.target as Node)) {
+        setMostrarPageSizeDropdownCompras(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -253,6 +591,57 @@ export function VerProveedores() {
     setProductoBusqueda("");
     setCantSeleccionada(1);
     setCostoSeleccionado("");
+  };
+
+  const handleScanBarcode = (product: Producto) => {
+    const cant = 1;
+    const costo = product.precio_base || 1;
+
+    const itemExistente = carrito.find((i) => i.producto.id === product.id);
+    if (itemExistente) {
+      setCarrito(
+        carrito.map((i) =>
+          i.producto.id === product.id
+            ? {
+                ...i,
+                cantidad: i.cantidad + cant,
+                precio_costo: i.precio_costo || costo,
+                subtotal: (i.cantidad + cant) * (i.precio_costo || costo)
+              }
+            : i
+        )
+      );
+    } else {
+      setCarrito([
+        ...carrito,
+        {
+          producto: product,
+          cantidad: cant,
+          precio_costo: costo,
+          subtotal: cant * costo
+        }
+      ]);
+    }
+
+    autoSeleccionarProveedor(product);
+
+    setProductoSeleccionado(null);
+    setProductoBusqueda("");
+    setCantSeleccionada(1);
+    setCostoSeleccionado("");
+
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      title: "Producto escaneado",
+      text: `${product.nombre} agregado al pedido`,
+      icon: "success",
+      showConfirmButton: false,
+      timer: 2000,
+      background: "#8DA78E",
+      color: "#ffffff",
+      iconColor: "#ffffff"
+    });
   };
 
   const handleAjustarCantidad = (index: number, delta: number) => {
@@ -381,7 +770,16 @@ export function VerProveedores() {
   };
 
   const handleCambiarEstadoPago = async (compraId: string, estadoActual: string, actualizarDetalleRef?: boolean) => {
-    const nuevoEstado = estadoActual === "Pagado" ? "Pendiente" : "Pagado";
+    if (estadoActual === "Pagado") {
+      Swal.fire({
+        title: "Operación no permitida",
+        text: "Una compra marcada como PAGADO ya no puede ser modificada.",
+        icon: "warning",
+        ...getSwalThemeOpts()
+      });
+      return;
+    }
+    const nuevoEstado = "Pagado";
     try {
       const res = await actualizarEstadoPagoCompra(compraId, nuevoEstado);
       if (res.success) {
@@ -466,8 +864,47 @@ export function VerProveedores() {
       (c.observaciones || "").toLowerCase().includes(query);
 
     const matchPago = filtroPago === "todos" || c.estado_pago === filtroPago;
-    return matchSearch && matchPago;
+
+    let matchFecha = true;
+    if (c.created_at) {
+      const cDate = new Date(c.created_at);
+      const offset = cDate.getTimezoneOffset();
+      const cLocalDate = new Date(cDate.getTime() - offset * 60 * 1000);
+      const cLocalDateStr = cLocalDate.toISOString().split("T")[0]; // YYYY-MM-DD
+
+      if (tipoFiltroFechaCompras === "dia") {
+        matchFecha = cLocalDateStr === fechaDiaCompras;
+      } else if (tipoFiltroFechaCompras === "mes") {
+        if (selectedWeekIndexCompras === -1) {
+          const mesStr = String(activeMonthCompras + 1).padStart(2, "0");
+          const prefix = `${activeYearCompras}-${mesStr}`;
+          matchFecha = cLocalDateStr.startsWith(prefix);
+        } else {
+          const semanas = obtenerSemanasDelMes(activeMonthCompras, activeYearCompras);
+          const sem = semanas[selectedWeekIndexCompras];
+          if (sem) {
+            matchFecha = cLocalDateStr >= sem.desde && cLocalDateStr <= sem.hasta;
+          }
+        }
+      } else if (tipoFiltroFechaCompras === "rango") {
+        const desde = fechaRangoDesdeCompras || "0000-00-00";
+        const hasta = fechaRangoHastaCompras || "9999-12-31";
+        matchFecha = cLocalDateStr >= desde && cLocalDateStr <= hasta;
+      }
+    } else {
+      matchFecha = false;
+    }
+
+    return matchSearch && matchPago && matchFecha;
   });
+
+  const totalComprasItems = comprasFiltradas.length;
+  const totalComprasPages = Math.ceil(totalComprasItems / pageSizeCompras) || 1;
+  const activeComprasPage = Math.min(currentPageCompras, totalComprasPages);
+  const comprasPaginadas = comprasFiltradas.slice(
+    (activeComprasPage - 1) * pageSizeCompras,
+    activeComprasPage * pageSizeCompras
+  );
 
   return (
     <div className="w-full flex flex-col gap-6 p-4 md:p-6 pt-32 md:pt-24 min-h-screen">
@@ -496,7 +933,7 @@ export function VerProveedores() {
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#8DA78E] dark:text-[#A3BEB0]">Compras</p>
             <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900 dark:text-white leading-none">
-              Gestión de Proveedores
+              Gestión de Compra
             </h1>
           </div>
         </div>
@@ -556,6 +993,31 @@ export function VerProveedores() {
                             setMostrarSugerenciasProd(true);
                           }}
                           onFocus={() => setMostrarSugerenciasProd(true)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const query = e.currentTarget.value.trim().toLowerCase();
+                              if (!query) return;
+
+                              const exactMatch = productos.find(p => p.codigo?.toLowerCase() === query);
+                              if (exactMatch) {
+                                handleScanBarcode(exactMatch);
+                              } else {
+                                Swal.fire({
+                                  toast: true,
+                                  position: "top-end",
+                                  title: "Producto no encontrado",
+                                  text: `No se encontró el código: ${query}`,
+                                  icon: "error",
+                                  background: "#ef4444",
+                                  color: "#ffffff",
+                                  showConfirmButton: false,
+                                  timer: 3000,
+                                  iconColor: "#ffffff"
+                                });
+                              }
+                            }
+                          }}
                           placeholder="Nombre o código de barras..."
                           className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
                         />
@@ -873,120 +1335,308 @@ export function VerProveedores() {
           {/* TAB 2: HISTORIAL DE COMPRAS */}
           {activeTab === "historial" && (
             <div className="flex flex-col gap-4">
-              <div className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5">
-                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-                  {/* Buscador */}
-                  <div className="relative flex-1 sm:max-w-md text-left">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                      type="text"
-                      value={busquedaHistorial}
-                      onChange={(e) => setBusquedaHistorial(e.target.value)}
-                      placeholder="Buscar por código, proveedor..."
-                      className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
-                    />
-                  </div>
-
-                  {/* Filtro Pago */}
-                  <div className="flex items-center gap-2 justify-between sm:justify-start">
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase shrink-0">Pago:</span>
-                    <select
-                      value={filtroPago}
-                      onChange={(e) => setFiltroPago(e.target.value)}
-                      className="px-3 py-2 border rounded-lg text-xs bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none cursor-pointer w-full sm:w-auto"
-                    >
-                      <option value="todos">Todos</option>
-                      <option value="Pagado">Pagados</option>
-                      <option value="Pendiente">Pendientes</option>
-                    </select>
-                  </div>
+              {/* Buscador y switch de pago */}
+              <div className="flex flex-col md:flex-row gap-3">
+                {/* Buscador */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por código, proveedor..."
+                    value={busquedaHistorial}
+                    onChange={(e) => {
+                      setBusquedaHistorial(e.target.value);
+                      setCurrentPageCompras(1);
+                    }}
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-zinc-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/30 focus:border-[#8DA78E] transition-all"
+                  />
                 </div>
 
-                {/* Tabla de Compras - Escritorio */}
-                <div className="hidden md:block overflow-x-auto border border-slate-100 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 mt-4">
-                  <table className="w-full border-collapse text-left text-xs">
-                    <thead>
-                      <tr className="bg-[#F5F5F1] dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-b border-slate-200 dark:border-zinc-800 font-bold">
-                        <th className="px-5 py-3.5">Compra #</th>
-                        <th className="px-5 py-3.5">Fecha</th>
-                        <th className="px-5 py-3.5">Proveedor</th>
-                        <th className="px-5 py-3.5">Estado Pago</th>
-                        <th className="px-5 py-3.5">Total</th>
-                        <th className="px-5 py-3.5 text-right">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-900">
-                      {comprasFiltradas.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="px-5 py-10 text-center text-slate-400">
-                            No se encontraron compras en el historial.
-                          </td>
-                        </tr>
-                      ) : (
-                        comprasFiltradas.map((c) => {
-                          const date = new Date(c.created_at).toLocaleString("es-GT", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit"
-                          });
-                          return (
-                            <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 transition-colors">
-                              <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                                #{obtenerCodigoCompra(c.id)}
-                              </td>
-                              <td className="px-5 py-3.5 text-slate-500">{date}</td>
-                              <td className="px-5 py-3.5 font-bold">
-                                {c.inv_proveedores?.nombre || "Proveedor Desconocido"}
-                              </td>
-                              <td className="px-5 py-3.5">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                  c.estado_pago === "Pagado"
-                                    ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
-                                    : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
-                                }`}>
-                                  {c.estado_pago}
-                                </span>
-                              </td>
-                              <td className="px-5 py-3.5 font-black text-[#8DA78E]">
-                                Q{c.total.toFixed(2)}
-                              </td>
-                              <td className="px-5 py-3.5 text-right flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => cargarDetallesCompra(c)}
-                                  className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border border-[#8DA78E]/20"
+                {/* Switch de pago segmentado horizontal */}
+                <div className="flex bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/30 dark:border-zinc-800 p-1 rounded-xl w-fit h-[46px] items-center shrink-0">
+                  {[
+                    { id: "todos", label: "Todos" },
+                    { id: "Pagado", label: "Pagado" },
+                    { id: "Pendiente", label: "Pendiente" }
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => {
+                        setFiltroPago(opt.id);
+                        setCurrentPageCompras(1);
+                      }}
+                      className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer relative h-[38px] ${
+                        filtroPago === opt.id
+                          ? "bg-[#8DA78E] text-[#F5F5F1] shadow-xs"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filtros de Fecha */}
+              <div className="flex flex-row gap-3 items-center bg-[#F5F5F1]/50 dark:bg-[#525D53]/5 border border-[#C1D1C5]/60 dark:border-zinc-800/50 rounded-2xl px-4 py-3 text-left w-fit flex-wrap max-w-full">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[
+                    { id: "dia", label: "Día" },
+                    { id: "mes", label: "Mes" },
+                    { id: "rango", label: "Rango" }
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => {
+                        setTipoFiltroFechaCompras(opt.id as any);
+                        setCurrentPageCompras(1);
+                        if (opt.id === "mes") {
+                          setSelectedWeekIndexCompras(-1); // Default to full month
+                        }
+                      }}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        tipoFiltroFechaCompras === opt.id
+                          ? "bg-[#8DA78E]/10 dark:bg-[#8DA78E]/20 text-[#8DA78E] border border-[#8DA78E]/30"
+                          : "border border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-zinc-800/40"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <AnimatePresence mode="wait">
+                    {tipoFiltroFechaCompras === "dia" && (
+                      <motion.div
+                        key="dia"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                      >
+                        <CustomDatePicker
+                          value={fechaDiaCompras}
+                          onChange={(val) => {
+                            setFechaDiaCompras(val);
+                            setCurrentPageCompras(1);
+                          }}
+                          align="right"
+                        />
+                      </motion.div>
+                    )}
+
+                    {tipoFiltroFechaCompras === "mes" && (
+                      <motion.div
+                        key="mes"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        className="flex flex-row items-center gap-1.5 w-auto flex-nowrap max-w-full"
+                      >
+                        {/* Navegador de Mes/Año */}
+                        <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl px-1.5 py-0.5 h-[34px] shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (activeMonthCompras === 0) {
+                                  setActiveMonthCompras(11);
+                                  setActiveYearCompras(activeYearCompras - 1);
+                              } else {
+                                  setActiveMonthCompras(activeMonthCompras - 1);
+                              }
+                              setSelectedWeekIndexCompras(-1);
+                              setCurrentPageCompras(1);
+                            }}
+                            className="size-5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded flex items-center justify-center text-slate-500 dark:text-slate-400 cursor-pointer"
+                          >
+                            <ChevronLeft className="size-3" />
+                          </button>
+
+                          <div className="relative" ref={mesDropdownComprasRef}>
+                            <button
+                              type="button"
+                              onClick={() => setMostrarMesDropdownCompras(!mostrarMesDropdownCompras)}
+                              className="px-2 py-1 hover:bg-slate-50 dark:hover:bg-zinc-850 rounded-lg text-xs font-bold text-slate-700 dark:text-[#A3BEB0] cursor-pointer"
+                            >
+                              {[
+                                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+                              ][activeMonthCompras]} {activeYearCompras}
+                            </button>
+
+                            <AnimatePresence>
+                              {mostrarMesDropdownCompras && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 4 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: 4 }}
+                                  transition={{ duration: 0.15 }}
+                                  className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-55 p-1 grid grid-cols-3 gap-1 min-w-[240px]"
                                 >
-                                  Ver Detalle
-                                </button>
+                                  {[
+                                    "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                                    "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+                                  ].map((mName, mIdx) => (
+                                    <button
+                                      key={mIdx}
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveMonthCompras(mIdx);
+                                        setSelectedWeekIndexCompras(-1);
+                                        setCurrentPageCompras(1);
+                                        setMostrarMesDropdownCompras(false);
+                                      }}
+                                      className={`w-full px-2 py-1.5 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                                        activeMonthCompras === mIdx
+                                          ? "bg-[#8DA78E] text-white"
+                                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/60"
+                                      }`}
+                                    >
+                                      {mName}
+                                    </button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (activeMonthCompras === 11) {
+                                  setActiveMonthCompras(0);
+                                  setActiveYearCompras(activeYearCompras + 1);
+                              } else {
+                                  setActiveMonthCompras(activeMonthCompras + 1);
+                              }
+                              setSelectedWeekIndexCompras(-1);
+                              setCurrentPageCompras(1);
+                            }}
+                            className="size-5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded flex items-center justify-center text-slate-500 dark:text-slate-400 cursor-pointer"
+                          >
+                            <ChevronRight className="size-3" />
+                          </button>
+                        </div>
+
+                        {/* Dropdown de semanas */}
+                        <div className="relative" ref={semanaDropdownComprasRef}>
+                          {(() => {
+                            const semanas = obtenerSemanasDelMes(activeMonthCompras, activeYearCompras);
+                            const semSeleccionada = semanas[selectedWeekIndexCompras] || semanas[0];
+                            return (
+                              <>
                                 <button
                                   type="button"
-                                  onClick={() => handleCambiarEstadoPago(c.id, c.estado_pago)}
-                                  className={`px-3 py-1.5 font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border ${
-                                    c.estado_pago === "Pagado"
-                                      ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40"
-                                      : "bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/40"
-                                  }`}
+                                  onClick={() => setMostrarSemanaDropdownCompras(!mostrarSemanaDropdownCompras)}
+                                  className="px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 text-[11px] font-bold text-[#525D53] dark:text-[#A3BEB0] transition-all cursor-pointer flex items-center gap-1.5 justify-between min-w-[130px] h-[34px]"
                                 >
-                                  {c.estado_pago === "Pagado" ? "Marcar Pendiente" : "Marcar Pagado"}
+                                  <span>{selectedWeekIndexCompras === -1 ? "Todas las semanas" : (semSeleccionada ? semSeleccionada.label : "Seleccionar semana")}</span>
+                                  <ChevronDown className="size-3.5 text-slate-400" />
                                 </button>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
 
-                {/* Vista Móvil (Tarjetas) */}
-                <div className="block md:hidden space-y-3 mt-4">
-                  {comprasFiltradas.length === 0 ? (
-                    <div className="py-10 text-center text-slate-400 bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl">
-                      No se encontraron compras en el historial.
-                    </div>
-                  ) : (
-                    comprasFiltradas.map((c) => {
+                                <AnimatePresence>
+                                  {mostrarSemanaDropdownCompras && (
+                                    <motion.div
+                                      initial={{ opacity: 0, y: -4 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, y: -4 }}
+                                      className="absolute left-0 mt-1 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5 min-w-[220px]"
+                                    >
+                                      {/* Opción: Todas las semanas */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedWeekIndexCompras(-1);
+                                          setCurrentPageCompras(1);
+                                          setMostrarSemanaDropdownCompras(false);
+                                        }}
+                                        className={`w-full px-3 py-2 rounded-lg text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
+                                          selectedWeekIndexCompras === -1
+                                            ? "bg-[#8DA78E]/10 text-[#8DA78E]"
+                                            : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/60"
+                                        }`}
+                                      >
+                                        <span>Todas las semanas</span>
+                                        {selectedWeekIndexCompras === -1 && <Check className="size-3.5" />}
+                                      </button>
+                                      {/* Separador */}
+                                      <div className="border-t border-slate-200 dark:border-zinc-800 my-0.5" />
+                                      {/* Semanas individuales */}
+                                      {semanas.map((s, idx) => (
+                                        <button
+                                          key={idx}
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedWeekIndexCompras(idx);
+                                            setCurrentPageCompras(1);
+                                            setMostrarSemanaDropdownCompras(false);
+                                          }}
+                                          className={`w-full px-3 py-2 rounded-lg text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
+                                            selectedWeekIndexCompras === idx
+                                              ? "bg-[#8DA78E]/10 text-[#8DA78E]"
+                                              : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/60"
+                                          }`}
+                                        >
+                                          <span>{s.label}</span>
+                                          {selectedWeekIndexCompras === idx && <Check className="size-3.5" />}
+                                        </button>
+                                      ))}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {tipoFiltroFechaCompras === "rango" && (
+                      <motion.div
+                        key="rango"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        className="flex items-center gap-2 flex-wrap max-w-full"
+                      >
+                        <span className="text-[10px] font-bold text-slate-400">Desde:</span>
+                        <CustomDatePicker
+                          value={fechaRangoDesdeCompras}
+                          onChange={(val) => {
+                            setFechaRangoDesdeCompras(val);
+                            setCurrentPageCompras(1);
+                          }}
+                          placeholder="Inicio"
+                          align="left"
+                        />
+                        <span className="text-[10px] font-bold text-slate-400">Hasta:</span>
+                        <CustomDatePicker
+                          value={fechaRangoHastaCompras}
+                          onChange={(val) => {
+                            setFechaRangoHastaCompras(val);
+                            setCurrentPageCompras(1);
+                          }}
+                          placeholder="Fin"
+                          align="right"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Listado de compras */}
+              {comprasPaginadas.length === 0 ? (
+                <div className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-3xl p-14 text-center text-slate-400 font-bold">
+                  No se encontraron compras en el historial.
+                </div>
+              ) : (
+                <>
+                  {/* Vista Móvil (Tarjetas) */}
+                  <div className="grid grid-cols-1 gap-3 md:hidden">
+                    {comprasPaginadas.map((c) => {
                       const date = new Date(c.created_at).toLocaleString("es-GT", {
                         day: "2-digit",
                         month: "short",
@@ -997,13 +1647,13 @@ export function VerProveedores() {
                       return (
                         <div
                           key={c.id}
-                          className="bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl p-4 flex flex-col gap-3 shadow-xs text-left"
+                          className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/30 dark:border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 shadow-xs text-left"
                         >
-                          <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-900 pb-2">
-                            <span className="font-black text-slate-900 dark:text-white text-xs">
-                              #{obtenerCodigoCompra(c.id)}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-slate-900 dark:text-white">
+                              Compra #{obtenerCodigoCompra(c.id)}
                             </span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               c.estado_pago === "Pagado"
                                 ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
                                 : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
@@ -1013,14 +1663,14 @@ export function VerProveedores() {
                           </div>
 
                           <div className="flex flex-col gap-1 text-xs">
-                            <p className="font-bold text-slate-850 dark:text-zinc-200">
+                            <p className="font-bold text-slate-800 dark:text-zinc-200">
                               {c.inv_proveedores?.nombre || "Proveedor Desconocido"}
                             </p>
                             <p className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                               <Calendar className="size-3.5 text-[#8DA78E]" /> {date}
                             </p>
                             {c.observaciones && (
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400 italic mt-1 bg-slate-50 dark:bg-zinc-900/50 p-2 rounded-lg border border-slate-100 dark:border-zinc-800/40 truncate">
+                              <p className="text-[10px] text-slate-550 dark:text-slate-400 italic mt-1 bg-slate-50 dark:bg-zinc-900/50 p-2 rounded-lg border border-slate-100 dark:border-zinc-800/40 truncate">
                                 {c.observaciones}
                               </p>
                             )}
@@ -1029,7 +1679,7 @@ export function VerProveedores() {
                           <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-900 mt-1">
                             <div className="flex flex-col">
                               <span className="text-[9px] font-bold text-slate-450 uppercase leading-none">Total</span>
-                              <span className="text-sm font-black text-[#8DA78E] mt-1">
+                              <span className="text-xs font-black text-[#8DA78E] mt-1">
                                 Q{c.total.toFixed(2)}
                               </span>
                             </div>
@@ -1040,32 +1690,212 @@ export function VerProveedores() {
                               >
                                 Ver Detalle
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => handleCambiarEstadoPago(c.id, c.estado_pago)}
-                                className={`px-3 py-1.5 font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border ${
-                                  c.estado_pago === "Pagado"
-                                    ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40"
-                                    : "bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/40"
-                                }`}
-                              >
-                                {c.estado_pago === "Pagado" ? "Pendiente" : "Pagado"}
-                              </button>
+                              {c.estado_pago !== "Pagado" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCambiarEstadoPago(c.id, c.estado_pago)}
+                                  className="px-3 py-1.5 font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/40"
+                                >
+                                  Pagado
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
                       );
-                    })
-                  )}
+                    })}
+                  </div>
+
+                  {/* Vista Desktop (Tabla) */}
+                  <div className="hidden md:block bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-3xl overflow-hidden shadow-xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-[#F5F5F1] dark:bg-[#525D53]/20 text-[#525D53] dark:text-[#A3BEB0] font-black uppercase tracking-wider border-b border-[#C1D1C5]/30">
+                            <th className="px-5 py-3.5">Compra #</th>
+                            <th className="px-5 py-3.5">Fecha</th>
+                            <th className="px-5 py-3.5">Proveedor</th>
+                            <th className="px-5 py-3.5">Estado Pago</th>
+                            <th className="px-5 py-3.5 text-right">Total</th>
+                            <th className="px-5 py-3.5 text-center">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#C1D1C5]/15 dark:divide-zinc-800/40 text-slate-700 dark:text-slate-300">
+                          {comprasPaginadas.map((c) => {
+                            const date = new Date(c.created_at).toLocaleString("es-GT", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            });
+                            return (
+                              <tr
+                                key={c.id}
+                                className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 transition-colors"
+                              >
+                                <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                                  #{obtenerCodigoCompra(c.id)}
+                                </td>
+                                <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">{date}</td>
+                                <td className="px-5 py-3.5 font-bold">
+                                  {c.inv_proveedores?.nombre || "Proveedor Desconocido"}
+                                </td>
+                                <td className="px-5 py-3.5 whitespace-nowrap">
+                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                    c.estado_pago === "Pagado"
+                                      ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
+                                      : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                                  }`}>
+                                    {c.estado_pago}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-3.5 text-right font-black text-[#8DA78E] dark:text-[#A3BEB0] whitespace-nowrap">
+                                  Q{c.total.toFixed(2)}
+                                </td>
+                                <td className="px-5 py-3.5 whitespace-nowrap">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => cargarDetallesCompra(c)}
+                                      className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border border-[#8DA78E]/20"
+                                    >
+                                      Ver Detalle
+                                    </button>
+                                    {c.estado_pago !== "Pagado" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCambiarEstadoPago(c.id, c.estado_pago)}
+                                        className="px-3 py-1.5 font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/40"
+                                      >
+                                        Pagado
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Barra de Paginación */}
+              {totalComprasItems > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 px-1 text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-4 text-xs font-medium">
+                    <div className="flex items-center gap-1.5 relative" ref={pageSizeDropdownComprasRef}>
+                      <button
+                        type="button"
+                        onClick={() => setMostrarPageSizeDropdownCompras(!mostrarPageSizeDropdownCompras)}
+                        className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 text-xs font-bold text-[#525D53] dark:text-[#A3BEB0] transition-all cursor-pointer flex items-center gap-1.5 hover:border-[#8DA78E] h-[34px] min-w-[55px] justify-between"
+                      >
+                        <span>{pageSizeCompras}</span>
+                        <ChevronDown className="size-3 text-slate-400" />
+                      </button>
+
+                      <AnimatePresence>
+                        {mostrarPageSizeDropdownCompras && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 4 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute bottom-full mb-1.5 left-0 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5 min-w-[70px]"
+                          >
+                            {[10, 50, 100].map((size) => (
+                              <button
+                                key={size}
+                                type="button"
+                                onClick={() => {
+                                  setPageSizeCompras(size);
+                                  setCurrentPageCompras(1);
+                                  setMostrarPageSizeDropdownCompras(false);
+                                }}
+                                className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
+                                  pageSizeCompras === size
+                                    ? "bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0]"
+                                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/60"
+                                }`}
+                              >
+                                <span>{size}</span>
+                                {pageSizeCompras === size && <Check className="size-3" />}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  {/* Botones de navegación */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCurrentPageCompras(Math.max(1, activeComprasPage - 1))}
+                      disabled={activeComprasPage === 1}
+                      className="size-8 rounded-lg border transition-all disabled:opacity-40 select-none bg-white dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-slate-200 dark:border-slate-800 hover:border-[#8DA78E] disabled:hover:border-slate-200 dark:disabled:hover:border-slate-800 cursor-pointer flex items-center justify-center"
+                      title="Anterior"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalComprasPages }, (_, idx) => {
+                        const pageNum = idx + 1;
+                        if (
+                          totalComprasPages <= 5 ||
+                          pageNum === 1 ||
+                          pageNum === totalComprasPages ||
+                          Math.abs(pageNum - activeComprasPage) <= 1
+                        ) {
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCurrentPageCompras(pageNum)}
+                              className={`size-8 rounded-lg text-[11px] font-bold transition-all select-none cursor-pointer flex items-center justify-center border ${
+                                activeComprasPage === pageNum
+                                  ? "bg-[#8DA78E] border-[#8DA78E] text-[#F5F5F1]"
+                                  : "bg-white dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-slate-200 dark:border-slate-800 hover:border-[#8DA78E]"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        }
+                        
+                        if (pageNum === 2 || pageNum === totalComprasPages - 1) {
+                          return (
+                            <span key={pageNum} className="px-1 text-slate-400 text-[11px]">
+                              ...
+                            </span>
+                          );
+                        }
+                        
+                        return null;
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPageCompras(Math.min(totalComprasPages, activeComprasPage + 1))}
+                      disabled={activeComprasPage === totalComprasPages}
+                      className="size-8 rounded-lg border transition-all disabled:opacity-40 select-none bg-white dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-slate-200 dark:border-slate-800 hover:border-[#8DA78E] disabled:hover:border-slate-200 dark:disabled:hover:border-slate-800 cursor-pointer flex items-center justify-center"
+                      title="Siguiente"
+                    >
+                      <ChevronRight className="size-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* TAB 3: CATALOGO DE PROVEEDORES */}
           {activeTab === "proveedores" && (
-            <div className="flex flex-col gap-4">
-              <div className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 flex flex-col gap-4">
+            <div className="flex gap-4 flex-1 relative min-h-[550px] overflow-x-hidden p-1">
+              <div className="flex-1 flex flex-col gap-4 min-w-0">
+                <div className="bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                   {/* Buscador */}
                   <div className="relative w-full sm:max-w-md text-left">
@@ -1120,7 +1950,15 @@ export function VerProveedores() {
                                 proveedoresFiltrados.map((p) => (
                                   <tr
                                     key={p.id}
-                                    className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 transition-colors"
+                                    onClick={() => {
+                                      const isSelected = proveedorSeleccionadoTab3?.id === p.id;
+                                      setProveedorSeleccionadoTab3(isSelected ? null : p);
+                                      setModoEdicionProveedor(false);
+                                    }}
+                                    className={cn(
+                                      "hover:bg-[#8DA78E]/10 dark:hover:bg-[#A3BEB0]/15 transition-all cursor-pointer",
+                                      proveedorSeleccionadoTab3?.id === p.id && "bg-[#8DA78E]/20 dark:bg-[#8DA78E]/25"
+                                    )}
                                   >
                                     <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
                                       {p.nombre}
@@ -1130,9 +1968,15 @@ export function VerProveedores() {
                                     </td>
                                     <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400">
                                       {p.telefono ? (
-                                        <span className="flex items-center gap-1.5">
-                                          <Phone className="size-3 text-[#8DA78E]" /> {p.telefono}
-                                        </span>
+                                        <a
+                                          href={getWhatsappUrl(p.telefono)}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="inline-flex items-center gap-1.5 text-green-600 dark:text-green-400 hover:underline font-bold"
+                                        >
+                                          <Phone className="size-3" /> {formatPhoneDisplay(p.telefono)}
+                                        </a>
                                       ) : (
                                         <span className="text-slate-300 dark:text-slate-600">—</span>
                                       )}
@@ -1156,17 +2000,21 @@ export function VerProveedores() {
                                     <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
                                       <div className="flex items-center justify-center gap-2">
                                         <button
-                                          onClick={() => {
-                                            setProveedorAEditar(p);
-                                            setIsEditarOpen(true);
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setProveedorSeleccionadoTab3(p);
+                                            setModoEdicionProveedor(true);
                                           }}
                                           className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
                                         >
                                           Editar
                                         </button>
                                         <button
-                                          onClick={() => handleEliminarProveedor(p.id, p.nombre)}
-                                          className="px-3 py-1.5 bg-slate-800 dark:bg-zinc-800 hover:bg-red-600 dark:hover:bg-red-700 text-white font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEliminarProveedor(p.id, p.nombre);
+                                          }}
+                                          className="px-3 py-1.5 bg-red-400 hover:bg-red-500 text-white font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
                                         >
                                           Eliminar
                                         </button>
@@ -1190,7 +2038,14 @@ export function VerProveedores() {
                           proveedoresFiltrados.map((p) => (
                             <div
                               key={p.id}
-                              className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-2xl p-4 flex flex-col gap-3 shadow-xs"
+                              onClick={() => {
+                                setProveedorSeleccionadoTab3(p);
+                                setModoEdicionProveedor(false);
+                              }}
+                              className={cn(
+                                "bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/40 dark:border-[#A3BEB0]/10 rounded-2xl p-4 flex flex-col gap-3 shadow-xs cursor-pointer hover:border-[#8DA78E] transition-all",
+                                proveedorSeleccionadoTab3?.id === p.id && "border-[#8DA78E] ring-1 ring-[#8DA78E]/30"
+                              )}
                             >
                               <div>
                                 <h4 className="font-bold text-sm text-slate-900 dark:text-white">{p.nombre}</h4>
@@ -1198,21 +2053,39 @@ export function VerProveedores() {
                               </div>
                               <div className="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
                                 {p.telefono && (
-                                  <p className="flex items-center gap-1.5"><Phone className="size-3.5 text-[#8DA78E]" /> {p.telefono}</p>
+                                  <p className="flex items-center gap-1.5">
+                                    <Phone className="size-3.5 text-[#8DA78E] shrink-0" />
+                                    <a
+                                      href={getWhatsappUrl(p.telefono)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-green-600 dark:text-green-400 hover:underline font-bold"
+                                    >
+                                      {formatPhoneDisplay(p.telefono)}
+                                    </a>
+                                  </p>
                                 )}
                                 {p.correo && (
                                   <p className="flex items-center gap-1.5 truncate"><Mail className="size-3.5 text-[#8DA78E]" /> {p.correo}</p>
                                 )}
                               </div>
-                              <div className="flex gap-2 justify-end pt-3 border-t border-slate-100 dark:border-zinc-800">
+                              <div className="flex gap-2 justify-end pt-3 border-t border-slate-100 dark:border-zinc-800" onClick={(e) => e.stopPropagation()}>
                                 <button
-                                  onClick={() => { setProveedorAEditar(p); setIsEditarOpen(true); }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setProveedorSeleccionadoTab3(p);
+                                    setModoEdicionProveedor(true);
+                                  }}
                                   className="px-3 py-1.5 text-xs font-bold text-[#8DA78E] hover:bg-[#8DA78E]/10 rounded-lg cursor-pointer transition-colors uppercase border border-[#8DA78E]/30"
                                 >
                                   Editar
                                 </button>
                                 <button
-                                  onClick={() => handleEliminarProveedor(p.id, p.nombre)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEliminarProveedor(p.id, p.nombre);
+                                  }}
                                   className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg cursor-pointer transition-colors uppercase border border-red-200 dark:border-red-900/40"
                                 >
                                   Eliminar
@@ -1227,9 +2100,35 @@ export function VerProveedores() {
                 })()}
               </div>
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Panel de detalle de Proveedor */}
+            <AnimatePresence>
+              {proveedorSeleccionadoTab3 && (
+                <motion.div
+                  initial={{ x: "100%", opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: "100%", opacity: 0 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  className="hidden md:block absolute top-0 right-0 h-full w-[600px] z-20 shadow-2xl"
+                >
+                  <div className="h-full">
+                    <ProveedorDetalle
+                      proveedor={proveedorSeleccionadoTab3}
+                      onClose={() => setProveedorSeleccionadoTab3(null)}
+                      onUpdate={() => {
+                        cargarDatos();
+                        setProveedorSeleccionadoTab3(null);
+                      }}
+                      defaultEdit={modoEdicionProveedor}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    )}
 
       {/* Slide-over Detalles (Historial de Compras) */}
       <AnimatePresence>
@@ -1298,13 +2197,15 @@ export function VerProveedores() {
                             }`}>
                               {compraDetalleSeleccionada.estado_pago}
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => handleCambiarEstadoPago(compraDetalleSeleccionada.id, compraDetalleSeleccionada.estado_pago, true)}
-                              className="text-[10px] text-[#8DA78E] hover:underline font-bold cursor-pointer"
-                            >
-                              (Cambiar)
-                            </button>
+                            {compraDetalleSeleccionada.estado_pago !== "Pagado" && (
+                              <button
+                                type="button"
+                                onClick={() => handleCambiarEstadoPago(compraDetalleSeleccionada.id, compraDetalleSeleccionada.estado_pago, true)}
+                                className="text-[10px] text-[#8DA78E] hover:underline font-bold cursor-pointer"
+                              >
+                                (Cambiar)
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1339,6 +2240,39 @@ export function VerProveedores() {
                           ))}
                         </div>
                       )}
+                    </div>
+
+                    {/* Historial de Pagos */}
+                    <div className="flex flex-col gap-2">
+                      <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">Historial de Pagos</h4>
+                      <div className="bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 rounded-2xl overflow-hidden shadow-xs text-xs">
+                        {compraDetalleSeleccionada.estado_pago === "Pagado" ? (
+                          <div className="divide-y divide-slate-50 dark:divide-zinc-900">
+                            <div className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 transition-colors">
+                              <div>
+                                <p className="font-bold text-slate-900 dark:text-white">Pago de Compra</p>
+                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                  Fecha: {compraDetalleSeleccionada.fecha_pago ? new Date(compraDetalleSeleccionada.fecha_pago).toLocaleString("es-GT") : new Date(compraDetalleSeleccionada.created_at).toLocaleString("es-GT")}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-black text-[#8DA78E] block">
+                                  Q{compraDetalleSeleccionada.total.toFixed(2)}
+                                </span>
+                                <span className="inline-block px-1.5 py-0.5 rounded-full font-bold uppercase text-[8px] bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400">
+                                  COMPLETADO
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-4 text-center text-slate-400 flex flex-col items-center justify-center gap-1.5">
+                            <AlertTriangle className="size-5 text-amber-500/80 animate-pulse" />
+                            <p className="font-bold text-[11px] text-slate-500">Pendiente de pago</p>
+                            <p className="text-[9px] text-slate-400">No se registran transacciones para esta compra.</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Observaciones */}

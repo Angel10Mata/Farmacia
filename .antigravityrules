@@ -36,3 +36,10 @@ Define y utiliza exclusivamente las siguientes constantes de color en tus estilo
 - LOOK_2_SALVIA_MENTA: "#8DA78E"
 - LOOK_2_PASTEL_CLARO: "#C1D1C5"
 - BLANCO_SUAVE_HUESO:  "#F5F5F1"
+
+# Reglas de Temas y Estilos Generales
+- Utilizar para el tema claro bg-zinc-100 y para el tema oscuro bg-zinc-800.
+- Cuando el tema esté en claro, el texto debe ser oscuro, y cuando esté en tema oscuro, el texto debe ser claro.
+- Los botones principales deben tener un fondo verde sólido (estilo filled) con el texto en color blanco o claro.
+- Los botones secundarios deben tener un estilo "outline" con fondo transparente, borde verde y el texto en color verde.
+- Siempre se deben respetar los temas seleccionados en todos los componentes.

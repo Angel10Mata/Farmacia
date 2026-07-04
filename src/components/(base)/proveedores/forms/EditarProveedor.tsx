@@ -27,6 +27,7 @@ export function EditarProveedor({ isOpen, onClose, onSuccess, proveedor }: Edita
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [nit, setNit] = useState("");
+  const [areaCode, setAreaCode] = useState("+502");
   const [telefono, setTelefono] = useState("");
   const [correo, setCorreo] = useState("");
 
@@ -39,7 +40,20 @@ export function EditarProveedor({ isOpen, onClose, onSuccess, proveedor }: Edita
       setNombre(proveedor.nombre || "");
       setDescripcion(proveedor.descripcion || "");
       setNit(proveedor.nit || "");
-      setTelefono(proveedor.telefono || "");
+      if (proveedor.telefono) {
+        const telStr = proveedor.telefono.trim();
+        const match = telStr.match(/^(\+\d{1,4})\s?(.*)$/);
+        if (match) {
+          setAreaCode(match[1]);
+          setTelefono(match[2]);
+        } else {
+          setAreaCode("+502");
+          setTelefono(telStr);
+        }
+      } else {
+        setAreaCode("+502");
+        setTelefono("");
+      }
       setCorreo(proveedor.correo || "");
     }
     setValidationError(null);
@@ -82,7 +96,7 @@ export function EditarProveedor({ isOpen, onClose, onSuccess, proveedor }: Edita
         nombre: nombreTrimmed,
         descripcion: descripcion.trim() || null,
         nit: nit.trim() || null,
-        telefono: telefono.trim() || null,
+        telefono: telefono.trim() ? `${areaCode} ${telefono.trim()}` : null,
         correo: correo.trim() || null,
       });
 
@@ -151,7 +165,7 @@ export function EditarProveedor({ isOpen, onClose, onSuccess, proveedor }: Edita
               value={nit}
               onChange={(e) => setNit(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
-              placeholder="Ej: 1234567-8"
+              placeholder="1234567-8"
             />
           </div>
 
@@ -160,13 +174,29 @@ export function EditarProveedor({ isOpen, onClose, onSuccess, proveedor }: Edita
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                 Teléfono de Contacto
               </label>
-              <input
-                type="text"
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
-                placeholder="Ej: 5555-1234"
-              />
+              <div className="flex gap-2">
+                <select
+                  value={areaCode}
+                  onChange={(e) => setAreaCode(e.target.value)}
+                  className="px-2 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors w-20 shrink-0"
+                >
+                  <option value="+502">+502</option>
+                  <option value="+503">+503</option>
+                  <option value="+504">+504</option>
+                  <option value="+505">+505</option>
+                  <option value="+506">+506</option>
+                  <option value="+507">+507</option>
+                  <option value="+52">+52</option>
+                  <option value="+1">+1</option>
+                </select>
+                <input
+                  type="text"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+                  placeholder="5555-1234"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
@@ -191,7 +221,7 @@ export function EditarProveedor({ isOpen, onClose, onSuccess, proveedor }: Edita
               onChange={(e) => setDescripcion(e.target.value)}
               rows={2}
               className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors resize-none"
-              placeholder="Ej: Distribuidora de medicamentos genéricos..."
+              placeholder="Distribuidora de medicamentos genéricos..."
             />
           </div>
         </div>

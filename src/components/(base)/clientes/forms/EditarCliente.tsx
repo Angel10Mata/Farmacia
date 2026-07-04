@@ -31,6 +31,7 @@ export function EditarCliente({ isOpen, onClose, onSuccess, cliente }: EditarCli
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [areaCode, setAreaCode] = useState("+502");
   const [direccion, setDireccion] = useState("");
   const [nit, setNit] = useState("");
 
@@ -42,7 +43,20 @@ export function EditarCliente({ isOpen, onClose, onSuccess, cliente }: EditarCli
     if (cliente) {
       setNombre(cliente.nombre || "");
       setEmail(cliente.email === "No registrado" ? "" : cliente.email || "");
-      setTelefono(cliente.telefono === "No registrado" ? "" : cliente.telefono || "");
+      if (cliente.telefono && cliente.telefono !== "No registrado") {
+        const telStr = cliente.telefono.trim();
+        const match = telStr.match(/^(\+\d{1,4})\s?(.*)$/);
+        if (match) {
+          setAreaCode(match[1]);
+          setTelefono(match[2]);
+        } else {
+          setAreaCode("+502");
+          setTelefono(telStr);
+        }
+      } else {
+        setAreaCode("+502");
+        setTelefono("");
+      }
       setDireccion(cliente.direccion === "No registrada" ? "" : cliente.direccion || "");
       setNit(cliente.nit === "C/F" ? "" : cliente.nit || "");
     }
@@ -86,7 +100,7 @@ export function EditarCliente({ isOpen, onClose, onSuccess, cliente }: EditarCli
         .update({
           nombre: nombreTrimmed,
           email: email.trim() || null,
-          telefono: telefono.trim() || null,
+          telefono: telefono.trim() ? `${areaCode} ${telefono.trim()}` : null,
           direccion: direccion.trim() || null,
           nit: nit.trim() || null,
         })
@@ -163,12 +177,29 @@ export function EditarCliente({ isOpen, onClose, onSuccess, cliente }: EditarCli
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
               Teléfono
             </label>
-            <input
-              type="text"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
-            />
+            <div className="flex gap-2">
+              <select
+                value={areaCode}
+                onChange={(e) => setAreaCode(e.target.value)}
+                className="px-2 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors w-20 shrink-0"
+              >
+                <option value="+502">+502</option>
+                <option value="+503">+503</option>
+                <option value="+504">+504</option>
+                <option value="+505">+505</option>
+                <option value="+506">+506</option>
+                <option value="+507">+507</option>
+                <option value="+52">+52</option>
+                <option value="+1">+1</option>
+              </select>
+              <input
+                type="text"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+                placeholder="5555-1234"
+              />
+            </div>
           </div>
 
           <div>

@@ -36,6 +36,8 @@ interface ImageUploaderProps {
   onEstadoChange?: (estado: { uploading: boolean; deleting: boolean }) => void;
   /** Clase CSS adicional para la vista previa de la imagen (ej. max-h-[250px]) */
   previewClassName?: string;
+  /** Modo compacto: solo íconos, sin textos y área clickeable */
+  compact?: boolean;
 }
 
 const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(function ImageUploader({
@@ -51,6 +53,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
   botonesExternos = false,
   onEstadoChange,
   previewClassName,
+  compact = false,
 }, ref) {
   const supabase = createClient();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -260,6 +263,11 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onClick={(e) => {
+          if (compact) {
+            e.stopPropagation();
+          }
+        }}
         className={
           botonesExternos
             ? `flex flex-col items-center transition-colors ${
@@ -269,6 +277,8 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                     ? 'border-2 border-dashed border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20 rounded-xl py-10 px-4'
                     : 'border-2 border-dashed border-gray-200 dark:border-neutral-700 rounded-xl py-10 px-4'
               }`
+            : compact 
+            ? `w-full h-full flex flex-col items-center justify-center transition-colors relative group ${!currentImagePath && tienePermisoSubir ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-800/50' : ''}`
             : `border-2 border-dashed rounded-xl p-4 flex flex-col items-center gap-3 transition-colors ${
                 isDragging 
                   ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20' 
@@ -315,7 +325,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
           )
         ) : null}
 
-        {!currentImagePath && !uploading && !botonesExternos && (
+        {!currentImagePath && !uploading && !botonesExternos && !compact && (
           <div className="text-center pointer-events-none">
             <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
               Arrastra una imagen o selecciona una opción
@@ -323,7 +333,65 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
           </div>
         )}
 
-        {!botonesExternos && (
+        {!currentImagePath && compact && !uploading && tienePermisoSubir && (
+          <div className="w-full h-full flex flex-col justify-between py-1 bg-white dark:bg-zinc-900/60 rounded-xl">
+            {/* Header Title */}
+            <div className="text-center pt-1 pb-1 border-b border-[#C1D1C5]/10 dark:border-zinc-800/10 select-none">
+              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider">Tomar / Subir Foto</span>
+            </div>
+            {/* Buttons Row */}
+            <div className="flex-1 flex flex-row items-stretch divide-x divide-[#C1D1C5]/30 dark:divide-zinc-800/40">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-[#8DA78E] hover:bg-slate-50 dark:hover:bg-zinc-800/20 transition-all gap-0.5 p-1 cursor-pointer select-none"
+              >
+                <Upload size={14} />
+                <span className="text-[8px] font-bold uppercase tracking-wider">Archivo</span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cameraInputRef.current?.click();
+                }}
+                className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-[#8DA78E] hover:bg-slate-50 dark:hover:bg-zinc-800/20 transition-all gap-0.5 p-1 cursor-pointer select-none"
+              >
+                <Camera size={14} />
+                <span className="text-[8px] font-bold uppercase tracking-wider">Cámara</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {compact && uploading && (
+          <div className="flex items-center justify-center">
+            <Loader2 className="animate-spin text-[#8DA78E]" size={24} />
+          </div>
+        )}
+
+        {compact && currentImagePath && tienePermisoSubir && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }}
+            disabled={isProcessing}
+            className="absolute top-1.5 right-1.5 size-7 flex items-center justify-center bg-red-500/90 hover:bg-red-600 text-white rounded-full shadow-sm backdrop-blur-sm transition-all disabled:opacity-50 z-10"
+          >
+            {deleting ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Trash2 size={12} />
+            )}
+          </button>
+        )}
+
+        {!botonesExternos && !compact && (
         <div className="flex gap-2 flex-wrap justify-center">
           {tienePermisoSubir && (
             <>
@@ -375,11 +443,11 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
         </div>
         )}
 
-        {!currentImagePath && !uploading && !botonesExternos && (
-          <p className="text-[10px] text-gray-400">JPG · PNG · WEBP</p>
+        {!currentImagePath && !uploading && !botonesExternos && !compact && (
+          <p className="text-[10px] text-gray-400 pointer-events-none select-none">JPG · PNG · WEBP</p>
         )}
         {!currentImagePath && !uploading && botonesExternos && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-medium text-center pointer-events-none select-none">
             Selecciona una imagen desde el pie del modal
           </p>
         )}

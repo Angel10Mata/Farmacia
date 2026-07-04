@@ -249,3 +249,179 @@ export async function anularVenta(ventaId: string) {
   }
 }
 
+export async function editarDetalleVentaDirecto(params: {
+  detalleId: string;
+  ventaId: string;
+  productoId: string;
+  nuevaCantidad: number;
+  nuevoPrecio: number;
+}) {
+  try {
+    const supabase = await createClient();
+    const { detalleId, ventaId, productoId, nuevaCantidad, nuevoPrecio } = params;
+
+    // 1. Obtener la cantidad anterior del detalle para calcular la diferencia de stock
+    const { data: detAnterior, error: getDetError } = await supabase
+      .from("ven_detalles")
+      .select("cantidad")
+      .eq("id", detalleId)
+      .single();
+
+    if (getDetError || !detAnterior) {
+      throw new Error("No se encontró el detalle de la venta anterior.");
+    }
+
+    const cantidadAnterior = detAnterior.cantidad;
+    const diffCantidad = nuevaCantidad - cantidadAnterior; // Si aumenta, descontamos más stock. Si disminuye, devolvemos stock.
+
+    // 2. Si aumentó la cantidad, verificar que haya stock disponible en inv_productos
+    if (diffCantidad > 0) {
+      const { data: prod, error: getProdError } = await supabase
+        .from("inv_productos")
+        .select("nombre, stock_actual")
+        .eq("id", productoId)
+        .single();
+
+      if (getProdError || !prod) {
+        throw new Error("Producto no encontrado.");
+      }
+
+      if (prod.stock_actual < diffCantidad) {
+        throw new Error(`Stock insuficiente para aumentar la cantidad. Disponibles: ${prod.stock_actual}.`);
+      }
+    }
+
+    // 3. Actualizar el stock del producto
+    const { data: prodStock } = await supabase
+      .from("inv_productos")
+      .select("stock_actual")
+      .eq("id", productoId)
+      .single();
+
+    const nuevoStock = (prodStock?.stock_actual || 0) - diffCantidad;
+
+    const { error: stockError } = await supabase
+      .from("inv_productos")
+      .update({ stock_actual: nuevoStock })
+      .eq("id", productoId);
+
+    if (stockError) {
+      throw new Error(`Error al actualizar el stock: ${stockError.message}`);
+    }
+
+    // 4. Actualizar el item del detalle
+    const nuevoSubtotal = nuevaCantidad * nuevoPrecio;
+    const { error: updateDetError } = await supabase
+      .from("ven_detalles")
+      .update({
+        cantidad: nuevaCantidad,
+        precio_aplicado: nuevoPrecio,
+        subtotal: nuevoSubtotal
+      })
+      .eq("id", detalleId);
+
+    if (updateDetError) {
+      throw new Error(`Error al actualizar el detalle: ${updateDetError.message}`);
+    }
+
+    // 5. Recalcular el total general de la venta
+    const { data: todosLosDetalles, error: sumError } = await supabase
+      .from("ven_detalles")
+      .select("subtotal")
+      .eq("venta_id", ventaId);
+
+    if (sumError || !todosLosDetalles) {
+      throw new Error("Error al recalcular el total de la venta.");
+    }
+
+    const nuevoTotalVenta = todosLosDetalles.reduce((sum, d) => sum + d.subtotal, 0);
+
+    const { error: updateVentaError } = await supabase
+      .from("ventas")
+      .update({ total: nuevoTotalVenta })
+      .eq("id", ventaId);
+
+    if (updateVentaError) {
+      throw new Error(`Error al actualizar el total de la venta: ${updateVentaError.message}`);
+    }
+
+    return { success: true, nuevoTotal: nuevoTotalVenta };
+  } catch (error: any) {
+    console.error("Error en editarDetalleVentaDirecto:", error);
+    return { success: false, error: error.message || "Error al editar el detalle de la venta." };
+  }
+}
+
+export async function eliminarDetalleVentaDirecto(params: {
+  detalleId: string;
+  ventaId: string;
+  productoId: string;
+  cantidadADevolver: number;
+}) {
+  try {
+    const supabase = await createClient();
+    const { detalleId, ventaId, productoId, cantidadADevolver } = params;
+
+    // 1. Obtener el stock actual del producto para sumarle la cantidad devuelta
+    const { data: prod, error: getProdError } = await supabase
+      .from("inv_productos")
+      .select("stock_actual")
+      .eq("id", productoId)
+      .single();
+
+    if (getProdError || !prod) {
+      throw new Error("No se pudo obtener el stock del producto.");
+    }
+
+    const nuevoStock = prod.stock_actual + cantidadADevolver;
+
+    // 2. Actualizar el stock del producto
+    const { error: updateStockError } = await supabase
+      .from("inv_productos")
+      .update({ stock_actual: nuevoStock })
+      .eq("id", productoId);
+
+    if (updateStockError) {
+      throw new Error(`Error al devolver stock al inventario: ${updateStockError.message}`);
+    }
+
+    // 3. Eliminar el registro del detalle de venta
+    const { error: deleteDetError } = await supabase
+      .from("ven_detalles")
+      .delete()
+      .eq("id", detalleId);
+
+    if (deleteDetError) {
+      throw new Error(`Error al eliminar el detalle de venta: ${deleteDetError.message}`);
+    }
+
+    // 4. Recalcular el total general de la venta
+    const { data: todosLosDetalles, error: sumError } = await supabase
+      .from("ven_detalles")
+      .select("subtotal")
+      .eq("venta_id", ventaId);
+
+    if (sumError || !todosLosDetalles) {
+      throw new Error("Error al recalcular el total de la venta.");
+    }
+
+    const nuevoTotalVenta = todosLosDetalles.reduce((sum, d) => sum + d.subtotal, 0);
+
+    // 5. Actualizar el total en la cabecera de la venta
+    const { error: updateVentaError } = await supabase
+      .from("ventas")
+      .update({ total: nuevoTotalVenta })
+      .eq("id", ventaId);
+
+    if (updateVentaError) {
+      throw new Error(`Error al actualizar el total de la venta: ${updateVentaError.message}`);
+    }
+
+    return { success: true, nuevoTotal: nuevoTotalVenta };
+  } catch (error: any) {
+    console.error("Error en eliminarDetalleVentaDirecto:", error);
+    return { success: false, error: error.message || "Error al eliminar el producto de la venta." };
+  }
+}
+
+
