@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import SignUp from "@/components/(base)/(auth)/signup/SignUp";
+import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
 
 export function VerUsuarios() {
   const user = useUser();
@@ -145,43 +146,7 @@ export function VerUsuarios() {
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground h-9"
               />
             </div>
-
             <div className="flex items-center gap-3 shrink-0">
-              <select
-                value={pageSize}
-                onChange={handlePageSizeChange}
-                className="h-9 rounded-md border border-border bg-card px-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer shrink-0"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value="all">Todos</option>
-              </select>
-
-              {!isAll && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border bg-card hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <span className="text-xs font-mono text-muted-foreground min-w-[30px] text-center font-bold">
-                      {currentPage}/{totalPages}
-                    </span>
-                    <button
-                      onClick={() =>
-                        setCurrentPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      disabled={currentPage === totalPages}
-                      className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border bg-card hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -278,6 +243,26 @@ export function VerUsuarios() {
           )}
         </div>
       </div>
+
+      {/* Barra de Paginación */}
+      {!isAll && filteredUsers.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 px-2.5 md:px-0 text-slate-600 dark:text-slate-400">
+          <PageSizeSelect
+            pageSize={pageSize as number}
+            setPageSize={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+          />
+          <div className="flex justify-center w-full sm:w-auto">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(p) => setCurrentPage(p)}
+            />
+          </div>
+        </div>
+      )}
 
       <VerPerfil
         isOpen={isProfileOpen}

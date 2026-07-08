@@ -212,7 +212,7 @@ export function CrearProveedor({ isOpen, onClose, onSuccess }: CrearProveedorPro
           <Button
             type="submit"
             disabled={isLoading}
-            className="bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] rounded-xl font-bold cursor-pointer text-xs py-2"
+            className="bg-[#8DA78E] text-[#F5F5F1] rounded-xl font-bold cursor-pointer text-xs py-2"
           >
             {isLoading ? "Guardando..." : "Guardar Proveedor"}
           </Button>

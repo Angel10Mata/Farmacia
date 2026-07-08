@@ -339,7 +339,7 @@ export function ProveedorDetalle({
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 py-2 bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-xs font-bold rounded-xl transition-all cursor-pointer uppercase text-center"
+              className="flex-1 py-2 bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold rounded-xl transition-all cursor-pointer uppercase text-center"
             >
               {isSaving ? "Guardando..." : "Guardar"}
             </button>

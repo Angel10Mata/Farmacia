@@ -22,6 +22,8 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
   const [precioBase, setPrecioBase] = useState("");
   const [stockActual, setStockActual] = useState("");
   const [stockMinimo, setStockMinimo] = useState("");
+  const [fechaVencimiento, setFechaVencimiento] = useState("");
+  const [numeroLote, setNumeroLote] = useState("");
   const [imagenUrl, setImagenUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -99,6 +101,8 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
     setImagenUrl(null);
     setProveedorBusqueda("");
     setProveedorSeleccionado(null);
+    setFechaVencimiento("");
+    setNumeroLote("");
     setValidationError(null);
   };
 
@@ -147,6 +151,8 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
         stock_minimo: stockMinimoNum,
         proveedor_id: proveedorSeleccionado?.id || null,
         imagen_url: imagenUrl,
+        fecha_vencimiento: fechaVencimiento || null,
+        numero_lote: numeroLote.trim() || null,
         activo: true
       });
 
@@ -342,6 +348,31 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
                 className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
               />
             </div>
+            
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                Lote
+              </label>
+              <input
+                type="text"
+                value={numeroLote}
+                onChange={(e) => setNumeroLote(e.target.value)}
+                placeholder="Opcional"
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                Vencimiento
+              </label>
+              <input
+                type="date"
+                value={fechaVencimiento}
+                onChange={(e) => setFechaVencimiento(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+              />
+            </div>
           </div>
         </div>
 
@@ -353,7 +384,7 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
           <Button
             type="submit"
             disabled={isLoading || isUploadingImage}
-            className="rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] font-bold transition-all text-xs"
+            className="rounded-xl bg-[#8DA78E] text-[#F5F5F1] font-bold transition-all text-xs"
           >
             {isLoading ? "Registrando..." : "Registrar Producto"}
           </Button>

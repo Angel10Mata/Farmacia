@@ -1,0 +1,82 @@
+{
+  "desde": "2026-07-07T00:00:00.000-06:00",
+  "hasta": "2026-07-07T23:59:59.999-06:00",
+  "tipo": "todos",
+  "data": [
+    {
+      "id": "b61bcee6-8ad1-4810-819f-67223c32e2f0",
+      "created_at": "2026-07-07T23:32:58.635202+00:00",
+      "fecha_movimiento": "2026-07-07",
+      "tipo_movimiento": "ingreso",
+      "categoria": "abono_cliente",
+      "descripcion": "abono",
+      "monto": 110,
+      "saldo_anterior": 315,
+      "saldo_nuevo": 425,
+      "gasto_fijo_id": null,
+      "venta_id": "f769b76d-4b9e-4b11-b9de-3c00a6915415",
+      "compra_id": null,
+      "usuario_id": "e4b2efa7-e245-4e47-8360-44425a31348d"
+    },
+    {
+      "id": "db14725f-233e-43bd-9d74-fb9e47a023c4",
+      "created_at": "2026-07-07T23:06:04.640353+00:00",
+      "fecha_movimiento": "2026-07-07",
+      "tipo_movimiento": "ingreso",
+      "categoria": "abono_cliente",
+      "descripcion": "abono a credito",
+      "monto": 150,
+      "saldo_anterior": 165,
+      "saldo_nuevo": 315,
+      "gasto_fijo_id": null,
+      "venta_id": "13bd186f-a3a7-4874-bbe3-2b54ca16592b",
+      "compra_id": null,
+      "usuario_id": "e4b2efa7-e245-4e47-8360-44425a31348d"
+    },
+    {
+      "id": "1c93381a-eb78-4fcc-80ab-18c3dff0b08d",
+      "created_at": "2026-07-07T21:48:19.368888+00:00",
+      "fecha_movimiento": "2026-07-07",
+      "tipo_movimiento": "ingreso",
+      "categoria": "venta",
+      "descripcion": "Anulación: Venta Directa - Contado",
+      "monto": -55,
+      "saldo_anterior": 220,
+      "saldo_nuevo": 165,
+      "gasto_fijo_id": null,
+      "venta_id": "262ac7d0-f7f1-4428-b8b1-95324c4a2048",
+      "compra_id": null,
+      "usuario_id": "e4b2efa7-e245-4e47-8360-44425a31348d"
+    },
+    {
+      "id": "c955431a-6594-4264-b10f-aed8048a10c0",
+      "created_at": "2026-07-07T21:46:34.335907+00:00",
+      "fecha_movimiento": "2026-07-07",
+      "tipo_movimiento": "ingreso",
+      "categoria": "venta",
+      "descripcion": "Venta Directa - Contado",
+      "monto": 55,
+      "saldo_anterior": 165,
+      "saldo_nuevo": 220,
+      "gasto_fijo_id": null,
+      "venta_id": "262ac7d0-f7f1-4428-b8b1-95324c4a2048",
+      "compra_id": null,
+      "usuario_id": "e4b2efa7-e245-4e47-8360-44425a31348d"
+    },
+    {
+      "id": "2bc69a8d-0a4f-4bb0-a37c-32ed0aa7c7c7",
+      "created_at": "2026-07-07T21:40:40.878077+00:00",
+      "fecha_movimiento": "2026-07-07",
+      "tipo_movimiento": "ingreso",
+      "categoria": "venta",
+      "descripcion": "Venta #null - Contado",
+      "monto": 165,
+      "saldo_anterior": 0,
+      "saldo_nuevo": 165,
+      "gasto_fijo_id": null,
+      "venta_id": "683d4638-a8b0-4fd7-8e87-67fa3e0766aa",
+      "compra_id": null,
+      "usuario_id": "e4b2efa7-e245-4e47-8360-44425a31348d"
+    }
+  ]
+}

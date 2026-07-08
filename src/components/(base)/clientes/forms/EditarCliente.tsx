@@ -240,7 +240,7 @@ export function EditarCliente({ isOpen, onClose, onSuccess, cliente }: EditarCli
           <Button
             type="submit"
             disabled={isLoading}
-            className="rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] font-bold transition-all text-xs"
+            className="rounded-xl bg-[#8DA78E] text-[#F5F5F1] font-bold transition-all text-xs"
           >
             {isLoading ? "Guardando..." : "Guardar Cambios"}
           </Button>

@@ -1,14 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import type { User } from "@supabase/supabase-js";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Swal from "sweetalert2";
+import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
+import PassKeysModal from "@/components/(base)/layout/modals/PassKeysModal";
 import {
   LogIn,
   LogOut,
   ShieldAlert,
+  Settings,
+  User as UserIcon,
+  Fingerprint,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
@@ -25,7 +32,10 @@ interface MenuProps {
 export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
   const pathname = usePathname();
   const { realRole, effectiveRole, simulatedRole, setSimulatedRole } = useUserContext();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isPasskeysOpen, setIsPasskeysOpen] = useState(false);
   const isRoot = pathname === "/kore";
+  const isSuperOrAdmin = ["super", "admin"].includes(effectiveRole);
 
   // On mobile root: no breadcrumb bar, so menu starts right below header (3.5rem)
   // On mobile subpages: breadcrumb bar exists, so menu starts below header+breadcrumb (~6.5rem) 
@@ -62,6 +72,17 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
 
   return (
     <>
+      <VerPerfil
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        userId={null}
+      />
+      <PassKeysModal
+        isOpen={isPasskeysOpen}
+        onClose={() => setIsPasskeysOpen(false)}
+        user={user}
+      />
+
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-background/40 backdrop-blur-sm"
@@ -108,6 +129,55 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
                   </select>
                 </div>
               )}
+
+              <div className="mb-6">
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground mb-3">
+                  Sistema
+                </p>
+                <div className="flex flex-col gap-2">
+                  {isSuperOrAdmin && (
+                    <Link
+                      href="/kore/admin"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm font-bold hover:bg-muted/60 transition-all"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Settings className="size-4 shrink-0" />
+                        Administración
+                      </span>
+                      <ChevronRight className="size-4 opacity-50" />
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProfileOpen(true);
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm font-bold hover:bg-muted/60 transition-all cursor-pointer w-full text-left"
+                  >
+                    <span className="flex items-center gap-3">
+                      <UserIcon className="size-4 shrink-0" />
+                      Mi Perfil
+                    </span>
+                    <ChevronRight className="size-4 opacity-50" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPasskeysOpen(true);
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm font-bold hover:bg-muted/60 transition-all cursor-pointer w-full text-left"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Fingerprint className="size-4 shrink-0" />
+                      Ingreso Seguro
+                    </span>
+                    <ChevronRight className="size-4 opacity-50" />
+                  </button>
+                </div>
+              </div>
 
               <div className="mb-4">
                 <button

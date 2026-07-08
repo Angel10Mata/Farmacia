@@ -27,22 +27,22 @@
 }
 
 .dark {
-  --background: #1e211e; /* Olivo oscuro del proyecto */
+  --background: #18181b; /* zinc-900 */
   --foreground: oklch(98.5% 0 0);
-  --card: #252825; /* Tono olivo medio-oscuro */
+  --card: #27272a; /* zinc-800 */
   --card-foreground: oklch(98.5% 0 0);
-  --popover: #2a2e2a;
+  --popover: #27272a; /* zinc-800 */
   --popover-foreground: oklch(98.5% 0 0);
   --primary: #CBDAD2; /* LOOK_1_SALVIA_SUAVE for better contrast in dark mode */
-  --primary-foreground: #1e211e;
+  --primary-foreground: #18181b;
   --secondary: #525D53; /* LOOK_1_OLIVO_OSCURO */
   --secondary-foreground: oklch(98.5% 0 0);
-  --muted: #525D53;
+  --muted: #3f3f46; /* zinc-700 */
   --muted-foreground: oklch(70.8% 0 0);
   --accent: #AEC1B0; /* LOOK_2_SALVIA_MENTA */
-  --accent-foreground: #1e211e;
-  --border: #353b35;
-  --input: #353b35;
+  --accent-foreground: #18181b;
+  --border: #3f3f46; /* zinc-700 */
+  --input: #3f3f46; /* zinc-700 */
   --ring: #CBDAD2;
 }
 
@@ -100,6 +100,9 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  button, [role="button"], a[href] {
+    cursor: pointer;
   }
   body {
     @apply bg-background text-foreground antialiased;

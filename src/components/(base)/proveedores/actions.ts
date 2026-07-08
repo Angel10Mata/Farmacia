@@ -202,9 +202,27 @@ export async function crearCompra(params: {
       }
     }
 
+    // 4. Registrar pago inmediato en Finanzas si el estado es Pagado
+    if (estado_pago === "Pagado") {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error: finError } = await supabase.from("fin_transacciones").insert({
+        tipo_movimiento: "egreso",
+        categoria: "pago_proveedor",
+        monto: total,
+        descripcion: `Pago inmediato de compra al registrar`,
+        usuario_id: user?.id,
+        compra_id: compra.id
+      });
+      if (finError) {
+        console.error("Error al registrar el pago en finanzas:", finError);
+        // No lanzamos error para no bloquear la creación de la compra
+      }
+    }
+
     // Revalidar rutas para refrescar datos de inventario y compras
     revalidatePath("/kore/inventario");
     revalidatePath("/kore/proveedores");
+    revalidatePath("/kore/finanzas");
 
     return {
       success: true,
@@ -225,7 +243,7 @@ export async function obtenerHistorialCompras() {
 
     const { data, error } = await supabase
       .from("inv_compras")
-      .select("*, inv_proveedores(nombre, nit)")
+      .select("*, inv_proveedores(nombre, nit), fin_transacciones(*)")
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -258,6 +276,70 @@ export async function obtenerDetalleCompra(compraId: string) {
 export async function actualizarEstadoPagoCompra(compraId: string, nuevoEstado: "Pagado" | "Pendiente") {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // 1. Obtener detalles de la compra para sincronizar finanzas
+    const { data: compra, error: compraErr } = await supabase
+      .from("inv_compras")
+      .select("total, estado_pago")
+      .eq("id", compraId)
+      .single();
+
+    if (compraErr) throw new Error(compraErr.message);
+
+    // Si se marca como Pagado y antes estaba Pendiente
+    if (nuevoEstado === "Pagado" && compra.estado_pago !== "Pagado") {
+      // Calcular saldo pendiente
+      const { data: pagos } = await supabase
+        .from("fin_transacciones")
+        .select("monto")
+        .eq("compra_id", compraId)
+        .eq("categoria", "pago_proveedor");
+        
+      const pagado = pagos?.reduce((sum, p) => sum + Number(p.monto), 0) || 0;
+      const saldo = Number(compra.total) - pagado;
+
+      if (saldo > 0) {
+        // Insertar pago por el saldo restante
+        const { error: finError } = await supabase.from("fin_transacciones").insert({
+          tipo_movimiento: "egreso",
+          categoria: "pago_proveedor",
+          monto: saldo,
+          descripcion: `Pago total de compra marcado desde Proveedores`,
+          usuario_id: user?.id,
+          compra_id: compraId
+        });
+        if (finError) throw new Error("No se pudo registrar el pago en finanzas: " + finError.message);
+      }
+    } 
+    // Si se marca como Pendiente y antes estaba Pagado (o tenía algún pago)
+    else if (nuevoEstado === "Pendiente" && compra.estado_pago !== "Pendiente") {
+      // Revertir pagos asociados insertando anulaciones (Opción A)
+      const { data: pagos } = await supabase
+        .from("fin_transacciones")
+        .select("*")
+        .eq("compra_id", compraId)
+        .eq("categoria", "pago_proveedor");
+
+      if (pagos && pagos.length > 0) {
+        // Filtramos para no volver a anular algo que ya sea negativo (una anulación previa)
+        // Aunque si el usuario anula manual en finanzas y luego en proveedores, podría haber duplicados.
+        // Pero en principio se anula el neto positivo.
+        const saldoNeto = pagos.reduce((sum, p) => sum + Number(p.monto), 0);
+        
+        if (saldoNeto > 0) {
+          const { error: finError } = await supabase.from("fin_transacciones").insert({
+            tipo_movimiento: "egreso",
+            categoria: "pago_proveedor",
+            monto: -Math.abs(saldoNeto),
+            descripcion: `Anulación automática al marcar compra como Pendiente`,
+            usuario_id: user?.id,
+            compra_id: compraId
+          });
+          if (finError) throw new Error("No se pudo anular los pagos en finanzas: " + finError.message);
+        }
+      }
+    }
 
     const payload = {
       estado_pago: nuevoEstado,
@@ -272,6 +354,7 @@ export async function actualizarEstadoPagoCompra(compraId: string, nuevoEstado: 
     if (error) throw new Error(error.message);
 
     revalidatePath("/kore/proveedores");
+    revalidatePath("/kore/finanzas");
     return { success: true };
   } catch (error: any) {
     console.error("Error en actualizarEstadoPagoCompra:", error);

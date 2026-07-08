@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { X, Save, TrendingUp, TrendingDown, FileText, Tag, DollarSign, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Save, TrendingUp, TrendingDown, FileText, Tag, DollarSign, Loader2, ListTree, ChevronDown, Check } from "lucide-react";
 import Swal from "sweetalert2";
 import { cn } from "@/lib/utils";
-import { registrarMovimiento } from "../actions";
+import { registrarMovimiento, obtenerCuentasPorCobrar, obtenerCuentasPorPagar } from "../actions";
+import type { CuentaPorCobrar, CuentaPorPagar } from "../schemas";
 
 interface Props {
   defaultTipo: "ingreso" | "egreso";
+  defaultVentaId?: string | null;
+  defaultCompraId?: string | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -23,12 +26,22 @@ const getSwalThemeOpts = () => {
   };
 };
 
-export function NuevoMovimiento({ defaultTipo, onClose, onSuccess }: Props) {
+export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, onClose, onSuccess }: Props) {
   const [tipo, setTipo] = useState<"ingreso" | "egreso">(defaultTipo);
   const [categoria, setCategoria] = useState("");
   const [monto, setMonto] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  
+  const [ventaId, setVentaId] = useState(defaultVentaId || "");
+  const [compraId, setCompraId] = useState(defaultCompraId || "");
+  
+  const [cuentasCobrar, setCuentasCobrar] = useState<CuentaPorCobrar[]>([]);
+  const [cuentasPagar, setCuentasPagar] = useState<CuentaPorPagar[]>([]);
+  const [isLoadingCuentas, setIsLoadingCuentas] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isOpen, setIsOpen] = useState(false);
+  const catDropdownRef = useRef<HTMLDivElement>(null);
 
   const categoriasIngreso = [
     { id: "abono_cliente", label: "Abono de Cliente" },
@@ -43,6 +56,42 @@ export function NuevoMovimiento({ defaultTipo, onClose, onSuccess }: Props) {
   ];
 
   const categoriasActuales = tipo === "ingreso" ? categoriasIngreso : categoriasEgreso;
+  const selectedCat = categoriasActuales.find(c => c.id === categoria);
+
+  useEffect(() => {
+    if (defaultVentaId) setCategoria("abono_cliente");
+    if (defaultCompraId) setCategoria("pago_proveedor");
+  }, [defaultVentaId, defaultCompraId]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (catDropdownRef.current && !catDropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchCuentas = async () => {
+      setIsLoadingCuentas(true);
+      try {
+        if (tipo === "ingreso") {
+          setCuentasCobrar(await obtenerCuentasPorCobrar());
+        } else {
+          setCuentasPagar(await obtenerCuentasPorPagar());
+        }
+      } catch (error) {
+        console.error("Error cargando cuentas", error);
+      } finally {
+        setIsLoadingCuentas(false);
+      }
+    };
+    fetchCuentas();
+  }, [tipo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +102,15 @@ export function NuevoMovimiento({ defaultTipo, onClose, onSuccess }: Props) {
         icon: "warning",
         ...getSwalThemeOpts()
       });
+      return;
+    }
+
+    if (categoria === "abono_cliente" && !ventaId) {
+      Swal.fire({ title: "Falta Venta", text: "Selecciona la venta a abonar.", icon: "warning", ...getSwalThemeOpts() });
+      return;
+    }
+    if (categoria === "pago_proveedor" && !compraId) {
+      Swal.fire({ title: "Falta Compra", text: "Selecciona la compra a pagar.", icon: "warning", ...getSwalThemeOpts() });
       return;
     }
 
@@ -70,10 +128,12 @@ export function NuevoMovimiento({ defaultTipo, onClose, onSuccess }: Props) {
     setIsSubmitting(true);
     try {
       await registrarMovimiento({
-        tipo,
-        categoria,
+        tipo_movimiento: tipo,
+        categoria: categoria as any,
         monto: numMonto,
-        descripcion
+        descripcion,
+        venta_id: categoria === "abono_cliente" ? ventaId : null,
+        compra_id: categoria === "pago_proveedor" ? compraId : null,
       });
 
       Swal.fire({
@@ -160,21 +220,104 @@ export function NuevoMovimiento({ defaultTipo, onClose, onSuccess }: Props) {
             </div>
 
             {/* Categoría */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5" ref={catDropdownRef}>
               <label className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
                 <Tag className="size-3.5" /> Categoría
               </label>
-              <select
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
-                className="w-full px-4 py-3 bg-white dark:bg-black/20 border border-[#C1D1C5]/40 dark:border-[#525D53]/40 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/40 transition-all"
-              >
-                <option value="" disabled>Selecciona una categoría...</option>
-                {categoriasActuales.map(c => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
-                ))}
-              </select>
+              
+              <div className="relative">
+                <button
+                  type="button"
+                  disabled={!!defaultVentaId || !!defaultCompraId}
+                  onClick={() => setIsOpen(!isOpen)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-black/20 border border-[#C1D1C5]/40 dark:border-[#525D53]/40 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/40 transition-all disabled:opacity-50 cursor-pointer text-left"
+                >
+                  {selectedCat ? (
+                    <span className="text-zinc-800 dark:text-zinc-200 text-sm font-semibold">{selectedCat.label}</span>
+                  ) : (
+                    <span className="text-zinc-400 text-sm">Selecciona una categoría...</span>
+                  )}
+                  <ChevronDown className="size-4 text-zinc-400 shrink-0" />
+                </button>
+                
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white dark:bg-[#171a17] border border-[#C1D1C5]/30 dark:border-[#525D53]/30 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5"
+                    >
+                      {categoriasActuales.map(c => {
+                        const isSelected = categoria === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setCategoria(c.id);
+                              setIsOpen(false);
+                            }}
+                            className={cn(
+                              "w-full px-4 py-2.5 rounded-lg text-left flex items-center justify-between cursor-pointer transition-all hover:bg-black/5 dark:hover:bg-white/5 text-sm",
+                              isSelected ? "bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0] font-black" : "text-zinc-700 dark:text-zinc-300 font-medium"
+                            )}
+                          >
+                            <span>{c.label}</span>
+                            {isSelected && <Check className="size-4 text-[#8DA78E] dark:text-[#A3BEB0]" />}
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
+
+            {/* Selector de Venta para Abono */}
+            {categoria === "abono_cliente" && (
+              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                  <ListTree className="size-3.5" /> Venta Pendiente
+                </label>
+                <select
+                  value={ventaId}
+                  onChange={(e) => setVentaId(e.target.value)}
+                  disabled={!!defaultVentaId || isLoadingCuentas}
+                  className="w-full px-4 py-3 bg-white dark:bg-black/20 border border-[#C1D1C5]/40 dark:border-[#525D53]/40 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/40 transition-all disabled:opacity-50"
+                >
+                  <option value="" disabled>{isLoadingCuentas ? "Cargando..." : "Selecciona una venta..."}</option>
+                  {cuentasCobrar.map(c => (
+                    <option key={c.venta_id} value={c.venta_id}>
+                      {c.cliente_nombre} - Pendiente: Q{c.saldo_pendiente}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Selector de Compra para Pago */}
+            {categoria === "pago_proveedor" && (
+              <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                <label className="text-xs font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                  <ListTree className="size-3.5" /> Compra Pendiente
+                </label>
+                <select
+                  value={compraId}
+                  onChange={(e) => setCompraId(e.target.value)}
+                  disabled={!!defaultCompraId || isLoadingCuentas}
+                  className="w-full px-4 py-3 bg-white dark:bg-black/20 border border-[#C1D1C5]/40 dark:border-[#525D53]/40 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/40 transition-all disabled:opacity-50"
+                >
+                  <option value="" disabled>{isLoadingCuentas ? "Cargando..." : "Selecciona una compra..."}</option>
+                  {cuentasPagar.map(c => (
+                    <option key={c.compra_id} value={c.compra_id}>
+                      {c.proveedor_nombre} - Pendiente: Q{c.saldo_pendiente}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Descripción */}
             <div className="space-y-1.5">
@@ -196,7 +339,7 @@ export function NuevoMovimiento({ defaultTipo, onClose, onSuccess }: Props) {
               className={cn(
                 "w-full flex items-center justify-center gap-2 text-white px-5 py-3.5 rounded-xl text-sm font-bold transition-all mt-2 active:scale-[0.98]",
                 tipo === "ingreso" 
-                  ? "bg-[#8DA78E] hover:bg-[#525D53]" 
+                  ? "bg-[#8DA78E]" 
                   : "bg-rose-500 hover:bg-rose-600",
                 isSubmitting && "opacity-70 pointer-events-none"
               )}

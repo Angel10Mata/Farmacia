@@ -433,7 +433,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                   type="button"
                   onClick={openGallery}
                   disabled={isProcessing}
-                  className="flex items-center justify-center gap-1 px-3 py-2 text-[10px] font-bold rounded-lg bg-[#8DA78E] hover:bg-[#525D53] text-white transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                  className="flex items-center justify-center gap-1 px-3 py-2 text-[10px] font-bold rounded-lg bg-[#8DA78E] text-white transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   <Upload size={13} />
                   Galería
@@ -531,7 +531,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                     type="button"
                     onClick={openGallery}
                     disabled={isProcessing}
-                    className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] transition-all shadow-sm hover:shadow active:scale-95 disabled:opacity-50 cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-[#8DA78E] text-[#F5F5F1] transition-all shadow-sm hover:shadow active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     {uploading ? (
                       <Loader2 size={14} className="animate-spin" />

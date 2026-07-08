@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import {
@@ -36,10 +37,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AnimatedNumbers } from "@/components/ui/animated-numbers";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import AnimatedIcon from "@/components/ui/AnimatedIcon";
+import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
 import { CrearCliente } from "./forms/CrearCliente";
 import { EditarCliente } from "./forms/EditarCliente";
 import { formatPhoneDisplay, getWhatsappUrl } from "../proveedores/forms/ProveedorDetalle";
@@ -55,6 +57,7 @@ interface Cliente {
   totalCompras: number;
   ultimaCompra: string;
   saldo: number;
+  creditosPendientes?: number;
   activo: boolean;
 }
 
@@ -80,7 +83,7 @@ function ClienteDetalle({
         const supabase = createClient();
         const { data, error } = await supabase
           .from("ventas")
-          .select("id, created_at, tipo_venta, total, observaciones")
+          .select("id, created_at, tipo_venta, total, observaciones, fin_transacciones(id, monto, fecha_movimiento, tipo_movimiento, categoria)")
           .eq("cliente_id", cliente.id)
           .order("created_at", { ascending: false });
         if (data) {
@@ -171,8 +174,15 @@ function ClienteDetalle({
         {loadingVentas ? (
           <p className="text-xs text-slate-400">Cargando transacciones...</p>
         ) : (() => {
-          const ventasPendientes = ventas.filter((v) => v.tipo_venta === "Crédito");
-          const totalPendiente = ventasPendientes.reduce((sum, v) => sum + (v.total || 0), 0);
+          const ventasPendientes = ventas.filter((v) => {
+            if (v.tipo_venta !== "Crédito") return false;
+            const abonos = v.fin_transacciones
+              ? v.fin_transacciones
+                  .filter((t: any) => t.categoria === "abono_cliente" || t.categoria === "venta")
+                  .reduce((sum: number, t: any) => sum + Number(t.monto), 0)
+              : 0;
+            return (v.total || 0) - abonos > 0;
+          });
 
           if (ventasPendientes.length === 0) {
             return (
@@ -187,20 +197,9 @@ function ClienteDetalle({
 
           return (
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between bg-[#8DA78E]/10 dark:bg-[#8DA78E]/5 border border-[#8DA78E]/20 dark:border-[#A3BEB0]/15 rounded-xl px-3 py-2">
-                <span className="text-[9px] uppercase font-bold text-[#525D53] dark:text-[#A3BEB0]">Pendiente ({ventasPendientes.length} {ventasPendientes.length === 1 ? "crédito" : "créditos"})</span>
-                <span className="text-sm font-black text-[#525D53] dark:text-[#A3BEB0]">Q{totalPendiente.toFixed(2)}</span>
+              <div className="flex items-center justify-start bg-[#8DA78E]/10 dark:bg-[#8DA78E]/5 border border-[#8DA78E]/20 dark:border-[#A3BEB0]/15 rounded-xl px-3 py-3">
+                <span className="text-[10px] uppercase font-bold text-[#525D53] dark:text-[#A3BEB0]">Pendiente ({ventasPendientes.length} {ventasPendientes.length === 1 ? "crédito" : "créditos"})</span>
               </div>
-              {ventasPendientes.map((v) => {
-                const dateStr = new Date(v.created_at).toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" });
-                return (
-                  <div key={v.id} className="flex items-center justify-between text-[11px] px-3 py-1.5 rounded-lg bg-white dark:bg-zinc-950 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10">
-                    <span className="font-bold text-slate-800 dark:text-slate-200">#{v.id.substring(0, 6).toUpperCase()}</span>
-                    <span className="text-[9px] text-slate-400">{dateStr}</span>
-                    <span className="font-black text-[#525D53] dark:text-[#A3BEB0]">Q{v.total.toFixed(2)}</span>
-                  </div>
-                );
-              })}
             </div>
           );
         })()}
@@ -212,7 +211,7 @@ function ClienteDetalle({
         <div className="grid grid-cols-2 gap-2">
           {[
             { icon: ShoppingBag, label: "Total Compras", value: cliente.totalCompras, color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
-            { icon: TrendingUp, label: "Saldo Actual", value: `Q${cliente.saldo.toFixed(2)}`, color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
+            { icon: TrendingUp, label: "Pendiente", value: `${cliente.creditosPendientes || 0} créditos`, color: "text-rose-500" },
             { icon: Calendar, label: "Última Compra", value: cliente.ultimaCompra ? new Date(cliente.ultimaCompra).toLocaleDateString("es-GT") : "Sin compras", color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
             { icon: Users, label: "Estado", value: cliente.activo ? "Activo" : "Inactivo", color: cliente.activo ? "text-[#8DA78E] dark:text-[#A3BEB0]" : "text-slate-400" },
           ].map(({ icon: Icon, label, value, color }) => (
@@ -231,14 +230,14 @@ function ClienteDetalle({
       <div className="mt-auto pt-3 border-t border-[#C1D1C5]/20 flex flex-col gap-2">
         <button
           onClick={onHistorial}
-          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#525D53] to-[#3a4a3c] hover:from-[#3a4a3c] hover:to-[#2c382e] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer group"
+          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#525D53] to-[#3a4a3c] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer group"
         >
           <History className="size-4 group-hover:rotate-[-20deg] transition-transform duration-300" />
           Ver Historial de Compras
         </button>
         <button
           onClick={onEdit}
-          className="w-full py-2 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          className="w-full py-2 px-4 rounded-xl bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
         >
           Editar Cliente
         </button>
@@ -268,7 +267,7 @@ function HistorialCliente({
         const supabase = createClient();
         const { data } = await supabase
           .from("ventas")
-          .select("id, created_at, tipo_venta, total, observaciones")
+          .select("id, created_at, tipo_venta, total, observaciones, fin_transacciones(id, monto, fecha_movimiento, tipo_movimiento, categoria)")
           .eq("cliente_id", cliente.id)
           .order("created_at", { ascending: false });
         if (data) setVentas(data);
@@ -306,13 +305,38 @@ function HistorialCliente({
     }
   };
 
-  const totalCancelado = ventas
-    .filter((v) => v.tipo_venta !== "Crédito")
-    .reduce((sum, v) => sum + (v.total || 0), 0);
-  const totalPendiente = ventas
-    .filter((v) => v.tipo_venta === "Crédito")
-    .reduce((sum, v) => sum + (v.total || 0), 0);
-  const totalGeneral = ventas.reduce((sum, v) => sum + (v.total || 0), 0);
+  let totalCancelado = 0;
+  let totalPendiente = 0;
+  let totalGeneral = 0;
+  let ventasContado = 0;
+  let ventasCredito = 0;
+
+  ventas.forEach((v) => {
+    const totalVenta = v.total || 0;
+    totalGeneral += totalVenta;
+    
+    if (v.tipo_venta === "Contado") {
+      totalCancelado += totalVenta;
+      ventasContado++;
+    } else {
+      // Es crédito
+      const abonos = v.fin_transacciones
+        ? v.fin_transacciones
+            .filter((t: any) => t.categoria === "abono_cliente" || t.categoria === "venta")
+            .reduce((sum: number, t: any) => sum + Number(t.monto), 0)
+        : 0;
+      
+      const saldoVenta = Math.max(0, totalVenta - abonos);
+      totalCancelado += abonos;
+      totalPendiente += saldoVenta;
+      
+      if (saldoVenta > 0) {
+        ventasCredito++;
+      } else {
+        ventasContado++; // Si se pagó todo, cuenta como venta cancelada
+      }
+    }
+  });
 
   return (
     <AnimatePresence>
@@ -337,50 +361,96 @@ function HistorialCliente({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-2xl max-h-[85vh] bg-[#F5F5F1] dark:bg-zinc-900 border border-[#C1D1C5]/40 dark:border-zinc-700 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+          className="relative w-full h-full bg-[#F5F5F1] dark:bg-zinc-900 border border-[#C1D1C5]/40 dark:border-zinc-700 md:rounded-3xl shadow-2xl flex flex-col overflow-hidden max-w-7xl mx-auto md:my-6 md:max-h-[calc(100vh-3rem)]"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#C1D1C5]/30 dark:border-zinc-800 bg-gradient-to-r from-[#525D53] to-[#3a4a3c]">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
-                <History className="size-5 text-white" />
+          <div className="flex items-center justify-between px-8 py-5 border-b border-[#C1D1C5]/30 dark:border-zinc-800 bg-gradient-to-r from-[#525D53] to-[#3a4a3c] shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="size-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
+                <History className="size-6 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-white leading-none">
+                <h2 className="text-xl font-black text-white leading-none">
                   Historial de Compras
                 </h2>
-                <p className="text-xs text-white/60 mt-0.5">{cliente.nombre}</p>
+                <p className="text-sm text-white/70 mt-1">{cliente.nombre}</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="size-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <X className="size-4 text-white" />
-            </button>
           </div>
 
-          {/* Summary cards */}
-          <div className="grid grid-cols-3 gap-3 px-6 py-4 border-b border-[#C1D1C5]/20 dark:border-zinc-800">
-            <div className="bg-white dark:bg-zinc-800/60 rounded-xl p-3 border border-[#C1D1C5]/30 dark:border-zinc-700">
-              <span className="text-[9px] uppercase font-bold text-[#525D53] dark:text-[#A3BEB0]/70 tracking-wider">Total General</span>
-              <p className="text-base font-black text-[#525D53] dark:text-white">Q{totalGeneral.toFixed(2)}</p>
-              <span className="text-[9px] text-[#525D53]/50 dark:text-[#A3BEB0]/50">{ventas.length} transacciones</span>
-            </div>
-            <div className="bg-[#8DA78E]/10 dark:bg-[#8DA78E]/5 rounded-xl p-3 border border-[#8DA78E]/20 dark:border-[#A3BEB0]/15">
-              <span className="text-[9px] uppercase font-bold text-[#525D53] dark:text-[#A3BEB0] tracking-wider">Cancelado</span>
-              <p className="text-base font-black text-[#525D53] dark:text-[#A3BEB0]">Q{totalCancelado.toFixed(2)}</p>
-              <span className="text-[9px] text-[#525D53]/50 dark:text-[#A3BEB0]/50">{ventas.filter((v) => v.tipo_venta !== "Crédito").length} ventas</span>
-            </div>
-            <div className="bg-[#8DA78E]/10 dark:bg-[#8DA78E]/5 rounded-xl p-3 border border-[#8DA78E]/20 dark:border-[#A3BEB0]/15">
-              <span className="text-[9px] uppercase font-bold text-[#525D53] dark:text-[#A3BEB0] tracking-wider">Pendiente</span>
-              <p className="text-base font-black text-[#525D53] dark:text-[#A3BEB0]">Q{totalPendiente.toFixed(2)}</p>
-              <span className="text-[9px] text-[#525D53]/50 dark:text-[#A3BEB0]/50">{ventas.filter((v) => v.tipo_venta === "Crédito").length} créditos</span>
-            </div>
-          </div>
+          <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+            {/* Contenido izquierdo (Resumen y Gráfica) */}
+            <div className="w-full md:w-2/5 p-6 border-b md:border-b-0 md:border-r border-[#C1D1C5]/30 dark:border-zinc-800 flex flex-col overflow-y-auto bg-white/50 dark:bg-zinc-950/20">
+              <h3 className="text-xs font-black uppercase tracking-widest text-[#525D53] dark:text-[#A3BEB0] mb-4">Resumen General</h3>
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                <div className="col-span-1 sm:col-span-2 bg-white dark:bg-zinc-800/60 rounded-2xl p-4 border border-[#C1D1C5]/30 dark:border-zinc-700 shadow-sm">
+                  <span className="text-[10px] uppercase font-bold text-[#525D53] dark:text-[#A3BEB0]/70 tracking-wider">Total General</span>
+                  <p className="text-3xl font-black text-[#525D53] dark:text-white mt-1">Q{totalGeneral.toFixed(2)}</p>
+                  <span className="text-xs font-medium text-[#525D53]/60 dark:text-[#A3BEB0]/50 mt-1 block">{ventas.length} transacciones</span>
+                </div>
+                <div className="bg-[#8DA78E]/10 dark:bg-[#8DA78E]/5 rounded-2xl p-4 border border-[#8DA78E]/20 dark:border-[#A3BEB0]/15">
+                  <span className="text-[10px] uppercase font-bold text-[#525D53] dark:text-[#A3BEB0] tracking-wider">Cancelado</span>
+                  <p className="text-xl font-black text-[#525D53] dark:text-[#A3BEB0] mt-1">Q{totalCancelado.toFixed(2)}</p>
+                  <span className="text-[10px] font-medium text-[#525D53]/60 dark:text-[#A3BEB0]/50 mt-1 block">{ventas.filter((v) => v.tipo_venta !== "Crédito").length} ventas</span>
+                </div>
+                <div className="bg-rose-500/10 dark:bg-rose-500/5 rounded-2xl p-4 border border-rose-500/20 dark:border-rose-500/15">
+                  <span className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400 tracking-wider">Pendiente</span>
+                  <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">Q{totalPendiente.toFixed(2)}</p>
+                  <span className="text-[10px] font-medium text-rose-600/60 dark:text-rose-400/60 mt-1 block">{ventas.filter((v) => v.tipo_venta === "Crédito").length} créditos</span>
+                </div>
+              </div>
 
-          {/* Sales list */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">
+              {/* Gráfica */}
+              <h3 className="text-xs font-black uppercase tracking-widest text-[#525D53] dark:text-[#A3BEB0] mb-4">Tendencia de Compras</h3>
+              <div className="flex-1 min-h-[200px] w-full bg-white dark:bg-zinc-800/60 rounded-2xl border border-[#C1D1C5]/30 dark:border-zinc-700 p-4">
+                {(() => {
+                  if (ventas.length === 0) {
+                    return (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-xs font-medium">
+                        Sin datos suficientes
+                      </div>
+                    );
+                  }
+                  
+                  // Agrupar por mes
+                  const datosMes = ventas.reduce((acc, v) => {
+                    const mesStr = format(new Date(v.created_at), "MMM yyyy", { locale: es });
+                    acc[mesStr] = (acc[mesStr] || 0) + v.total;
+                    return acc;
+                  }, {} as Record<string, number>);
+                  
+                  // Convertir a array y tomar los últimos 6 meses (orden cronológico)
+                  const chartData = Object.entries(datosMes)
+                    .map(([name, total]) => ({ name, total }))
+                    .reverse()
+                    .slice(0, 6)
+                    .reverse();
+
+                  return (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData}>
+                        <XAxis dataKey="name" stroke="#8DA78E" fontSize={10} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#8DA78E" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `Q${val}`} width={50} />
+                        <Tooltip 
+                          cursor={{ fill: 'rgba(141, 167, 142, 0.1)' }}
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
+                          formatter={(value: any) => [`Q${Number(value || 0).toFixed(2)}`, 'Total']}
+                        />
+                        <Bar dataKey="total" fill="#8DA78E" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Lista derecha (Desglose) */}
+            <div className="w-full md:w-3/5 flex flex-col h-full">
+              <div className="px-6 py-4 border-b border-[#C1D1C5]/30 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900 shrink-0">
+                <h3 className="text-xs font-black uppercase tracking-widest text-[#525D53] dark:text-[#A3BEB0]">Desglose de Transacciones</h3>
+              </div>
+              <div className="flex-1 overflow-y-auto px-6 py-4 bg-white dark:bg-zinc-900/50">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12 gap-3">
                 <div className="size-8 rounded-full border-2 border-[#8DA78E]/30 border-t-[#8DA78E] animate-spin" />
@@ -394,7 +464,14 @@ function HistorialCliente({
             ) : (
               <div className="space-y-2">
                 {ventas.map((venta, idx) => {
-                  const isPaid = venta.tipo_venta !== "Crédito";
+                  const abonos = venta.fin_transacciones
+                    ? venta.fin_transacciones
+                        .filter((t: any) => t.categoria === "abono_cliente" || t.categoria === "venta")
+                        .reduce((sum: number, t: any) => sum + Number(t.monto), 0)
+                    : 0;
+                  const saldoVenta = Math.max(0, (venta.total || 0) - abonos);
+                  const isPaid = venta.tipo_venta !== "Crédito" || saldoVenta <= 0;
+                  
                   const date = new Date(venta.created_at);
                   const dateStr = date.toLocaleDateString("es-GT", {
                     day: "2-digit",
@@ -438,10 +515,15 @@ function HistorialCliente({
                         <div className="flex items-center gap-3">
                           <div className="text-right">
                             <p className="text-sm font-black text-slate-900 dark:text-white">
-                              Q{venta.total.toFixed(2)}
+                              Q{venta.tipo_venta === "Crédito" ? saldoVenta.toFixed(2) : venta.total.toFixed(2)}
                             </p>
-                            <span className="text-[8px] font-bold uppercase tracking-wider text-[#8DA78E] dark:text-[#A3BEB0]">
-                              {isPaid ? venta.tipo_venta : "Crédito"}
+                            <span className={cn(
+                              "text-[8px] font-bold uppercase tracking-wider",
+                              isPaid ? "text-[#8DA78E] dark:text-[#A3BEB0]" : "text-rose-500"
+                            )}>
+                              {isPaid 
+                                ? (venta.tipo_venta === "Crédito" ? "Crédito Pagado" : venta.tipo_venta) 
+                                : "Crédito Pendiente"}
                             </span>
                           </div>
                           <ChevronDown className={cn(
@@ -467,37 +549,70 @@ function HistorialCliente({
                                   <div className="size-4 rounded-full border-2 border-[#8DA78E]/30 border-t-[#8DA78E] animate-spin" />
                                   <span className="text-[10px] text-slate-400">Cargando productos...</span>
                                 </div>
-                              ) : detalles && detalles.length > 0 ? (
+                              ) : (
                                 <div className="pt-2 space-y-1.5">
-                                  {detalles.map((d: any) => (
-                                    <div key={d.id} className="flex items-center justify-between text-[11px] py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-zinc-900/50">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[9px] font-mono text-slate-400 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
-                                          {d.cantidad}x
-                                        </span>
-                                        <div>
-                                          <span className="font-bold text-slate-700 dark:text-slate-200">
-                                            {d.inv_productos?.nombre || "Producto eliminado"}
-                                          </span>
-                                          {d.inv_productos?.codigo && (
-                                            <span className="text-[9px] text-slate-400 ml-1.5">({d.inv_productos.codigo})</span>
-                                          )}
+                                  {detalles && detalles.length > 0 ? (
+                                    <>
+                                      {detalles.map((d: any) => (
+                                        <div key={d.id} className="flex items-center justify-between text-[11px] py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-zinc-900/50">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[9px] font-mono text-slate-400 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+                                              {d.cantidad}x
+                                            </span>
+                                            <div>
+                                              <span className="font-bold text-slate-700 dark:text-slate-200">
+                                                {d.inv_productos?.nombre || "Producto eliminado"}
+                                              </span>
+                                              {d.inv_productos?.codigo && (
+                                                <span className="text-[9px] text-slate-400 ml-1.5">({d.inv_productos.codigo})</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <div className="text-right">
+                                            <span className="font-black text-slate-800 dark:text-white">Q{d.subtotal.toFixed(2)}</span>
+                                            <span className="text-[9px] text-slate-400 ml-1">(Q{d.precio_aplicado.toFixed(2)} c/u)</span>
+                                          </div>
                                         </div>
-                                      </div>
-                                      <div className="text-right">
-                                        <span className="font-black text-slate-800 dark:text-white">Q{d.subtotal.toFixed(2)}</span>
-                                        <span className="text-[9px] text-slate-400 ml-1">(Q{d.precio_aplicado.toFixed(2)} c/u)</span>
+                                      ))}
+                                      {venta.observaciones && (
+                                        <p className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-100 dark:border-zinc-800 mt-1">
+                                          Nota: {venta.observaciones}
+                                        </p>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <p className="text-[10px] text-slate-400 py-1 italic">Sin detalles disponibles.</p>
+                                  )}
+
+                                  {venta.tipo_venta === "Crédito" && (
+                                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-zinc-700/50">
+                                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Historial de Abonos</p>
+                                      {venta.fin_transacciones?.filter((t:any) => t.categoria === "abono_cliente").length > 0 ? (
+                                        <div className="space-y-1">
+                                          {venta.fin_transacciones
+                                            .filter((t:any) => t.categoria === "abono_cliente")
+                                            .map((abono: any) => (
+                                              <div key={abono.id} className="flex justify-between items-center text-[10px] py-1 border-b border-slate-100/50 dark:border-zinc-800/50 last:border-0">
+                                                <span className="text-slate-500 dark:text-slate-400">
+                                                  {new Date(abono.fecha_movimiento).toLocaleDateString("es-GT")} - {new Date(abono.fecha_movimiento).toLocaleTimeString("es-GT", { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                                <span className="font-bold text-[#8DA78E]">+ Q{Number(abono.monto).toFixed(2)}</span>
+                                              </div>
+                                            ))}
+                                        </div>
+                                      ) : (
+                                        <p className="text-[10px] text-slate-400 italic">No se han registrado abonos.</p>
+                                      )}
+                                      
+                                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200 dark:border-zinc-700">
+                                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Saldo Pendiente:</span>
+                                        <span className="text-[11px] font-black text-rose-500">
+                                          Q{Math.max(0, (venta.total || 0) - (venta.fin_transacciones?.filter((t:any) => t.categoria === "abono_cliente" || t.categoria === "venta").reduce((sum:number, t:any) => sum + Number(t.monto), 0) || 0)).toFixed(2)}
+                                        </span>
                                       </div>
                                     </div>
-                                  ))}
-                                  {venta.observaciones && (
-                                    <p className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-100 dark:border-zinc-800 mt-1">
-                                      Nota: {venta.observaciones}
-                                    </p>
                                   )}
                                 </div>
-                              ) : (
-                                <p className="text-[10px] text-slate-400 py-3 italic">Sin detalles disponibles.</p>
                               )}
                             </div>
                           </motion.div>
@@ -508,13 +623,14 @@ function HistorialCliente({
                 })}
               </div>
             )}
+              </div>
+            </div>
           </div>
-
           {/* Footer */}
-          <div className="px-6 py-3 border-t border-[#C1D1C5]/20 dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
+          <div className="px-6 py-4 border-t border-[#C1D1C5]/30 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0">
             <button
               onClick={onClose}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full md:w-auto md:ml-auto py-3 px-8 rounded-xl bg-slate-200 dark:bg-zinc-800 hover:bg-slate-300 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               Cerrar Historial
             </button>
@@ -540,6 +656,10 @@ export function VerClientes() {
   
   // Criterio de Orden
   const [criterioOrden, setCriterioOrden] = useState<"nombre-asc" | "nombre-desc" | "compras-desc" | "saldo-asc" | "saldo-desc">("nombre-asc");
+
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Helper para obtener colores de SweetAlert según el tema activo (claro/oscuro)
   const getSwalThemeOpts = () => {
@@ -577,6 +697,9 @@ export function VerClientes() {
 
       if (ventasError) throw ventasError;
 
+      // Obtener cuentas por cobrar reales para saber cuántos créditos pendientes tiene cada cliente
+      const { data: cuentasPendientes } = await supabase.rpc("fin_cuentas_por_cobrar");
+
       const clientSalesMap = new Map<string, any[]>();
       if (ventasData) {
         ventasData.forEach((v) => {
@@ -599,9 +722,10 @@ export function VerClientes() {
             ultimaCompra = sorted[0].created_at;
           }
 
-          const saldo = clientSales
-            .filter((v) => v.tipo_venta === "Crédito")
-            .reduce((sum, v) => sum + (v.total || 0), 0);
+          // Contar cuántos créditos pendientes tiene este cliente según el RPC
+          const creditosPendientes = cuentasPendientes 
+            ? cuentasPendientes.filter((c: any) => c.cliente_id === row.id).length
+            : 0;
 
           return {
             id: row.id,
@@ -612,7 +736,8 @@ export function VerClientes() {
             nit: row.nit || "C/F",
             totalCompras,
             ultimaCompra,
-            saldo,
+            saldo: 0, // ya no se usa como dinero, pero lo dejamos por compatibilidad o lo cambiamos
+            creditosPendientes,
             activo: true,
           };
         });
@@ -672,6 +797,13 @@ export function VerClientes() {
     }
     return 0;
   });
+
+  // Paginación logic
+  const totalPages = Math.ceil(clientesOrdenados.length / pageSize) || 1;
+  const paginatedClientes = clientesOrdenados.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   // Función para agregar nuevo cliente interactivo
   const handleNuevoCliente = () => {
@@ -741,10 +873,10 @@ export function VerClientes() {
   return (
     <div className="w-full flex flex-col gap-6 p-4 md:p-6 pt-32 md:pt-24 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 w-full">
         <div className="flex items-center gap-4">
-          <div className="shrink-0 size-12 rounded-2xl bg-[#8DA78E]/10 border border-[#8DA78E]/20 flex items-center justify-center">
-            <Users className="size-6 text-[#8DA78E] dark:text-[#A3BEB0]" />
+          <div className="shrink-0 size-12 rounded-2xl bg-[#8DA78E]/10 border border-[#8DA78E]/20 flex items-center justify-center overflow-hidden">
+            <AnimatedIcon iconKey="zdwrqfmb" className="text-[#8DA78E] dark:text-[#A3BEB0]" size={32} />
           </div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#8DA78E] dark:text-[#A3BEB0]">Módulo</p>
@@ -754,16 +886,13 @@ export function VerClientes() {
           </div>
         </div>
 
-        {/* Controles */}
-        <div className="flex items-center flex-wrap gap-3 sm:ml-auto">
-          {/* Botón Nuevo Cliente */}
-          <button
-            onClick={handleNuevoCliente}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-sm font-bold transition-all shadow-sm cursor-pointer"
-          >
-            <Plus className="size-4" /> Nuevo Cliente
-          </button>
-        </div>
+        {/* Botón Nuevo Cliente */}
+        <button
+          onClick={handleNuevoCliente}
+          className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-[#8DA78E] text-[#F5F5F1] text-xs sm:text-sm font-bold transition-all shadow-sm cursor-pointer shrink-0"
+        >
+          <Plus className="size-4" /> Nuevo Cliente
+        </button>
       </div>
 
       {/* Buscador, Ordenamiento y Exportar */}
@@ -804,7 +933,7 @@ export function VerClientes() {
       </div>
 
       {/* Grid de clientes + detalle */}
-      <div className="flex gap-4 flex-1 relative min-h-[550px] overflow-x-hidden p-1">
+      <div className="flex gap-4 relative w-full overflow-x-hidden p-1">
         {isLoading && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center z-50 rounded-2xl">
             <div className="flex flex-col items-center gap-3">
@@ -814,8 +943,107 @@ export function VerClientes() {
           </div>
         )}
 
-        {/* Tabla principal */}
-        <div className="flex-1 min-w-0 bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 flex flex-col gap-4 overflow-hidden">
+        {/* Contenedor principal de tarjetas/tabla y paginación */}
+        <div className="flex flex-col flex-1 min-w-0 gap-4">
+          {/* Vista Mobile: Tarjetas */}
+          <div className="md:hidden flex flex-col gap-3 px-1 py-1 w-full">
+          {paginatedClientes.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 font-bold text-sm bg-white dark:bg-zinc-900/40 rounded-2xl border border-slate-100 dark:border-zinc-800/40">
+              No se encontraron clientes.
+            </div>
+          ) : (
+            paginatedClientes.map((cliente) => (
+              <motion.div
+                key={cliente.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                className={cn(
+                  "relative border rounded-xl p-3 flex gap-3 items-center min-h-[96px] transition-all bg-white dark:bg-[#525D53]/10 border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 hover:border-[#8DA78E] dark:hover:border-[#A3BEB0]/60"
+                )}
+              >
+                {/* Icon Left */}
+                <div className="shrink-0 size-10 rounded-xl flex items-center justify-center border bg-[#8DA78E]/10 border-[#8DA78E]/20 text-[#8DA78E] dark:text-[#A3BEB0]">
+                  <User className="size-5" />
+                </div>
+
+                {/* Content Right */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
+                  <div>
+                    <div className="flex items-start justify-between gap-1.5">
+                      <h3 className="font-black text-xs text-slate-900 dark:text-white truncate uppercase leading-tight">
+                        {cliente.nombre}
+                      </h3>
+                      <span className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 bg-slate-100 dark:bg-zinc-850 text-slate-500 rounded-full shrink-0 leading-none">
+                        NIT: {cliente.nit || "C/F"}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 mt-1 text-[10px]">
+                      {cliente.telefono && cliente.telefono !== "No registrado" && (
+                        <a
+                          href={getWhatsappUrl(cliente.telefono)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline font-bold"
+                        >
+                          <Phone className="size-3" /> {formatPhoneDisplay(cliente.telefono)}
+                        </a>
+                      )}
+                      {cliente.email && cliente.email !== "No registrado" && (
+                        <span className="text-slate-400 dark:text-slate-500 truncate flex items-center gap-0.5">
+                          <Mail className="size-3 shrink-0" /> {cliente.email}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bottom Stats & Action Buttons */}
+                  <div className="mt-2 flex items-center justify-between gap-2 pt-1.5 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10">
+                    <div className="flex gap-2.5 text-[9px] leading-none">
+                      <div>
+                        <span className="text-[#525D53]/60 dark:text-[#A3BEB0]/50 font-bold uppercase">Compras:</span>
+                        <span className="font-bold ml-0.5 text-zinc-700 dark:text-zinc-200 tabular-nums">
+                          {cliente.totalCompras}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[#525D53]/60 dark:text-[#A3BEB0]/50 font-bold uppercase">Saldo:</span>
+                        <span className="font-black ml-0.5 text-[#8DA78E] dark:text-[#A3BEB0] tabular-nums tracking-tight">
+                          Q{cliente.saldo.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setHistorialCliente(cliente)}
+                        className="px-2 py-1 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/20 text-[#8DA78E] dark:text-[#A3BEB0] text-[9px] font-bold rounded-md transition-all cursor-pointer uppercase"
+                      >
+                        Historial
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setClienteParaEditar(cliente);
+                          setIsEditOpen(true);
+                        }}
+                        className="px-2 py-1 bg-[#A3BEB0]/20 hover:bg-[#A3BEB0]/40 text-[#525D53] dark:text-[#A3BEB0] text-[9px] font-bold rounded-md transition-all cursor-pointer uppercase"
+                      >
+                        Editar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        {/* Vista Desktop: Tabla */}
+        <div className="hidden md:block flex-1 bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 overflow-hidden">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -831,14 +1059,14 @@ export function VerClientes() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#C1D1C5]/15 dark:divide-zinc-800/40 text-slate-700 dark:text-slate-300">
-                {clientesOrdenados.length === 0 ? (
+                {paginatedClientes.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-slate-400">
+                    <td colSpan={8} className="text-center py-12 text-slate-400">
                       No se encontraron clientes.
                     </td>
                   </tr>
                 ) : (
-                  clientesOrdenados.map((cliente, index) => (
+                  paginatedClientes.map((cliente, index) => (
                     <tr
                       key={cliente.id}
                       onClick={() => {
@@ -853,7 +1081,7 @@ export function VerClientes() {
                       )}
                     >
                       <td className="px-5 py-3.5 text-center font-bold text-slate-400 dark:text-slate-500">
-                        {index + 1}
+                        {(currentPage - 1) * pageSize + index + 1}
                       </td>
                       <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
                         {cliente.nombre}
@@ -899,6 +1127,27 @@ export function VerClientes() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Paginación */}
+        {!isLoading && clientesOrdenados.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6 px-2.5 md:px-0 text-slate-600 dark:text-slate-400">
+            <PageSizeSelect
+              pageSize={pageSize}
+              setPageSize={(size) => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+            />
+            <div className="flex justify-start sm:justify-center w-full sm:w-auto">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(p) => setCurrentPage(p)}
+              />
+            </div>
+          </div>
+        )}
         </div>
 
         {/* Panel de detalle */}

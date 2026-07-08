@@ -22,6 +22,8 @@ interface Producto {
   inv_proveedores?: { nombre: string } | null;
   created_at?: string;
   imagen_url?: string | null;
+  fecha_vencimiento?: string | null;
+  numero_lote?: string | null;
 }
 
 interface EditarProductoProps {
@@ -38,6 +40,8 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
   const [stockActual, setStockActual] = useState("");
   const [stockMinimo, setStockMinimo] = useState("");
   const [activo, setActivo] = useState(true);
+  const [fechaVencimiento, setFechaVencimiento] = useState("");
+  const [numeroLote, setNumeroLote] = useState("");
   const [imagenUrl, setImagenUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -95,6 +99,8 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
       setStockMinimo(producto.stock_minimo?.toString() || "0");
       setActivo(producto.activo !== false);
       setImagenUrl(producto.imagen_url || null);
+      setFechaVencimiento(producto.fecha_vencimiento || "");
+      setNumeroLote(producto.numero_lote || "");
 
       if (producto.proveedor_id) {
         const pNombre = producto.inv_proveedores?.nombre || "";
@@ -187,6 +193,8 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
           stock_minimo: stockMinimoNum,
           proveedor_id: proveedorSeleccionado?.id || null,
           imagen_url: imagenUrl,
+          fecha_vencimiento: fechaVencimiento || null,
+          numero_lote: numeroLote.trim() || null,
           activo: activo
         })
         .eq("id", producto.id);
@@ -393,6 +401,46 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
               </label>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3 items-center">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                Lote
+              </label>
+              <input
+                type="text"
+                value={numeroLote}
+                onChange={(e) => setNumeroLote(e.target.value)}
+                placeholder="Opcional"
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                Vencimiento
+              </label>
+              <input
+                type="date"
+                value={fechaVencimiento}
+                onChange={(e) => setFechaVencimiento(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 mt-4">
+              <input
+                type="checkbox"
+                id="edit-activo"
+                checked={activo}
+                onChange={(e) => setActivo(e.target.checked)}
+                className="size-4 rounded border-slate-200 dark:border-slate-800 text-[#8DA78E] focus:ring-[#8DA78E]"
+              />
+              <label htmlFor="edit-activo" className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase cursor-pointer">
+                Producto Activo
+              </label>
+            </div>
+          </div>
         </div>
 
         {validationError && !validationError.includes("nombre") && (
@@ -412,7 +460,7 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
           <Button
             type="submit"
             disabled={isLoading || isUploadingImage}
-            className="rounded-xl bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] font-bold transition-all text-xs"
+            className="rounded-xl bg-[#8DA78E] text-[#F5F5F1] font-bold transition-all text-xs"
           >
             {isLoading ? "Guardando..." : "Guardar Cambios"}
           </Button>

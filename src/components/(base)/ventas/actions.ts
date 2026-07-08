@@ -147,17 +147,27 @@ export async function crearVenta(params: {
       }
     }
 
-    // 5. Registrar el ingreso en Finanzas
-    if (tipo_venta === "al contado" || tipo_venta === "transferencia" || tipo_venta === "tarjeta") {
+    // 5. Registrar el ingreso en Finanzas (solo si no es crédito)
+    const normalizedTipo = tipo_venta.toLowerCase();
+    if (normalizedTipo !== "crédito" && normalizedTipo !== "credito") {
+      // Intentar obtener el numero_recibo actualizado si vino nulo
+      let numRecibo = venta.numero_recibo;
+      if (!numRecibo) {
+        const { data: vInfo } = await supabase.from("ventas").select("numero_recibo").eq("id", venta.id).single();
+        if (vInfo && vInfo.numero_recibo) numRecibo = vInfo.numero_recibo;
+      }
+
+      const desc = numRecibo ? `Venta #${numRecibo} - ${tipo_venta}` : `Venta Directa - ${tipo_venta}`;
+
       const { error: finError } = await supabase
         .from("fin_transacciones")
         .insert({
-          tipo: "ingreso",
+          tipo_movimiento: "ingreso",
           categoria: "venta",
           monto: total,
-          descripcion: `Venta #${venta.numero_recibo} - ${tipo_venta.toUpperCase()}`,
+          descripcion: desc,
           usuario_id: user.id,
-          referencia_id: venta.id
+          venta_id: venta.id
         });
         
       if (finError) {
@@ -286,17 +296,43 @@ export async function anularVenta(ventaId: string) {
 
     if (delDetallesError) throw new Error(delDetallesError.message);
 
-    // 4. Eliminar la venta principal
-    const { error: delVentaError } = await supabase
-      .from("ventas")
-      .delete()
-      .eq("id", ventaId);
+    // 4. Revertir transacción financiera (si existe) en el módulo de Finanzas
+    const { data: finTx } = await supabase
+      .from("fin_transacciones")
+      .select("*")
+      .eq("venta_id", ventaId)
+      .eq("categoria", "venta")
+      .gt("monto", 0)
+      .single();
 
-    if (delVentaError) throw new Error(delVentaError.message);
+    if (finTx) {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("fin_transacciones").insert({
+        tipo_movimiento: finTx.tipo_movimiento,
+        categoria: finTx.categoria,
+        monto: -Math.abs(finTx.monto),
+        descripcion: `Anulación: ${finTx.descripcion}`,
+        usuario_id: user?.id,
+        venta_id: ventaId
+      });
+    }
 
-    // Revalidar rutas para refrescar cache de inventario y ventas
+    // 5. Marcar la venta principal como anulada (no eliminarla físicamente)
+    const { data: vInfo } = await supabase.from("ventas").select("observaciones").eq("id", ventaId).single();
+    const currentObs = vInfo?.observaciones || "";
+    if (!currentObs.includes("[ANULADA]")) {
+      const { error: updVentaError } = await supabase
+        .from("ventas")
+        .update({ observaciones: `${currentObs} [ANULADA]`.trim() })
+        .eq("id", ventaId);
+        
+      if (updVentaError) throw new Error(updVentaError.message);
+    }
+
+    // Revalidar rutas para refrescar cache de inventario, ventas y finanzas
     revalidatePath("/kore/inventario");
     revalidatePath("/kore/ventas");
+    revalidatePath("/kore/finanzas");
 
     return { success: true };
   } catch (error: any) {

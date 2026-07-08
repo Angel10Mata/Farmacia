@@ -25,6 +25,7 @@ import {
 import Swal from "sweetalert2";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
+import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
 import { CrearProveedor } from "./forms/CrearProveedor";
 import { EditarProveedor } from "./forms/EditarProveedor";
 import { ProveedorDetalle, formatPhoneDisplay, getWhatsappUrl } from "./forms/ProveedorDetalle";
@@ -361,7 +362,6 @@ interface Producto {
   stock_actual: number;
   proveedor_id?: string | null;
 }
-
 interface ItemCarritoCompra {
   producto: Producto;
   cantidad: number;
@@ -377,6 +377,7 @@ interface Compra {
   estado_pago: string;
   fecha_pago: string | null;
   observaciones: string | null;
+  fin_transacciones?: any[];
   inv_proveedores?: {
     nombre: string;
     nit: string | null;
@@ -863,7 +864,10 @@ export function VerProveedores() {
       (c.inv_proveedores?.nombre || "").toLowerCase().includes(query) ||
       (c.observaciones || "").toLowerCase().includes(query);
 
-    const matchPago = filtroPago === "todos" || c.estado_pago === filtroPago;
+    const abonos = c.fin_transacciones?.filter((t:any) => t.categoria === "pago_proveedor").reduce((sum:number, t:any) => sum + Math.abs(Number(t.monto)), 0) || 0;
+    const isPaid = abonos >= c.total;
+    const estadoCalculado = isPaid ? "Pagado" : "Pendiente";
+    const matchPago = filtroPago === "todos" || estadoCalculado === filtroPago;
 
     let matchFecha = true;
     if (c.created_at) {
@@ -1101,7 +1105,7 @@ export function VerProveedores() {
                   <button
                     onClick={handleAgregarAlCarrito}
                     disabled={!productoSeleccionado}
-                    className="py-2.5 px-4 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 text-[#F5F5F1] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98]"
+                    className="py-2.5 px-4 bg-[#8DA78E] disabled:opacity-40 text-[#F5F5F1] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.98]"
                   >
                     <Plus className="size-4" /> Agregar Producto a la Compra
                   </button>
@@ -1315,7 +1319,7 @@ export function VerProveedores() {
                   type="button"
                   onClick={handleFinalizarCompra}
                   disabled={carrito.length === 0 || isProcesando}
-                  className="w-full py-3 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
+                  className="w-full py-3 bg-[#8DA78E] disabled:opacity-40 disabled:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
                 >
                   {isProcesando ? (
                     <>
@@ -1649,17 +1653,24 @@ export function VerProveedores() {
                           key={c.id}
                           className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/30 dark:border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 shadow-xs text-left"
                         >
+                          {/* Mobile View Item */}
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-black text-slate-900 dark:text-white">
                               Compra #{obtenerCodigoCompra(c.id)}
                             </span>
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                              c.estado_pago === "Pagado"
-                                ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
-                                : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
-                            }`}>
-                              {c.estado_pago}
-                            </span>
+                            {(() => {
+                              const abonos = c.fin_transacciones?.filter((t:any) => t.categoria === "pago_proveedor").reduce((sum:number, t:any) => sum + Math.abs(Number(t.monto)), 0) || 0;
+                              const isPaid = abonos >= c.total;
+                              return (
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                  isPaid
+                                    ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
+                                    : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                                }`}>
+                                  {isPaid ? "Pagado" : "Pendiente"}
+                                </span>
+                              );
+                            })()}
                           </div>
 
                           <div className="flex flex-col gap-1 text-xs">
@@ -1677,29 +1688,30 @@ export function VerProveedores() {
                           </div>
 
                           <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-900 mt-1">
-                            <div className="flex flex-col">
-                              <span className="text-[9px] font-bold text-slate-450 uppercase leading-none">Total</span>
-                              <span className="text-xs font-black text-[#8DA78E] mt-1">
-                                Q{c.total.toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => cargarDetallesCompra(c)}
-                                className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border border-[#8DA78E]/20"
-                              >
-                                Ver Detalle
-                              </button>
-                              {c.estado_pago !== "Pagado" && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleCambiarEstadoPago(c.id, c.estado_pago)}
-                                  className="px-3 py-1.5 font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/40"
-                                >
-                                  Pagado
-                                </button>
-                              )}
-                            </div>
+                            {(() => {
+                              const abonos = c.fin_transacciones?.filter((t:any) => t.categoria === "pago_proveedor").reduce((sum:number, t:any) => sum + Math.abs(Number(t.monto)), 0) || 0;
+                              const saldoCompra = Math.max(0, c.total - abonos);
+                              return (
+                                <>
+                                  <div className="flex flex-col">
+                                    <span className="text-[9px] font-bold text-slate-450 uppercase leading-none">
+                                      {saldoCompra < c.total && saldoCompra > 0 ? "Saldo Pendiente" : "Total"}
+                                    </span>
+                                    <span className="text-xs font-black text-[#8DA78E] mt-1">
+                                      Q{(saldoCompra < c.total && saldoCompra > 0 ? saldoCompra : c.total).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => cargarDetallesCompra(c)}
+                                      className="px-3 py-1.5 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/25 text-[#8DA78E] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border border-[#8DA78E]/20"
+                                    >
+                                      Ver Detalle
+                                    </button>
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                       );
@@ -1729,6 +1741,9 @@ export function VerProveedores() {
                               hour: "2-digit",
                               minute: "2-digit"
                             });
+                            const abonos = c.fin_transacciones?.filter((t:any) => t.categoria === "pago_proveedor").reduce((sum:number, t:any) => sum + Math.abs(Number(t.monto)), 0) || 0;
+                            const isPaid = abonos >= c.total;
+                            const saldoCompra = Math.max(0, c.total - abonos);
                             return (
                               <tr
                                 key={c.id}
@@ -1743,15 +1758,22 @@ export function VerProveedores() {
                                 </td>
                                 <td className="px-5 py-3.5 whitespace-nowrap">
                                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                    c.estado_pago === "Pagado"
+                                    isPaid
                                       ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
                                       : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
                                   }`}>
-                                    {c.estado_pago}
+                                    {isPaid ? "Pagado" : "Pendiente"}
                                   </span>
                                 </td>
                                 <td className="px-5 py-3.5 text-right font-black text-[#8DA78E] dark:text-[#A3BEB0] whitespace-nowrap">
-                                  Q{c.total.toFixed(2)}
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase leading-none mb-1">
+                                      {saldoCompra < c.total && saldoCompra > 0 ? "Saldo" : "Total"}
+                                    </span>
+                                    <span>
+                                      Q{(saldoCompra < c.total && saldoCompra > 0 ? saldoCompra : c.total).toFixed(2)}
+                                    </span>
+                                  </div>
                                 </td>
                                 <td className="px-5 py-3.5 whitespace-nowrap">
                                   <div className="flex items-center justify-center gap-2">
@@ -1761,15 +1783,6 @@ export function VerProveedores() {
                                     >
                                       Ver Detalle
                                     </button>
-                                    {c.estado_pago !== "Pagado" && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleCambiarEstadoPago(c.id, c.estado_pago)}
-                                        className="px-3 py-1.5 font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase border bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/40"
-                                      >
-                                        Pagado
-                                      </button>
-                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -1784,107 +1797,21 @@ export function VerProveedores() {
 
               {/* Barra de Paginación */}
               {totalComprasItems > 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 px-1 text-slate-600 dark:text-slate-400">
-                  <div className="flex items-center gap-4 text-xs font-medium">
-                    <div className="flex items-center gap-1.5 relative" ref={pageSizeDropdownComprasRef}>
-                      <button
-                        type="button"
-                        onClick={() => setMostrarPageSizeDropdownCompras(!mostrarPageSizeDropdownCompras)}
-                        className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 text-xs font-bold text-[#525D53] dark:text-[#A3BEB0] transition-all cursor-pointer flex items-center gap-1.5 hover:border-[#8DA78E] h-[34px] min-w-[55px] justify-between"
-                      >
-                        <span>{pageSizeCompras}</span>
-                        <ChevronDown className="size-3 text-slate-400" />
-                      </button>
-
-                      <AnimatePresence>
-                        {mostrarPageSizeDropdownCompras && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 4 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute bottom-full mb-1.5 left-0 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5 min-w-[70px]"
-                          >
-                            {[10, 50, 100].map((size) => (
-                              <button
-                                key={size}
-                                type="button"
-                                onClick={() => {
-                                  setPageSizeCompras(size);
-                                  setCurrentPageCompras(1);
-                                  setMostrarPageSizeDropdownCompras(false);
-                                }}
-                                className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
-                                  pageSizeCompras === size
-                                    ? "bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0]"
-                                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/60"
-                                }`}
-                              >
-                                <span>{size}</span>
-                                {pageSizeCompras === size && <Check className="size-3" />}
-                              </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-
-                  {/* Botones de navegación */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setCurrentPageCompras(Math.max(1, activeComprasPage - 1))}
-                      disabled={activeComprasPage === 1}
-                      className="size-8 rounded-lg border transition-all disabled:opacity-40 select-none bg-white dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-slate-200 dark:border-slate-800 hover:border-[#8DA78E] disabled:hover:border-slate-200 dark:disabled:hover:border-slate-800 cursor-pointer flex items-center justify-center"
-                      title="Anterior"
-                    >
-                      <ChevronLeft className="size-4" />
-                    </button>
-                    
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalComprasPages }, (_, idx) => {
-                        const pageNum = idx + 1;
-                        if (
-                          totalComprasPages <= 5 ||
-                          pageNum === 1 ||
-                          pageNum === totalComprasPages ||
-                          Math.abs(pageNum - activeComprasPage) <= 1
-                        ) {
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => setCurrentPageCompras(pageNum)}
-                              className={`size-8 rounded-lg text-[11px] font-bold transition-all select-none cursor-pointer flex items-center justify-center border ${
-                                activeComprasPage === pageNum
-                                  ? "bg-[#8DA78E] border-[#8DA78E] text-[#F5F5F1]"
-                                  : "bg-white dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-slate-200 dark:border-slate-800 hover:border-[#8DA78E]"
-                              }`}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        }
-                        
-                        if (pageNum === 2 || pageNum === totalComprasPages - 1) {
-                          return (
-                            <span key={pageNum} className="px-1 text-slate-400 text-[11px]">
-                              ...
-                            </span>
-                          );
-                        }
-                        
-                        return null;
-                      })}
-                    </div>
-
-                    <button
-                      onClick={() => setCurrentPageCompras(Math.min(totalComprasPages, activeComprasPage + 1))}
-                      disabled={activeComprasPage === totalComprasPages}
-                      className="size-8 rounded-lg border transition-all disabled:opacity-40 select-none bg-white dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-slate-200 dark:border-slate-800 hover:border-[#8DA78E] disabled:hover:border-slate-200 dark:disabled:hover:border-slate-800 cursor-pointer flex items-center justify-center"
-                      title="Siguiente"
-                    >
-                      <ChevronRight className="size-4" />
-                    </button>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-1 text-slate-600 dark:text-slate-400">
+                  <PageSizeSelect
+                    pageSize={pageSizeCompras}
+                    setPageSize={(size) => {
+                      setPageSizeCompras(size);
+                      setCurrentPageCompras(1);
+                      setMostrarPageSizeDropdownCompras(false);
+                    }}
+                  />
+                  <div className="flex justify-center w-full sm:w-auto">
+                    <Pagination
+                      currentPage={activeComprasPage}
+                      totalPages={totalComprasPages}
+                      onPageChange={(p) => setCurrentPageCompras(p)}
+                    />
                   </div>
                 </div>
               )}
@@ -1911,7 +1838,7 @@ export function VerProveedores() {
 
                   <button
                     onClick={() => setIsCrearOpen(true)}
-                    className="py-2 px-4 bg-[#8DA78E] hover:bg-[#525D53] text-[#F5F5F1] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+                    className="py-2 px-4 bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
                   >
                     <Plus className="size-4" /> Nuevo Proveedor
                   </button>
@@ -2190,22 +2117,19 @@ export function VerProveedores() {
                         <div>
                           <span className="block font-bold text-slate-400">Estado Pago</span>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className={`inline-block px-2 py-0.5 rounded font-bold uppercase text-[9px] ${
-                              compraDetalleSeleccionada.estado_pago === "Pagado"
-                                ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
-                                : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
-                            }`}>
-                              {compraDetalleSeleccionada.estado_pago}
-                            </span>
-                            {compraDetalleSeleccionada.estado_pago !== "Pagado" && (
-                              <button
-                                type="button"
-                                onClick={() => handleCambiarEstadoPago(compraDetalleSeleccionada.id, compraDetalleSeleccionada.estado_pago, true)}
-                                className="text-[10px] text-[#8DA78E] hover:underline font-bold cursor-pointer"
-                              >
-                                (Cambiar)
-                              </button>
-                            )}
+                            {(() => {
+                              const abonos = compraDetalleSeleccionada.fin_transacciones?.filter((t:any) => t.categoria === "pago_proveedor").reduce((sum:number, t:any) => sum + Math.abs(Number(t.monto)), 0) || 0;
+                              const isPaid = abonos >= compraDetalleSeleccionada.total;
+                              return (
+                                <span className={`inline-block px-2 py-0.5 rounded font-bold uppercase text-[9px] ${
+                                  isPaid
+                                    ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400"
+                                    : "bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400"
+                                }`}>
+                                  {isPaid ? "Pagado" : "Pendiente"}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -2246,32 +2170,46 @@ export function VerProveedores() {
                     <div className="flex flex-col gap-2">
                       <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">Historial de Pagos</h4>
                       <div className="bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 rounded-2xl overflow-hidden shadow-xs text-xs">
-                        {compraDetalleSeleccionada.estado_pago === "Pagado" ? (
-                          <div className="divide-y divide-slate-50 dark:divide-zinc-900">
-                            <div className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 transition-colors">
-                              <div>
-                                <p className="font-bold text-slate-900 dark:text-white">Pago de Compra</p>
-                                <p className="text-[10px] text-slate-400 mt-0.5">
-                                  Fecha: {compraDetalleSeleccionada.fecha_pago ? new Date(compraDetalleSeleccionada.fecha_pago).toLocaleString("es-GT") : new Date(compraDetalleSeleccionada.created_at).toLocaleString("es-GT")}
-                                </p>
+                        {(() => {
+                          const pagos = compraDetalleSeleccionada.fin_transacciones?.filter((t:any) => t.categoria === "pago_proveedor") || [];
+                          if (pagos.length > 0) {
+                            return (
+                              <div className="divide-y divide-slate-50 dark:divide-zinc-900">
+                                {pagos.map((pago: any) => {
+                                  const dateStr = new Date(pago.created_at).toLocaleDateString("es-GT", {
+                                    day: "2-digit", month: "short", year: "numeric"
+                                  });
+                                  const timeStr = new Date(pago.created_at).toLocaleTimeString("es-GT", {
+                                    hour: "2-digit", minute: "2-digit"
+                                  });
+                                  return (
+                                    <div key={pago.id} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 transition-colors">
+                                      <div>
+                                        <p className="font-bold text-slate-900 dark:text-white">{pago.concepto}</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">
+                                          Fecha: {dateStr} a las {timeStr}
+                                        </p>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="font-black text-[#8DA78E] block">
+                                          Q{Math.abs(Number(pago.monto)).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                              <div className="text-right">
-                                <span className="font-black text-[#8DA78E] block">
-                                  Q{compraDetalleSeleccionada.total.toFixed(2)}
-                                </span>
-                                <span className="inline-block px-1.5 py-0.5 rounded-full font-bold uppercase text-[8px] bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400">
-                                  COMPLETADO
-                                </span>
+                            );
+                          } else {
+                            return (
+                              <div className="p-4 text-center text-slate-400 flex flex-col items-center justify-center gap-1.5">
+                                <AlertTriangle className="size-5 text-amber-500/80 animate-pulse" />
+                                <p className="font-bold text-[11px] text-slate-500">Pendiente de pago</p>
+                                <p className="text-[9px] text-slate-400">No se registran transacciones para esta compra.</p>
                               </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="p-4 text-center text-slate-400 flex flex-col items-center justify-center gap-1.5">
-                            <AlertTriangle className="size-5 text-amber-500/80 animate-pulse" />
-                            <p className="font-bold text-[11px] text-slate-500">Pendiente de pago</p>
-                            <p className="text-[9px] text-slate-400">No se registran transacciones para esta compra.</p>
-                          </div>
-                        )}
+                            );
+                          }
+                        })()}
                       </div>
                     </div>
 

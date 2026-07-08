@@ -6,7 +6,7 @@ import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 const SEGMENT_LABELS: Record<string, string> = {
-  kore: "Farmacia Salud",
+  kore: "Farmacia La Salud",
   proyectos: "Proyectos",
   proyecto: "Proyectos",
   resumen: "Dashboard",
@@ -24,6 +24,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   ventas: "Ventas",
   proveedores: "Proveedores",
   perfil: "Mi Perfil",
+  finanzas: "Finanzas",
 };
 
 export function BreadcrumbNav() {

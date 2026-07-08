@@ -241,7 +241,7 @@ useEffect(() => {
                     setShowCredentials(true);
                   }
                 }}
-                className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-300 bg-[#8DA78E] dark:bg-[#525D53] hover:bg-[#525D53] dark:hover:bg-[#8DA78E] border border-[#8DA78E]/30 dark:border-[#A3BEB0]/20 text-[#F5F5F1] cursor-pointer active:scale-[0.98] disabled:opacity-50 shadow-sm"
+                className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-300 bg-[#8DA78E] dark:bg-[#525D53] border border-[#8DA78E]/30 dark:border-[#A3BEB0]/20 text-[#F5F5F1] cursor-pointer active:scale-[0.98] disabled:opacity-50 shadow-sm"
                 disabled={showCredentials && (isPending || isPasskeyPending)}
               >
                 <User className="size-4 text-[#F5F5F1]/80" />
@@ -267,7 +267,7 @@ useEffect(() => {
                   <button
                     type="button"
                     onClick={handlePasskeyLogin}
-                    className="w-full py-5 flex flex-col items-center justify-center gap-3 rounded-xl transition-all duration-300 bg-[#C1D1C5]/20 dark:bg-[#525D53]/30 hover:bg-[#C1D1C5]/40 dark:hover:bg-[#525D53]/50 border border-[#8DA78E]/30 dark:border-[#A3BEB0]/20 text-slate-700 dark:text-[#A3BEB0] cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                    className="w-full py-5 flex flex-col items-center justify-center gap-3 rounded-xl transition-all duration-300 bg-[#C1D1C5]/20 dark:bg-[#525D53]/30 border border-[#8DA78E]/30 dark:border-[#A3BEB0]/20 text-slate-700 dark:text-[#A3BEB0] cursor-pointer active:scale-[0.98] disabled:opacity-50"
                     disabled={isPending || isPasskeyPending}
                   >
                     {isPasskeyPending ? (

@@ -18,13 +18,16 @@ import {
   ChevronLeft,
   Calendar,
   Edit,
-  Package
+  Package,
+  X,
+  UserPlus
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { cn } from "@/lib/utils";
+import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
 import { CrearCliente } from "@/components/(base)/clientes/forms/CrearCliente";
 import {
   obtenerProductosYClientes,
@@ -508,6 +511,13 @@ export function VerVentas() {
     };
   };
 
+  // Evitar venta al crédito sin cliente seleccionado
+  useEffect(() => {
+    if (!clienteSeleccionado && tipoVenta === "Crédito") {
+      setTipoVenta("Contado");
+    }
+  }, [clienteSeleccionado, tipoVenta]);
+
   // Cargar datos del servidor
   const cargarDatos = async () => {
     setIsLoading(true);
@@ -780,6 +790,16 @@ export function VerVentas() {
       Swal.fire({
         title: "Venta vacía",
         text: "Por favor agrega productos a la venta antes de cobrar.",
+        icon: "warning",
+        ...getSwalThemeOpts()
+      });
+      return;
+    }
+
+    if (tipoVenta === "Crédito" && !clienteSeleccionado) {
+      Swal.fire({
+        title: "Cliente requerido",
+        text: "Para realizar una venta al crédito, debe seleccionar un cliente (no se permite Consumidor Final).",
         icon: "warning",
         ...getSwalThemeOpts()
       });
@@ -1604,33 +1624,94 @@ export function VerVentas() {
                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                   Seleccionar Cliente
                 </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={clienteBusqueda}
-                    onChange={(e) => {
-                      setClienteBusqueda(e.target.value);
-                      setMostrarSugerenciasCli(true);
-                      if (!e.target.value) setClienteSeleccionado(null);
-                    }}
-                    onFocus={() => {
-                      setMostrarSugerenciasCli(true);
-                      if (clienteBusqueda === "Consumidor Final") {
-                        setClienteBusqueda("");
-                      }
-                    }}
-                    onBlur={() => {
-                      setTimeout(() => {
-                        if (!clienteSeleccionado && !clienteBusqueda) {
-                          setClienteBusqueda("Consumidor Final");
-                        }
-                      }, 200);
-                    }}
-                    placeholder="Nombre o NIT del cliente..."
-                    className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-9"
-                  />
-                </div>
+                {clienteSeleccionado ? (
+                  <div className="w-full flex items-center justify-between p-3 bg-[#8DA78E]/10 dark:bg-[#8DA78E]/25 border border-[#8DA78E]/30 rounded-xl relative transition-all animate-in fade-in duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="size-8 rounded-lg bg-[#8DA78E] text-[#F5F5F1] flex items-center justify-center font-bold text-sm">
+                        {clienteSeleccionado.nombre.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white leading-tight">
+                          {clienteSeleccionado.nombre}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+                          <span className="font-bold">NIT: {clienteSeleccionado.nit || "C/F"}</span>
+                          {clienteSeleccionado.telefono && (
+                            <>
+                              <span>•</span>
+                              <span>{clienteSeleccionado.telefono}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClienteSeleccionado(null);
+                        setClienteBusqueda("Consumidor Final");
+                      }}
+                      className="size-6 rounded-md hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 flex items-center justify-center transition-all cursor-pointer"
+                      title="Quitar cliente"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 w-full">
+                    <div className="relative flex-1">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={clienteBusqueda}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setClienteBusqueda(val);
+                          setMostrarSugerenciasCli(true);
+                          if (!val || (clienteSeleccionado && val !== clienteSeleccionado.nombre)) {
+                            setClienteSeleccionado(null);
+                          }
+                        }}
+                        onFocus={() => {
+                          setMostrarSugerenciasCli(true);
+                          if (clienteBusqueda === "Consumidor Final") {
+                            setClienteBusqueda("");
+                          }
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => {
+                            if (!clienteSeleccionado && !clienteBusqueda) {
+                              setClienteBusqueda("Consumidor Final");
+                            }
+                          }, 200);
+                        }}
+                        placeholder="Nombre o NIT del cliente..."
+                        className="w-full pl-9 pr-8 py-2 border rounded-xl text-xs bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-[38px]"
+                      />
+                      {clienteBusqueda && clienteBusqueda !== "Consumidor Final" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClienteBusqueda("");
+                            setClienteSeleccionado(null);
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                          title="Limpiar búsqueda"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCrearClienteOpen(true)}
+                      className="size-[38px] shrink-0 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/20 text-[#8DA78E] dark:text-[#A3BEB0] border border-[#8DA78E]/30 rounded-xl flex items-center justify-center transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                      title="Nuevo Cliente"
+                    >
+                      <UserPlus className="size-4" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Dropdown sugerencias */}
                 <AnimatePresence>
@@ -1701,6 +1782,15 @@ export function VerVentas() {
                           key={opt.id}
                           type="button"
                           onClick={() => {
+                            if (opt.id === "Crédito" && !clienteSeleccionado) {
+                              Swal.fire({
+                                title: "Cliente requerido",
+                                text: "Para seleccionar pago al crédito, debe seleccionar un cliente (no se permite Consumidor Final).",
+                                icon: "warning",
+                                ...getSwalThemeOpts()
+                              });
+                              return;
+                            }
                             setTipoVenta(opt.id as any);
                             setMostrarMetodoPagoDropdown(false);
                           }}
@@ -1866,7 +1956,7 @@ export function VerVentas() {
                     type="button"
                     onClick={() => handleAgregarAlCarrito()}
                     disabled={!productoSeleccionado}
-                    className="w-[60%] h-10 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs shrink-0"
+                    className="w-[60%] h-10 bg-[#8DA78E] disabled:opacity-40 disabled:bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs shrink-0"
                   >
                     Añadir
                   </button>
@@ -1942,9 +2032,9 @@ export function VerVentas() {
                       animate={{ opacity: 1 }}
                       className="h-full flex flex-col items-center justify-center py-8"
                     >
-                      <ShoppingCart className="size-10 text-slate-400 dark:text-slate-600 mb-2" />
-                      <p className="text-sm font-black text-slate-800 dark:text-slate-200">Venta vacía</p>
-                      <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 max-w-[200px] leading-normal mt-1.5 text-center">
+                      <ShoppingCart className="size-16 sm:size-20 text-slate-400 dark:text-slate-600 mb-4" strokeWidth={1.5} />
+                      <p className="text-lg sm:text-xl font-black text-slate-800 dark:text-slate-200">Venta vacía</p>
+                      <p className="text-sm font-bold text-slate-500 dark:text-slate-400 max-w-[250px] leading-normal mt-2 text-center">
                         Busca y agrega productos desde el panel izquierdo.
                       </p>
                     </motion.div>
@@ -2023,7 +2113,7 @@ export function VerVentas() {
                                   } : it));
                                   setEditingCartItemIndex(null);
                                 }}
-                                className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#8DA78E] text-[#F5F5F1] hover:bg-[#525D53] cursor-pointer transition-colors"
+                                className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#8DA78E] text-[#F5F5F1] cursor-pointer transition-colors"
                               >
                                 Guardar
                               </button>
@@ -2123,7 +2213,7 @@ export function VerVentas() {
                   type="button"
                   onClick={handleFinalizarVenta}
                   disabled={carrito.length === 0 || isProcesandoVenta}
-                  className="w-full lg:w-auto px-6 py-3 bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-40 disabled:hover:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
+                  className="w-full lg:w-auto px-6 py-3 bg-[#8DA78E] disabled:opacity-40 disabled:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.98]"
                 >
                   {isProcesandoVenta ? (
                     <>
@@ -2470,7 +2560,12 @@ export function VerVentas() {
                   return (
                     <div
                       key={v.id}
-                      className="bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/30 dark:border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3 shadow-xs text-left"
+                      className={cn(
+                        "border rounded-2xl p-4 flex flex-col gap-3 shadow-xs text-left transition-colors",
+                        v.observaciones?.includes("[ANULADA]")
+                          ? "bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/50"
+                          : "bg-white dark:bg-[#525D53]/10 border-[#C1D1C5]/30 dark:border-zinc-800/80"
+                      )}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-black text-slate-900 dark:text-white">
@@ -2561,7 +2656,12 @@ export function VerVentas() {
                         return (
                           <tr
                             key={v.id}
-                            className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/10 transition-colors"
+                            className={cn(
+                              "transition-colors",
+                              v.observaciones?.includes("[ANULADA]")
+                                ? "bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-50/80 dark:hover:bg-rose-950/40"
+                                : "hover:bg-slate-50/50 dark:hover:bg-zinc-800/10"
+                            )}
                           >
                             <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                               {obtenerCodigoRecibo(v.id)}
@@ -2622,110 +2722,21 @@ export function VerVentas() {
 
           {/* Barra de Paginación */}
           {totalVentasItems > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-2 px-1 text-slate-600 dark:text-slate-400">
-              <div className="flex items-center gap-4 text-xs font-medium">
-                <div className="flex items-center gap-1.5 relative" ref={pageSizeDropdownVentasRef}>
-
-                  <button
-                    type="button"
-                    onClick={() => setMostrarPageSizeDropdownVentas(!mostrarPageSizeDropdownVentas)}
-                    className="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-900 text-xs font-bold text-[#525D53] dark:text-[#A3BEB0] transition-all cursor-pointer flex items-center gap-1.5 hover:border-[#8DA78E] h-[34px] min-w-[55px] justify-between"
-                  >
-                    <span>{pageSizeVentas}</span>
-                    <ChevronDown className="size-3 text-slate-400" />
-                  </button>
-
-                  <AnimatePresence>
-                    {mostrarPageSizeDropdownVentas && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 4 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute bottom-full mb-1.5 left-0 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5 min-w-[70px]"
-                      >
-                        {[10, 50, 100].map((size) => (
-                          <button
-                            key={size}
-                            type="button"
-                            onClick={() => {
-                              setPageSizeVentas(size);
-                              setCurrentPageVentas(1);
-                              setMostrarPageSizeDropdownVentas(false);
-                            }}
-                            className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
-                              pageSizeVentas === size
-                                ? "bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0]"
-                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-900/60"
-                            }`}
-                          >
-                            <span>{size}</span>
-                            {pageSizeVentas === size && <Check className="size-3" />}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                </div>
-              </div>
-
-              {/* Botones de navegación */}
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setCurrentPageVentas(Math.max(1, activeVentasPage - 1))}
-                  disabled={activeVentasPage === 1}
-                  className="size-8 rounded-lg border transition-all disabled:opacity-40 select-none bg-white dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-slate-200 dark:border-slate-800 hover:border-[#8DA78E] disabled:hover:border-slate-200 dark:disabled:hover:border-slate-800 cursor-pointer flex items-center justify-center"
-                  title="Anterior"
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalVentasPages }, (_, idx) => {
-                    const pageNum = idx + 1;
-                    if (
-                      totalVentasPages <= 5 ||
-                      pageNum === 1 ||
-                      pageNum === totalVentasPages ||
-                      Math.abs(pageNum - activeVentasPage) <= 1
-                    ) {
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPageVentas(pageNum)}
-                          className={cn(
-                            "size-8 rounded-lg text-[11px] font-bold transition-all select-none cursor-pointer flex items-center justify-center border",
-                            activeVentasPage === pageNum
-                              ? "bg-[#8DA78E] border-[#8DA78E] text-[#F5F5F1]"
-                              : "bg-white dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-slate-200 dark:border-slate-800 hover:border-[#8DA78E]"
-                          )}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    }
-                    
-                    if (pageNum === 2 || pageNum === totalVentasPages - 1) {
-                      return (
-                        <span key={pageNum} className="px-1 text-slate-400 text-[11px]">
-                          ...
-                        </span>
-                      );
-                    }
-                    
-                    return null;
-                  })}
-                </div>
-
-                <button
-                  onClick={() => setCurrentPageVentas(Math.min(totalVentasPages, activeVentasPage + 1))}
-                  disabled={activeVentasPage === totalVentasPages}
-                  className="size-8 rounded-lg border transition-all disabled:opacity-40 select-none bg-white dark:bg-zinc-900 text-[#525D53] dark:text-[#A3BEB0] border-slate-200 dark:border-slate-800 hover:border-[#8DA78E] disabled:hover:border-slate-200 dark:disabled:hover:border-slate-800 cursor-pointer flex items-center justify-center"
-                  title="Siguiente"
-                >
-                  <ChevronRight className="size-4" />
-                </button>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 text-slate-600 dark:text-slate-400">
+              <PageSizeSelect
+                pageSize={pageSizeVentas}
+                setPageSize={(size) => {
+                  setPageSizeVentas(size);
+                  setCurrentPageVentas(1);
+                  setMostrarPageSizeDropdownVentas(false); // Can be kept or removed if unused
+                }}
+              />
+              <div className="flex justify-center w-full sm:w-auto">
+                <Pagination
+                  currentPage={activeVentasPage}
+                  totalPages={totalVentasPages}
+                  onPageChange={(p) => setCurrentPageVentas(p)}
+                />
               </div>
             </div>
           )}
@@ -2836,7 +2847,7 @@ export function VerVentas() {
                                     <button
                                       onClick={() => handleSaveDetalleVentaDirecto(d)}
                                       disabled={isSavingDetalle}
-                                      className="px-2 py-1 text-[10px] font-bold rounded bg-[#8DA78E] text-[#F5F5F1] cursor-pointer hover:bg-[#525D53]"
+                                      className="px-2 py-1 text-[10px] font-bold rounded bg-[#8DA78E] text-[#F5F5F1] cursor-pointer"
                                     >
                                       {isSavingDetalle ? "Guardando..." : "Guardar"}
                                     </button>
@@ -2937,7 +2948,7 @@ export function VerVentas() {
                           });
                         }}
                         disabled={isLoadingDetalles}
-                        className="w-full py-2.5 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#525D53] disabled:opacity-50 text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                        className="w-full py-2.5 px-4 rounded-xl bg-[#8DA78E] disabled:opacity-50 text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                       >
                         <Printer className="size-4" /> Imprimir Recibo
                       </button>
