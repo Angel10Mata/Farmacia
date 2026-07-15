@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   ArrowUpRight,
   Wallet,
+  CreditCard,
 } from "lucide-react";
 
 function VentasIllustration({ className }: { className?: string }) {
@@ -49,12 +50,30 @@ function ProveedoresIllustration({ className }: { className?: string }) {
   );
 }
 
+function CreditosIllustration({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+      {/* Document / Receipt behind */}
+      <rect x="14" y="8" width="20" height="24" rx="2" fill="#E2E8F0" />
+      <line x1="18" y1="14" x2="30" y2="14" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" />
+      <line x1="18" y1="19" x2="26" y2="19" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" />
+      
+      {/* Credit Card */}
+      <rect x="4" y="20" width="40" height="24" rx="4" fill="#6366F1" />
+      <rect x="4" y="25" width="40" height="6" fill="#1E1B4B" />
+      <rect x="10" y="34" width="7" height="5" rx="1" fill="#FBBF24" />
+      <rect x="22" y="35.5" width="16" height="2" rx="1" fill="#818CF8" />
+    </svg>
+  );
+}
+
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   inventario: Package,
   proveedores: Truck,
   ventas: ShoppingCart,
   clientes: Users,
   finanzas: Wallet,
+  creditos: CreditCard,
 };
 
 interface ModuleConfig {
@@ -86,7 +105,7 @@ const MODULES: ModuleConfig[] = [
     title: "Ventas",
     subtitle: "",
     desc: "Punto de venta, control de caja diaria, reportes de ingresos y facturación.",
-    href: "/kore/ventas",
+    href: "/farmacia-la-salud/ventas",
     allowedRoles: ["super", "admin", "ventas", "user"],
     accent: "text-zinc-600 dark:text-zinc-300",
     accentHover: "group-hover:text-zinc-900 dark:group-hover:text-white",
@@ -103,7 +122,7 @@ const MODULES: ModuleConfig[] = [
     title: "Clientes",
     subtitle: "",
     desc: "Directorio de clientes, historial de compras, saldos y fichas de contacto.",
-    href: "/kore/clientes",
+    href: "/farmacia-la-salud/clientes",
     allowedRoles: ["super", "admin", "clientes", "ventas"],
     accent: "text-zinc-600 dark:text-zinc-300",
     accentHover: "group-hover:text-zinc-900 dark:group-hover:text-white",
@@ -119,7 +138,7 @@ const MODULES: ModuleConfig[] = [
     title: "Proveedores",
     subtitle: "",
     desc: "Catálogo de proveedores autorizados, órdenes de compra y facturas.",
-    href: "/kore/proveedores",
+    href: "/farmacia-la-salud/proveedores",
     allowedRoles: ["super", "admin", "proveedores"],
     accent: "text-zinc-600 dark:text-zinc-300",
     accentHover: "group-hover:text-zinc-900 dark:group-hover:text-white",
@@ -135,12 +154,12 @@ const MODULES: ModuleConfig[] = [
     title: "Finanzas",
     subtitle: "",
     desc: "Ingresos, egresos, control de gastos fijos y pagos de clientes.",
-    href: "/kore/finanzas",
+    href: "/farmacia-la-salud/finanzas",
     allowedRoles: ["super", "admin"],
     accent: "text-zinc-600 dark:text-zinc-300",
     accentHover: "group-hover:text-zinc-900 dark:group-hover:text-white",
-    bento: "col-span-1 row-span-1 md:col-span-2 md:col-start-1 md:row-start-3",
-    size: "wide" as const,
+    bento: "col-span-1 row-span-1 md:col-start-1 md:row-start-3",
+    size: "compact" as const,
     tag: "Ingresos · Egresos",
     cardBg: "bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800/90",
     cardBorder: "border-zinc-200 dark:border-zinc-800",
@@ -151,7 +170,7 @@ const MODULES: ModuleConfig[] = [
     title: "Inventario",
     subtitle: "",
     desc: "Control de existencias de medicamentos, lotes, vencimientos y categorías.",
-    href: "/kore/inventario",
+    href: "/farmacia-la-salud/inventario",
     allowedRoles: ["super", "admin", "inventario"],
     accent: "text-zinc-600 dark:text-zinc-300",
     accentHover: "group-hover:text-zinc-900 dark:group-hover:text-white",
@@ -161,6 +180,22 @@ const MODULES: ModuleConfig[] = [
     cardBg: "bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800/90",
     cardBorder: "border-zinc-200 dark:border-zinc-800",
     lordIcon: "gbzbfgyf",
+  },
+  {
+    id: "creditos",
+    title: "Créditos",
+    subtitle: "",
+    desc: "Gestión de créditos, estados de cuenta y registros de abonos.",
+    href: "/farmacia-la-salud/creditos",
+    allowedRoles: ["super", "admin", "ventas", "finanzas"],
+    accent: "text-zinc-600 dark:text-zinc-300",
+    accentHover: "group-hover:text-zinc-900 dark:group-hover:text-white",
+    bento: "col-span-1 row-span-1 md:col-start-2 md:row-start-3",
+    size: "compact" as const,
+    tag: "Cuentas por cobrar",
+    cardBg: "bg-white hover:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-zinc-800/90",
+    cardBorder: "border-zinc-200 dark:border-zinc-800",
+    illustration: CreditosIllustration,
   },
 ];
 
@@ -229,7 +264,7 @@ export function Dashboard() {
     router.push(href);
   };
 
-  const AREA_NEGOCIO = ["ventas", "clientes", "proveedores", "inventario", "finanzas"];
+  const AREA_NEGOCIO = ["ventas", "clientes", "proveedores", "inventario", "finanzas", "creditos"];
 
   const negocioModules = AREA_NEGOCIO
     .map((id) => visibleModules.find((m) => m.id === id))

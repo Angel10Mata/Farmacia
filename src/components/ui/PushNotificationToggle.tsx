@@ -151,7 +151,7 @@ export function PushNotificationToggle() {
     <button
       onClick={handleToggle}
       disabled={loading}
-      className="flex items-center justify-center cursor-pointer transition-all duration-200 hover:opacity-80 active:scale-95 rounded-xl"
+      className="flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-95 rounded-xl"
       style={{ width: '42px', height: '42px', backgroundColor: 'transparent' }}
       title={isSubscribed ? 'Desactivar notificaciones' : 'Activar notificaciones'}
     >

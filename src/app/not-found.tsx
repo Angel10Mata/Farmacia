@@ -16,10 +16,10 @@ export default function NotFound() {
         </h1>
         <p className="text-muted-foreground mb-6 text-sm">
           Lo sentimos, la ruta que intenta consultar no existe en el sistema de{" "}
-          <strong>Kore</strong>
+          <strong>Farmacia La Salud</strong>
         </p>
         <Link
-          href="/kore"
+          href="/farmacia-la-salud"
           className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-xl font-bold text-xs transition-all active:scale-95 uppercase"
         >
           <ArrowLeft className="size-4 stroke-3" />

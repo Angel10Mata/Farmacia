@@ -34,7 +34,7 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
   const { realRole, effectiveRole, simulatedRole, setSimulatedRole } = useUserContext();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isPasskeysOpen, setIsPasskeysOpen] = useState(false);
-  const isRoot = pathname === "/kore";
+  const isRoot = pathname === "/farmacia-la-salud";
   const isSuperOrAdmin = ["super", "admin"].includes(effectiveRole);
 
   // On mobile root: no breadcrumb bar, so menu starts right below header (3.5rem)
@@ -137,7 +137,7 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
                 <div className="flex flex-col gap-2">
                   {isSuperOrAdmin && (
                     <Link
-                      href="/kore/admin"
+                      href="/farmacia-la-salud/admin"
                       onClick={() => setIsOpen(false)}
                       className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm font-bold hover:bg-muted/60 transition-all"
                     >
@@ -182,7 +182,7 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
               <div className="mb-4">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center justify-between rounded-xl bg-celeste-kore text-white px-5 py-3 text-sm font-bold w-full hover:opacity-90 transition-all cursor-pointer"
+                  className="flex items-center justify-between rounded-xl bg-celeste-kore text-white px-5 py-3 text-sm font-bold w-fit max-w-full transition-all cursor-pointer"
                 >
                   <span>Cerrar Sesión</span>
                   <LogOut className="size-4 rotate-180" />

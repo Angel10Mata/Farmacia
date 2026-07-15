@@ -210,7 +210,7 @@ export const CustomDatePicker = ({
               <button
                 type="button"
                 onClick={handlePrevMonth}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg cursor-pointer text-slate-500 hover:text-[#8DA78E] dark:hover:text-[#A3BEB0] transition-colors"
+                className="p-1.5 rounded-lg cursor-pointer text-slate-500 transition-colors"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -222,7 +222,7 @@ export const CustomDatePicker = ({
               <button
                 type="button"
                 onClick={handleNextMonth}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg cursor-pointer text-slate-500 hover:text-[#8DA78E] dark:hover:text-[#A3BEB0] transition-colors"
+                className="p-1.5 rounded-lg cursor-pointer text-slate-500 transition-colors"
               >
                 <ChevronRight className="size-4" />
               </button>

@@ -151,8 +151,9 @@ export function VerUsuarios() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto border border-border rounded-xl bg-card mx-4">
-          <table className="w-full text-sm text-left border-separate border-spacing-0">
+        <div className="flex flex-col flex-1 min-w-0 bg-card border border-border rounded-xl mx-4 overflow-hidden shadow-sm">
+          <div className="w-full flex-1 overflow-auto custom-scrollbar">
+            <table className="w-full text-sm text-left border-separate border-spacing-0">
             <thead className="sticky top-0 bg-muted/80 backdrop-blur-md z-20">
               <tr>
                 <th className="px-6 py-3 border-b border-border">
@@ -241,28 +242,29 @@ export function VerUsuarios() {
                 : "No hay usuarios disponibles con estos filtros."}
             </div>
           )}
+          </div>
+
+          {/* Barra de Paginación */}
+          {!isAll && filteredUsers.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border/50 text-muted-foreground">
+              <PageSizeSelect
+                pageSize={pageSize as number}
+                setPageSize={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+              <div className="flex justify-center w-full sm:w-auto">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={(p) => setCurrentPage(p)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Barra de Paginación */}
-      {!isAll && filteredUsers.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 px-2.5 md:px-0 text-slate-600 dark:text-slate-400">
-          <PageSizeSelect
-            pageSize={pageSize as number}
-            setPageSize={(size) => {
-              setPageSize(size);
-              setCurrentPage(1);
-            }}
-          />
-          <div className="flex justify-center w-full sm:w-auto">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={(p) => setCurrentPage(p)}
-            />
-          </div>
-        </div>
-      )}
 
       <VerPerfil
         isOpen={isProfileOpen}

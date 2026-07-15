@@ -13,13 +13,13 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#000000",
     icons: [
       {
-        src: "/kore/farmacia-salud-logo.png",
+        src: "/farmacia-la-salud/logo.png",
         sizes: "64x64 192x192 512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/kore/farmacia-salud-logo.png",
+        src: "/farmacia-la-salud/logo.png",
         sizes: "64x64 192x192 512x512",
         type: "image/png",
         purpose: "maskable",

@@ -48,29 +48,35 @@ export function ReciboVenta({
     <div
       id={id}
       className={cn(
-        "recibo-venta w-full bg-[#F9F6F0] text-[#1a1a1a] font-serif px-8 py-7 box-border",
+        "recibo-venta w-[816px] min-h-[528px] mx-auto bg-white text-[#1a1a1a] font-serif px-8 py-7 box-border flex flex-col",
         className,
       )}
     >
-      <div className="mb-6">
-        <div className="mb-3 flex justify-end">
-          <div className="shrink-0 border border-[#525D53]/40 bg-[#F9F6F0] px-2.5 py-1 text-[10px] font-semibold tracking-wide text-[#1a1a1a]">
-            No. {codigo}
+      <div className="mb-6 flex flex-row items-center justify-between gap-4">
+        {/* Logo y Título a la izquierda */}
+        <div className="flex flex-row items-center gap-2 text-left">
+          <div className="w-[150px] h-[150px] shrink-0">
+            <img src="/farmacia-la-salud/logo.png" alt="Logo Farmacia Salud" className="w-full h-full object-contain object-center" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-black tracking-tight leading-none mb-1 text-[#1a1a1a]">
+              FARMACIA<br />LA SALUD
+            </h1>
+            <p className="text-sm italic text-gray-600 font-medium leading-tight">Guatemala • Recibo de venta</p>
           </div>
         </div>
-        <div className="text-center">
-          <h1 className="text-[22px] font-bold uppercase tracking-[0.08em] text-[#1a1a1a]">
-            Farmacia Salud
-          </h1>
-          <p className="mt-1 text-[11px] italic text-[#525D53]">Guatemala · Recibo de venta</p>
+
+        {/* Número a la derecha */}
+        <div className="shrink-0 border border-[#525D53]/40 bg-white px-2.5 py-1 text-[10px] font-semibold tracking-wide text-[#1a1a1a]">
+          No. {codigo}
         </div>
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-x-4 gap-y-3">
+      <div className="mb-5 grid grid-cols-4 gap-4">
         <CampoRecibo label="Fecha" value={fecha} />
-        <CampoRecibo label="Cliente" value={cliente} />
+        <CampoRecibo label="Cliente" value={cliente?.toLowerCase().trim() === "consumidor final" ? "C/F" : cliente} />
         <CampoRecibo label="NIT" value={nit} />
-        <CampoRecibo label="Forma de pago" value={formaPago} />
+        <CampoRecibo label="Pago" value={formaPago} />
       </div>
 
       <div className="mb-4 border-t-2 border-[#1a1a1a] pt-2">
@@ -126,13 +132,15 @@ export function ReciboVenta({
         </p>
       )}
 
-      <p className="mt-6 text-center text-[11px] italic text-[#525D53]">
-        Gracias por su compra
-      </p>
+      <div className="mt-auto pt-6">
+        <p className="text-center text-[11px] italic text-[#525D53]">
+          Gracias por su compra
+        </p>
 
-      <div className="mt-4 flex justify-end">
-        <div className="border-t border-dashed border-[#525D53]/45 pt-1 text-[9px] italic text-[#525D53]/70">
-          línea de corte
+        <div className="mt-4 flex justify-end">
+          <div className="border-t border-dashed border-[#525D53]/45 pt-1 text-[9px] italic text-[#525D53]/70">
+            línea de corte
+          </div>
         </div>
       </div>
     </div>

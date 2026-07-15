@@ -123,7 +123,7 @@ export function PasskeyPrompt() {
               <button
                 onClick={handleRegister}
                 disabled={isPending || !deviceName.trim()}
-                className="w-full h-11 bg-amber-600 text-white font-medium rounded-xl hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50"
+                className="w-fit max-w-full h-11 bg-amber-600 text-white font-medium rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
               >
                 {isPending ? "Configurando..." : "Activar Ahora"}
               </button>
@@ -131,7 +131,7 @@ export function PasskeyPrompt() {
             
             <button
               onClick={handleDismiss}
-              className="w-full h-11 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-secondary/80 transition-all"
+              className="w-fit max-w-full h-11 bg-secondary text-secondary-foreground font-medium rounded-xl transition-all cursor-pointer"
             >
               Quizás más tarde
             </button>

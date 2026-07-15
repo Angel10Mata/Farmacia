@@ -39,7 +39,7 @@ export default function EditarProductoClient({ id }: { id: string }) {
           icon: "error",
           confirmButtonColor: "#ef4444"
         }).then(() => {
-          router.push("/kore/inventario");
+          router.push("/farmacia-la-salud/inventario");
         });
       } finally {
         setIsLoading(false);
@@ -52,11 +52,11 @@ export default function EditarProductoClient({ id }: { id: string }) {
   }, [id, router]);
 
   const handleClose = () => {
-    router.push("/kore/inventario");
+    router.push("/farmacia-la-salud/inventario");
   };
 
   const handleSuccess = () => {
-    router.push("/kore/inventario");
+    router.push("/farmacia-la-salud/inventario");
   };
 
   if (isLoading) {
@@ -76,7 +76,7 @@ export default function EditarProductoClient({ id }: { id: string }) {
     <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
       <div>
         <Link 
-          href="/kore/inventario"
+          href="/farmacia-la-salud/inventario"
           className="inline-flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
         >
           <ChevronLeft className="size-4" />

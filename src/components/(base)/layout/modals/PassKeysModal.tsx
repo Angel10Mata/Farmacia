@@ -187,7 +187,7 @@ export default function PassKeysModal({ isOpen, onClose, user }: PassKeysModalPr
 
             <button
               onClick={onClose}
-              className="shrink-0 p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors"
+              className="shrink-0 p-2 text-muted-foreground rounded-full transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>

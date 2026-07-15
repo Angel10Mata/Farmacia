@@ -41,8 +41,8 @@ export const metadata: Metadata = {
     title: "Farmacia Salud",
   },
   icons: {
-    icon: "/kore/farmacia-salud-logo.png",
-    apple: "/kore/farmacia-salud-logo.png",
+    icon: "/farmacia-la-salud/logo.png",
+    apple: "/farmacia-la-salud/logo.png",
   },
 };
 

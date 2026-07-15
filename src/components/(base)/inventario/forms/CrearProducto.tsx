@@ -384,7 +384,7 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
           <Button
             type="submit"
             disabled={isLoading || isUploadingImage}
-            className="rounded-xl bg-[#8DA78E] text-[#F5F5F1] font-bold transition-all text-xs"
+            className="rounded-xl bg-[#8DA78E] text-[#F5F5F1] font-bold transition-all text-xs cursor-pointer"
           >
             {isLoading ? "Registrando..." : "Registrar Producto"}
           </Button>

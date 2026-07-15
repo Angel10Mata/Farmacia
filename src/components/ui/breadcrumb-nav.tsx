@@ -6,7 +6,7 @@ import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 const SEGMENT_LABELS: Record<string, string> = {
-  kore: "Farmacia La Salud",
+  "farmacia-la-salud": "Farmacia La Salud",
   proyectos: "Proyectos",
   proyecto: "Proyectos",
   resumen: "Dashboard",
@@ -25,12 +25,13 @@ const SEGMENT_LABELS: Record<string, string> = {
   proveedores: "Proveedores",
   perfil: "Mi Perfil",
   finanzas: "Finanzas",
+  creditos: "Créditos",
 };
 
 export function BreadcrumbNav() {
   const pathname = usePathname();
 
-  if (pathname === "/kore") return null;
+  if (pathname === "/farmacia-la-salud") return null;
 
   const rawSegments = pathname.split("/").filter((item) => item !== "");
 
@@ -53,17 +54,17 @@ export function BreadcrumbNav() {
     .filter((item): item is { segment: string; label: string; href: string } => item !== null);
 
   // ── Navegación hacia atrás (botón flecha izquierda) ────────────────────────
-  let backHref = "/kore";
+  let backHref = "/farmacia-la-salud";
   if (rawSegments.includes("qr")) {
     const detalleIdx = rawSegments.indexOf("ver");
     const id = detalleIdx >= 0 && detalleIdx + 1 < rawSegments.length ? rawSegments[detalleIdx + 1] : "";
-    backHref = id ? `/kore/proyectos/ver/${id}` : "/kore/proyectos";
+    backHref = id ? `/farmacia-la-salud/proyectos/ver/${id}` : "/farmacia-la-salud/proyectos";
   } else if (rawSegments.includes("editar")) {
     const detalleIdx = rawSegments.indexOf("ver");
     const id = detalleIdx >= 0 && detalleIdx + 1 < rawSegments.length ? rawSegments[detalleIdx + 1] : "";
-    backHref = id ? `/kore/proyectos/ver/${id}` : "/kore/proyectos";
+    backHref = id ? `/farmacia-la-salud/proyectos/ver/${id}` : "/farmacia-la-salud/proyectos";
   } else if (rawSegments.includes("ver")) {
-    backHref = "/kore/proyectos";
+    backHref = "/farmacia-la-salud/proyectos";
   } else if (rawSegments.length > 1) {
     backHref = `/${rawSegments.slice(0, -1).join("/")}`;
   }
@@ -86,7 +87,7 @@ export function BreadcrumbNav() {
 
         <motion.div layout="position" className="flex items-center">
           <Link
-            href="/kore"
+            href="/farmacia-la-salud"
             className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
           >
             <Home className="size-5 md:size-6" />

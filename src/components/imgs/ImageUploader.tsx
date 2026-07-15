@@ -334,7 +334,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                   type="button"
                   onClick={openGallery}
                   disabled={isProcessing}
-                  className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/95 text-[#525D53] hover:bg-white transition-all disabled:opacity-50 cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-white/95 text-[#525D53] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   <Upload size={12} />
                   Cambiar
@@ -343,7 +343,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                   type="button"
                   onClick={handleDelete}
                   disabled={isProcessing}
-                  className="flex items-center justify-center px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-red-500/90 text-white hover:bg-red-600 transition-all disabled:opacity-50 cursor-pointer"
+                  className="flex items-center justify-center px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-red-500/90 text-white transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                 </button>
@@ -442,7 +442,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                   type="button"
                   onClick={openCamera}
                   disabled={isProcessing}
-                  className="flex items-center justify-center gap-1 px-3 py-2 text-[10px] font-bold rounded-lg bg-white/90 dark:bg-zinc-800/90 border border-[#C1D1C5]/60 dark:border-zinc-700 text-[#525D53] dark:text-slate-200 hover:bg-white dark:hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                  className="flex items-center justify-center gap-1 px-3 py-2 text-[10px] font-bold rounded-lg bg-white/90 dark:bg-zinc-800/90 border border-[#C1D1C5]/60 dark:border-zinc-700 text-[#525D53] dark:text-slate-200 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   <Camera size={13} className="text-[#8DA78E]" />
                   Cámara
@@ -545,7 +545,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                     type="button"
                     onClick={openCamera}
                     disabled={isProcessing}
-                    className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-white dark:bg-zinc-800 border border-[#C1D1C5]/60 dark:border-zinc-700 text-[#525D53] dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-white dark:bg-zinc-800 border border-[#C1D1C5]/60 dark:border-zinc-700 text-[#525D53] dark:text-slate-200 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     <Camera size={14} className="text-[#8DA78E]" />
                     Tomar Foto
@@ -558,7 +558,7 @@ const ImageUploader = forwardRef<ImageUploaderHandle, ImageUploaderProps>(functi
                   type="button"
                   onClick={handleDelete}
                   disabled={isProcessing}
-                  className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100/70 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   {deleting ? (
                     <Loader2 size={14} className="animate-spin" />

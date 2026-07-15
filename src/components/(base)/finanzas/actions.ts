@@ -11,7 +11,7 @@ import {
   type CuentaPorPagar,
 } from "./schemas";
 
-const FINANZAS_PATH = "/kore/finanzas";
+const FINANZAS_PATH = "/farmacia-la-salud/finanzas";
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 200;
 
@@ -118,33 +118,7 @@ export async function obtenerResumenFinanciero(): Promise<ResumenFinanciero> {
   }
 }
 
-export async function obtenerCuentasPorCobrar(): Promise<CuentaPorCobrar[]> {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("fin_cuentas_por_cobrar");
 
-    if (error) throw new Error(error.message);
-
-    return (data ?? []) as CuentaPorCobrar[];
-  } catch (error: unknown) {
-    console.error("Error en obtenerCuentasPorCobrar:", error);
-    throw new Error(toErrorMessage(error, "No se pudieron cargar las cuentas por cobrar."));
-  }
-}
-
-export async function obtenerCuentasPorPagar(): Promise<CuentaPorPagar[]> {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("fin_cuentas_por_pagar");
-
-    if (error) throw new Error(error.message);
-
-    return (data ?? []) as CuentaPorPagar[];
-  } catch (error: unknown) {
-    console.error("Error en obtenerCuentasPorPagar:", error);
-    throw new Error(toErrorMessage(error, "No se pudieron cargar las cuentas por pagar."));
-  }
-}
 
 export async function registrarMovimiento(
   input: unknown
@@ -243,10 +217,36 @@ export async function eliminarMovimiento(id: string): Promise<{ success: true }>
     }
 
     revalidatePath(FINANZAS_PATH);
-    revalidatePath("/kore/ventas");
+    revalidatePath("/farmacia-la-salud/ventas");
     return { success: true };
   } catch (error: unknown) {
     console.error("Error al anular movimiento:", error);
     throw new Error(toErrorMessage(error, "No se pudo anular el movimiento."));
+  }
+}
+
+export async function obtenerCuentasPorCobrar(): Promise<CuentaPorCobrar[]> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("fin_cuentas_por_cobrar");
+
+    if (error) throw new Error(error.message);
+    return (data ?? []) as CuentaPorCobrar[];
+  } catch (error: unknown) {
+    console.error("Error en obtenerCuentasPorCobrar:", error);
+    throw new Error("No se pudieron cargar las cuentas por cobrar.");
+  }
+}
+
+export async function obtenerCuentasPorPagar(): Promise<CuentaPorPagar[]> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("fin_cuentas_por_pagar");
+
+    if (error) throw new Error(error.message);
+    return (data ?? []) as CuentaPorPagar[];
+  } catch (error: unknown) {
+    console.error("Error en obtenerCuentasPorPagar:", error);
+    throw new Error("No se pudieron cargar las cuentas por pagar.");
   }
 }

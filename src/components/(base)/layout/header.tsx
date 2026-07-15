@@ -20,7 +20,7 @@ export default function Header() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const isRoot = pathname === "/kore";
+  const isRoot = pathname === "/farmacia-la-salud";
 
   const metadata = user?.user_metadata || {};
   const role = metadata.rol || user?.role || "user";
@@ -49,17 +49,17 @@ export default function Header() {
           <div className="flex items-center h-full">
             <div className="flex items-center shrink-0">
               <Link
-                href={user ? "/kore" : "/"}
+                href={user ? "/farmacia-la-salud" : "/"}
                 onClick={handleLogoClick}
                 className="flex flex-row items-center shrink-0 group gap-1 md:gap-1.5 cursor-pointer"
               >
                 <motion.img 
-                  src="/kore/farmacia-salud-logo.png"
+                  src="/farmacia-la-salud/logo.png"
                   alt="Farmacia Salud"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="h-10 md:h-12 w-10 md:w-12 object-cover transition-transform duration-300 group-hover:scale-105 origin-left rounded-full"
+                  className="h-16 md:h-20 w-16 md:w-20 object-contain transition-transform duration-300 group-hover:scale-105 origin-left"
                 />
                 <motion.span
                   initial={{ opacity: 0, x: -10 }}

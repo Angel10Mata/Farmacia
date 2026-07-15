@@ -17,7 +17,7 @@ export async function AdminPanel() {
   const role = metadata.rol || user.role || "user";
 
   if (!["super", "admin"].includes(role)) {
-    redirect("/kore");
+    redirect("/farmacia-la-salud");
   }
 
   const pendingDevices = (await getPendingDevicesCount()) ?? 0;

@@ -67,7 +67,7 @@ export async function guardarProveedor(params: {
       if (error) throw new Error(error.message);
     }
 
-    revalidatePath("/kore/proveedores");
+    revalidatePath("/farmacia-la-salud/proveedores");
     return { success: true };
   } catch (error: any) {
     console.error("Error en guardarProveedor:", error);
@@ -85,7 +85,7 @@ export async function eliminarProveedor(id: string) {
 
     if (error) throw new Error(error.message);
 
-    revalidatePath("/kore/proveedores");
+    revalidatePath("/farmacia-la-salud/proveedores");
     return { success: true };
   } catch (error: any) {
     console.error("Error en eliminarProveedor:", error);
@@ -220,9 +220,9 @@ export async function crearCompra(params: {
     }
 
     // Revalidar rutas para refrescar datos de inventario y compras
-    revalidatePath("/kore/inventario");
-    revalidatePath("/kore/proveedores");
-    revalidatePath("/kore/finanzas");
+    revalidatePath("/farmacia-la-salud/inventario");
+    revalidatePath("/farmacia-la-salud/proveedores");
+    revalidatePath("/farmacia-la-salud/finanzas");
 
     return {
       success: true,
@@ -353,8 +353,8 @@ export async function actualizarEstadoPagoCompra(compraId: string, nuevoEstado: 
 
     if (error) throw new Error(error.message);
 
-    revalidatePath("/kore/proveedores");
-    revalidatePath("/kore/finanzas");
+    revalidatePath("/farmacia-la-salud/proveedores");
+    revalidatePath("/farmacia-la-salud/finanzas");
     return { success: true };
   } catch (error: any) {
     console.error("Error en actualizarEstadoPagoCompra:", error);
@@ -365,3 +365,73 @@ export async function actualizarEstadoPagoCompra(compraId: string, nuevoEstado: 
   }
 }
 
+export async function registrarAbonoCompra(
+  compraId: string,
+  montoAbono: number,
+  metodoPago: string,
+  notas?: string
+) {
+  try {
+    const supabase = await createClient();
+
+    if (!montoAbono || montoAbono <= 0) {
+      throw new Error("El monto a abonar debe ser mayor a 0.");
+    }
+
+    // Obtener la compra y transacciones para calcular saldo
+    const { data: compra, error: compraError } = await supabase
+      .from("inv_compras")
+      .select("*, fin_transacciones(monto, categoria)")
+      .eq("id", compraId)
+      .single();
+
+    if (compraError || !compra) {
+      throw new Error("No se pudo encontrar la compra.");
+    }
+
+    const pagado = compra.fin_transacciones
+      ?.filter((t: any) => t.categoria === "pago_proveedor")
+      .reduce((acc: number, curr: any) => acc + Math.abs(Number(curr.monto)), 0) || 0;
+
+    const saldo = Number(compra.total) - pagado;
+
+    // Permitimos un margen de error de decimales
+    if (montoAbono > saldo + 0.01) {
+      throw new Error("El abono no puede exceder el saldo pendiente.");
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const desc = notas 
+      ? `Abono a cuenta por pagar (${metodoPago}): ${notas}` 
+      : `Abono a cuenta por pagar (${metodoPago})`;
+
+    // Insertar abono
+    const { error: finError } = await supabase.from("fin_transacciones").insert({
+      tipo_movimiento: "egreso",
+      categoria: "pago_proveedor",
+      monto: montoAbono,
+      descripcion: desc,
+      usuario_id: user?.id,
+      compra_id: compraId
+    });
+
+    if (finError) throw new Error("Error al registrar el abono: " + finError.message);
+
+    // Revisar si ya quedó pagado para actualizar estado (tolerancia de 0.01)
+    if (montoAbono >= saldo - 0.01) {
+      await supabase
+        .from("inv_compras")
+        .update({ estado_pago: "Pagado", fecha_pago: new Date().toISOString() })
+        .eq("id", compraId);
+    }
+
+    revalidatePath("/farmacia-la-salud/proveedores");
+    revalidatePath("/farmacia-la-salud/finanzas");
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error en registrarAbonoCompra:", error);
+    return { success: false, error: error.message };
+  }
+}

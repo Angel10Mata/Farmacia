@@ -40,7 +40,6 @@ import {
   type CuentaPorPagar,
 } from "./schemas";
 import { NuevoMovimiento } from "./forms/NuevoMovimiento";
-import { CuentasPendientes } from "@/components/(base)/finanzas/CuentasPendientes";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -49,8 +48,6 @@ const RESUMEN_VACIO: ResumenFinanciero = {
   total_egresos: 0,
   balance: 0,
 };
-
-type VistaPrincipal = "movimientos" | "pendientes";
 
 const getSwalThemeOpts = () => {
   const isDark = document.documentElement.classList.contains("dark");
@@ -75,8 +72,6 @@ function toErrorMessage(error: unknown, fallback: string): string {
 }
 
 export function VerFinanzas() {
-  const [vista, setVista] = useState<VistaPrincipal>("movimientos");
-
   const [movimientos, setMovimientos] = useState<TransaccionFinanciera[]>([]);
   const [resumen, setResumen] = useState<ResumenFinanciero>(RESUMEN_VACIO);
   const [totalRegistros, setTotalRegistros] = useState(0);
@@ -111,8 +106,6 @@ export function VerFinanzas() {
 
   const [fechaRangoDesde, setFechaRangoDesde] = useState<string>("");
   const [fechaRangoHasta, setFechaRangoHasta] = useState<string>("");
-
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -214,8 +207,8 @@ export function VerFinanzas() {
   ]);
 
   useEffect(() => {
-    if (vista === "movimientos") loadMovimientos();
-  }, [vista, loadMovimientos]);
+    loadMovimientos();
+  }, [loadMovimientos]);
 
   const handleDelete = async (id: string, descripcion: string) => {
     const result = await Swal.fire({
@@ -256,20 +249,6 @@ export function VerFinanzas() {
     setPrefillVentaId(null);
     setPrefillCompraId(null);
     setDefaultTipo(tipo);
-    setShowNuevoMovimiento(true);
-  };
-
-  const handleAbonarVenta = (cuenta: CuentaPorCobrar) => {
-    setPrefillVentaId(cuenta.venta_id);
-    setPrefillCompraId(null);
-    setDefaultTipo("ingreso");
-    setShowNuevoMovimiento(true);
-  };
-
-  const handlePagarCompra = (cuenta: CuentaPorPagar) => {
-    setPrefillCompraId(cuenta.compra_id);
-    setPrefillVentaId(null);
-    setDefaultTipo("egreso");
     setShowNuevoMovimiento(true);
   };
 
@@ -375,12 +354,10 @@ export function VerFinanzas() {
           </div>
         </div>
 
-        {/* Filtros de Fecha y Tabs */}
+        {/* Filtros de Fecha */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 px-4 md:px-0">
           
-          {/* Filtros de Fecha (Izquierda) */}
           <div className="flex-1 w-full sm:w-auto">
-            {vista === "movimientos" && (
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 bg-white dark:bg-[#171a17] border border-[#C1D1C5]/30 dark:border-[#525D53]/30 rounded-2xl p-2 shadow-sm w-full md:w-fit z-20 mx-auto sm:mx-0">
                 
                 {/* Opciones Dia/Mes/Rango */}
@@ -568,43 +545,11 @@ export function VerFinanzas() {
                   )}
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Tabs de vista principal (Derecha) */}
-          <div className="flex items-center justify-end gap-2 w-full sm:w-fit bg-[#8DA78E]/5 p-1 rounded-xl border border-[#8DA78E]/10 shrink-0">
-            <button
-              type="button"
-              onClick={() => setVista("movimientos")}
-              className={cn(
-                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer",
-                vista === "movimientos"
-                  ? "bg-white dark:bg-[#525D53] text-[#8DA78E] dark:text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-              )}
-            >
-              Movimientos
-            </button>
-            <button
-              type="button"
-              onClick={() => setVista("pendientes")}
-              className={cn(
-                "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer",
-                vista === "pendientes"
-                  ? "bg-white dark:bg-[#525D53] text-[#8DA78E] dark:text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-              )}
-            >
-              Cuentas Pendientes
-            </button>
-          </div>
+            </div>
         </div>
       </div>
 
-      {vista === "pendientes" ? (
-        <CuentasPendientes onAbonarVenta={handleAbonarVenta} onPagarCompra={handlePagarCompra} refreshKey={refreshKey} />
-      ) : (
-        <div className="flex flex-col bg-white dark:bg-[#171a17] border-y md:border border-[#C1D1C5]/30 dark:border-[#525D53]/30 md:rounded-3xl shadow-sm overflow-hidden flex-1">
+        <div className="w-full flex flex-col flex-1 min-w-0 bg-white dark:bg-[#171a17] border-y md:border border-[#C1D1C5]/30 dark:border-[#525D53]/30 md:rounded-3xl p-0 overflow-hidden shadow-sm relative">
           {/* Toolbar */}
           <div className="p-4 md:p-5 border-b border-[#C1D1C5]/20 dark:border-[#525D53]/20 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="relative w-full sm:max-w-md">
@@ -642,7 +587,7 @@ export function VerFinanzas() {
             </div>
           </div>
 
-          <div className="min-h-[400px] w-full">
+          <div className="flex-1 overflow-y-auto custom-scrollbar w-full p-1 sm:p-2 md:p-4">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center h-64 opacity-50">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8DA78E] mb-4"></div>
@@ -844,28 +789,27 @@ export function VerFinanzas() {
               </>
             )}
           </div>
-        </div>
-      )}
 
-      {/* Paginación */}
-      {!isLoading && totalRegistros > 0 && vista === "movimientos" && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4 text-slate-600 dark:text-slate-400">
-          <PageSizeSelect
-            pageSize={pageSize}
-            setPageSize={(size) => {
-              setPageSize(size);
-              setPage(1);
-            }}
-          />
-          <div className="flex justify-start sm:justify-center w-full sm:w-auto">
-            <Pagination
-              currentPage={page}
-              totalPages={totalPaginas}
-              onPageChange={(p) => setPage(p)}
-            />
-          </div>
+          {/* Paginación */}
+          {!isLoading && totalRegistros > 0 && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-t border-[#C1D1C5]/40 dark:border-[#525D53]/30 text-slate-600 dark:text-slate-400">
+              <PageSizeSelect
+                pageSize={pageSize}
+                setPageSize={(size) => {
+                  setPageSize(size);
+                  setPage(1);
+                }}
+              />
+              <div className="flex justify-start sm:justify-center w-full sm:w-auto">
+                <Pagination
+                  currentPage={page}
+                  totalPages={totalPaginas}
+                  onPageChange={(p) => setPage(p)}
+                />
+              </div>
+            </div>
+          )}
         </div>
-      )}
 
       <AnimatePresence>
         {showNuevoMovimiento && (
@@ -877,7 +821,6 @@ export function VerFinanzas() {
             onSuccess={() => {
               setShowNuevoMovimiento(false);
               loadMovimientos();
-              setRefreshKey((k) => k + 1);
             }}
           />
         )}

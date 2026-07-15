@@ -207,7 +207,7 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-muted/50 transition-colors cursor-pointer"
+                className="p-2 rounded-full transition-colors cursor-pointer"
               >
                 <X size={20} className="text-muted-foreground" />
               </button>
@@ -371,7 +371,7 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
                     <button
                       type="submit"
                       disabled={logic.isPending}
-                      className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold uppercase text-[10px] tracking-widest hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 shadow-sm cursor-pointer"
+                      className="w-fit max-w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold uppercase text-[10px] tracking-widest transition-all active:scale-95 disabled:opacity-50 shadow-sm cursor-pointer"
                     >
                       {logic.isPending ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -461,7 +461,7 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
                           type="button"
                           onClick={handleWhatsApp}
                           disabled={phoneNumber.length !== 8}
-                          className="px-5 rounded-xl border border-border bg-background text-foreground font-bold hover:bg-muted/50 disabled:opacity-40 flex items-center gap-2 text-[10px] tracking-widest transition-all h-10 shadow-sm cursor-pointer"
+                          className="px-5 rounded-xl border border-border bg-background text-foreground font-bold disabled:opacity-40 flex items-center gap-2 text-[10px] tracking-widest transition-all h-10 shadow-sm cursor-pointer"
                         >
                           <MessageCircle size={16} />
                           ENVIAR
@@ -472,7 +472,7 @@ export default function SignUp({ isOpen, onClose }: SignUpProps) {
                     <button
                       type="button"
                       onClick={resetForm}
-                      className="w-full h-12 rounded-xl border border-border bg-background text-foreground font-bold uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-muted/50 transition-all active:scale-95 shadow-sm cursor-pointer"
+                      className="w-fit max-w-full h-12 rounded-xl border border-border bg-background text-foreground font-bold uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm cursor-pointer"
                     >
                       <ArrowLeft size={16} /> Volver
                     </button>

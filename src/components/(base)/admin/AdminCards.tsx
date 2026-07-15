@@ -7,7 +7,7 @@ import AnimatedIcon from "@/components/ui/AnimatedIcon";
 const adminOptions = [
   {
     id: "dispositivos",
-    href: "/kore/admin/dispositivos",
+    href: "/farmacia-la-salud/admin/dispositivos",
     title: "Dispositivos",
     desc: "Autorizar o rechazar solicitudes de acceso por dispositivo.",
     iconKey: "gzqipvbr",
@@ -15,7 +15,7 @@ const adminOptions = [
   },
   {
     id: "usuarios",
-    href: "/kore/admin/usuarios",
+    href: "/farmacia-la-salud/admin/usuarios",
     title: "Usuarios",
     desc: "Gestionar cuentas de usuario, roles y permisos.",
     iconKey: "vxfekxur",
@@ -23,7 +23,7 @@ const adminOptions = [
   },
   {
     id: "configuraciones",
-    href: "/kore/admin/configuraciones",
+    href: "/farmacia-la-salud/admin/configuraciones",
     title: "Configuraciones",
     desc: "Ajustes generales del sistema y seguridad.",
     iconKey: "plusmrxr",

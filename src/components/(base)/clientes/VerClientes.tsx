@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -13,9 +13,9 @@ import {
   ShoppingBag,
   Calendar,
   ChevronRight,
+  ChevronLeft,
   Download,
   TrendingUp,
-  History,
   X,
   Eye,
   Clock,
@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import {
@@ -42,6 +42,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
 import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
+import { CustomDatePicker, obtenerSemanasDelMes } from "@/components/ui/CustomDatePicker";
 import { CrearCliente } from "./forms/CrearCliente";
 import { EditarCliente } from "./forms/EditarCliente";
 import { formatPhoneDisplay, getWhatsappUrl } from "../proveedores/forms/ProveedorDetalle";
@@ -66,15 +67,14 @@ function ClienteDetalle({
   cliente,
   onClose,
   onEdit,
-  onHistorial,
 }: {
   cliente: Cliente;
   onClose: () => void;
   onEdit: () => void;
-  onHistorial: () => void;
 }) {
   const [ventas, setVentas] = useState<any[]>([]);
   const [loadingVentas, setLoadingVentas] = useState(false);
+  const [showHistorial, setShowHistorial] = useState(false);
 
   useEffect(() => {
     async function loadVentas() {
@@ -130,7 +130,7 @@ function ClienteDetalle({
         </div>
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-[#525D53] dark:hover:text-[#A3BEB0] transition-colors text-lg font-bold px-2 cursor-pointer"
+          className="text-slate-400 transition-colors text-lg font-bold px-2 cursor-pointer"
         >
           ✕
         </button>
@@ -208,436 +208,436 @@ function ClienteDetalle({
       {/* Estadísticas */}
       <div>
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70 mb-2">Estadísticas</h4>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {[
             { icon: ShoppingBag, label: "Total Compras", value: cliente.totalCompras, color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
             { icon: TrendingUp, label: "Pendiente", value: `${cliente.creditosPendientes || 0} créditos`, color: "text-rose-500" },
             { icon: Calendar, label: "Última Compra", value: cliente.ultimaCompra ? new Date(cliente.ultimaCompra).toLocaleDateString("es-GT") : "Sin compras", color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
-            { icon: Users, label: "Estado", value: cliente.activo ? "Activo" : "Inactivo", color: cliente.activo ? "text-[#8DA78E] dark:text-[#A3BEB0]" : "text-slate-400" },
           ].map(({ icon: Icon, label, value, color }) => (
-            <div key={label} className="bg-white dark:bg-[#525D53]/10 rounded-xl p-3 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Icon className={`size-3.5 ${color}`} />
-                <span className="text-[10px] text-[#525D53] dark:text-[#A3BEB0]/70 font-semibold uppercase tracking-wide">{label}</span>
+            <div key={label} className="bg-white dark:bg-[#525D53]/10 rounded-lg p-2 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 flex flex-col justify-center">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Icon className={`size-3 ${color} shrink-0`} />
+                <span className="text-[8px] text-[#525D53] dark:text-[#A3BEB0]/70 font-bold uppercase tracking-wider truncate leading-tight">{label}</span>
               </div>
-              <p className={`text-sm font-black ${color}`}>{value}</p>
+              <p className={`text-xs font-black ${color} truncate leading-tight`}>{value}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Acciones */}
-      <div className="mt-auto pt-3 border-t border-[#C1D1C5]/20 flex flex-col gap-2">
+      <div className="mt-auto pt-3 border-t border-[#C1D1C5]/20 flex flex-wrap justify-end gap-2">
         <button
-          onClick={onHistorial}
-          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#525D53] to-[#3a4a3c] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer group"
+          onClick={() => setShowHistorial(true)}
+          className="w-fit py-2 px-4 rounded-xl bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
         >
-          <History className="size-4 group-hover:rotate-[-20deg] transition-transform duration-300" />
-          Ver Historial de Compras
+          Historial de Compras
         </button>
         <button
           onClick={onEdit}
-          className="w-full py-2 px-4 rounded-xl bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          className="w-fit max-w-full py-2 px-4 rounded-xl bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
         >
           Editar Cliente
         </button>
       </div>
+
+      <AnimatePresence>
+        {showHistorial && (
+          <HistorialComprasModal 
+            cliente={cliente}
+            ventas={ventas}
+            onClose={() => setShowHistorial(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
 
-// ─── Historial de Cliente (Modal completo) ──────────────────────────────────
-function HistorialCliente({
+// ─── Modal Historial Compras ──────────────────────────────────────────────────
+function HistorialComprasModal({
   cliente,
-  onClose,
+  ventas,
+  onClose
 }: {
   cliente: Cliente;
+  ventas: any[];
   onClose: () => void;
 }) {
-  const [ventas, setVentas] = useState<any[]>([]);
-  const [detallesExpandidos, setDetallesExpandidos] = useState<Record<string, any[]>>({});
-  const [expandido, setExpandido] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingDetalle, setLoadingDetalle] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        const supabase = createClient();
-        const { data } = await supabase
-          .from("ventas")
-          .select("id, created_at, tipo_venta, total, observaciones, fin_transacciones(id, monto, fecha_movimiento, tipo_movimiento, categoria)")
-          .eq("cliente_id", cliente.id)
-          .order("created_at", { ascending: false });
-        if (data) setVentas(data);
-      } catch (err) {
-        console.error("Error al cargar historial:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [cliente.id]);
-
-  const toggleDetalle = async (ventaId: string) => {
-    if (expandido === ventaId) {
-      setExpandido(null);
-      return;
-    }
-    setExpandido(ventaId);
-    if (!detallesExpandidos[ventaId]) {
-      setLoadingDetalle(ventaId);
-      try {
-        const supabase = createClient();
-        const { data } = await supabase
-          .from("detalle_ventas")
-          .select("id, cantidad, precio_aplicado, subtotal, inv_productos(nombre, codigo)")
-          .eq("venta_id", ventaId);
-        if (data) {
-          setDetallesExpandidos((prev) => ({ ...prev, [ventaId]: data }));
-        }
-      } catch (err) {
-        console.error("Error al cargar detalle:", err);
-      } finally {
-        setLoadingDetalle(null);
-      }
-    }
-  };
-
-  let totalCancelado = 0;
-  let totalPendiente = 0;
-  let totalGeneral = 0;
-  let ventasContado = 0;
-  let ventasCredito = 0;
-
-  ventas.forEach((v) => {
-    const totalVenta = v.total || 0;
-    totalGeneral += totalVenta;
-    
-    if (v.tipo_venta === "Contado") {
-      totalCancelado += totalVenta;
-      ventasContado++;
-    } else {
-      // Es crédito
-      const abonos = v.fin_transacciones
-        ? v.fin_transacciones
-            .filter((t: any) => t.categoria === "abono_cliente" || t.categoria === "venta")
-            .reduce((sum: number, t: any) => sum + Number(t.monto), 0)
-        : 0;
-      
-      const saldoVenta = Math.max(0, totalVenta - abonos);
-      totalCancelado += abonos;
-      totalPendiente += saldoVenta;
-      
-      if (saldoVenta > 0) {
-        ventasCredito++;
-      } else {
-        ventasContado++; // Si se pagó todo, cuenta como venta cancelada
-      }
-    }
+  const [tipoFiltroFecha, setTipoFiltroFecha] = useState<string>("semana");
+  const [fechaDia, setFechaDia] = useState<string>(() => {
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   });
 
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      >
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          onClick={onClose}
-        />
+  const [activeMonth, setActiveMonth] = useState(() => new Date().getMonth());
+  const [activeYear, setActiveYear] = useState(() => new Date().getFullYear());
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(-1);
+  const [mostrarMesDropdown, setMostrarMesDropdown] = useState(false);
+  const [mostrarSemanaDropdown, setMostrarSemanaDropdown] = useState(false);
+  
+  const [fechaRangoDesde, setFechaRangoDesde] = useState<string>("");
+  const [fechaRangoHasta, setFechaRangoHasta] = useState<string>("");
 
-        {/* Modal */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="relative w-full h-full bg-[#F5F5F1] dark:bg-zinc-900 border border-[#C1D1C5]/40 dark:border-zinc-700 md:rounded-3xl shadow-2xl flex flex-col overflow-hidden max-w-7xl mx-auto md:my-6 md:max-h-[calc(100vh-3rem)]"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-8 py-5 border-b border-[#C1D1C5]/30 dark:border-zinc-800 bg-gradient-to-r from-[#525D53] to-[#3a4a3c] shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="size-12 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
-                <History className="size-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-white leading-none">
-                  Historial de Compras
-                </h2>
-                <p className="text-sm text-white/70 mt-1">{cliente.nombre}</p>
-              </div>
-            </div>
+  const mesDropdownRef = useRef<HTMLDivElement>(null);
+  const semanaDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (mesDropdownRef.current && !mesDropdownRef.current.contains(event.target as Node)) {
+        setMostrarMesDropdown(false);
+      }
+      if (semanaDropdownRef.current && !semanaDropdownRef.current.contains(event.target as Node)) {
+        setMostrarSemanaDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const ventasFiltradas = useMemo(() => {
+    return ventas.filter(v => {
+      const fechaVenta = new Date(v.created_at);
+      if (tipoFiltroFecha === "dia") {
+        return fechaVenta.toISOString().split('T')[0] === fechaDia;
+      } else if (tipoFiltroFecha === "semana") {
+        if (fechaVenta.getMonth() !== activeMonth || fechaVenta.getFullYear() !== activeYear) return false;
+        if (selectedWeekIndex !== -1) {
+          const semanas = obtenerSemanasDelMes(activeMonth, activeYear);
+          const semanaSeleccionada = semanas[selectedWeekIndex];
+          if (semanaSeleccionada) {
+            const dateV = new Date(fechaVenta).setHours(0,0,0,0);
+            const desde = new Date(semanaSeleccionada.desde + "T00:00:00").getTime();
+            const hasta = new Date(semanaSeleccionada.hasta + "T00:00:00").getTime();
+            return dateV >= desde && dateV <= hasta;
+          }
+        }
+        return true;
+      } else if (tipoFiltroFecha === "rango") {
+        const dateV = new Date(fechaVenta).setHours(0,0,0,0);
+        const from = fechaRangoDesde ? new Date(fechaRangoDesde).setHours(0,0,0,0) : 0;
+        const to = fechaRangoHasta ? new Date(fechaRangoHasta).setHours(23,59,59,999) : Infinity;
+        return dateV >= from && dateV <= to;
+      }
+      return true;
+    });
+  }, [ventas, tipoFiltroFecha, fechaDia, activeMonth, activeYear, selectedWeekIndex, fechaRangoDesde, fechaRangoHasta]);
+
+  const chartData = useMemo(() => {
+    if (tipoFiltroFecha === "dia") {
+      const d = new Date(fechaDia + "T00:00:00");
+      if (isNaN(d.getTime())) return [];
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      const data = [];
+      for (let i = 1; i <= daysInMonth; i++) {
+        const total = ventas.filter(v => {
+          const vDate = new Date(v.created_at);
+          return vDate.getFullYear() === year && vDate.getMonth() === month && vDate.getDate() === i;
+        }).reduce((acc, curr) => acc + curr.total, 0);
+        data.push({
+          fecha: `${i} ${d.toLocaleDateString("es-GT", { month: "short" })}`,
+          total
+        });
+      }
+      return data;
+    } else if (tipoFiltroFecha === "semana") {
+      const data = [];
+      for (let i = 0; i < 12; i++) {
+        const monthDate = new Date(activeYear, i, 1);
+        const monthName = monthDate.toLocaleDateString("es-GT", { month: "short" });
+        const total = ventas.filter(v => {
+          const date = new Date(v.created_at);
+          return date.getFullYear() === activeYear && date.getMonth() === i;
+        }).reduce((acc, curr) => acc + curr.total, 0);
+        data.push({
+          fecha: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+          total
+        });
+      }
+      return data;
+    } else if (tipoFiltroFecha === "rango") {
+      if (!fechaRangoDesde || !fechaRangoHasta) return [];
+      const start = new Date(fechaRangoDesde + "T00:00:00");
+      const end = new Date(fechaRangoHasta + "T23:59:59");
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return [];
+      
+      const data = [];
+      const current = new Date(start);
+      current.setHours(0,0,0,0);
+      let daysCount = 0;
+      while (current <= end && daysCount < 366) {
+        const year = current.getFullYear();
+        const month = current.getMonth();
+        const dateDay = current.getDate();
+        const total = ventas.filter(v => {
+          const vDate = new Date(v.created_at);
+          return vDate.getFullYear() === year && vDate.getMonth() === month && vDate.getDate() === dateDay;
+        }).reduce((acc, curr) => acc + curr.total, 0);
+        
+        data.push({
+          fecha: current.toLocaleDateString("es-GT", { month: "short", day: "numeric" }),
+          total
+        });
+        current.setDate(current.getDate() + 1);
+        daysCount++;
+      }
+      return data;
+    }
+    return [];
+  }, [ventas, tipoFiltroFecha, fechaDia, activeYear, fechaRangoDesde, fechaRangoHasta]);
+
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="w-[85vw] max-w-5xl h-[80vh] bg-white dark:bg-zinc-900 rounded-3xl shadow-xl overflow-hidden flex flex-col mt-10"
+      >
+        <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-zinc-50 dark:bg-zinc-800/50 shrink-0">
+          <div>
+            <h3 className="font-black text-zinc-800 dark:text-zinc-100 uppercase tracking-wider text-sm flex items-center gap-2">
+              <Clock className="size-4" /> Historial de Compras
+            </h3>
+            <p className="text-xs text-zinc-500 mt-1">Cliente: {cliente.nombre}</p>
           </div>
 
-          <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-            {/* Contenido izquierdo (Resumen y Gráfica) */}
-            <div className="w-full md:w-2/5 p-6 border-b md:border-b-0 md:border-r border-[#C1D1C5]/30 dark:border-zinc-800 flex flex-col overflow-y-auto bg-white/50 dark:bg-zinc-950/20">
-              <h3 className="text-xs font-black uppercase tracking-widest text-[#525D53] dark:text-[#A3BEB0] mb-4">Resumen General</h3>
-              {/* Summary cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                <div className="col-span-1 sm:col-span-2 bg-white dark:bg-zinc-800/60 rounded-2xl p-4 border border-[#C1D1C5]/30 dark:border-zinc-700 shadow-sm">
-                  <span className="text-[10px] uppercase font-bold text-[#525D53] dark:text-[#A3BEB0]/70 tracking-wider">Total General</span>
-                  <p className="text-3xl font-black text-[#525D53] dark:text-white mt-1">Q{totalGeneral.toFixed(2)}</p>
-                  <span className="text-xs font-medium text-[#525D53]/60 dark:text-[#A3BEB0]/50 mt-1 block">{ventas.length} transacciones</span>
-                </div>
-                <div className="bg-[#8DA78E]/10 dark:bg-[#8DA78E]/5 rounded-2xl p-4 border border-[#8DA78E]/20 dark:border-[#A3BEB0]/15">
-                  <span className="text-[10px] uppercase font-bold text-[#525D53] dark:text-[#A3BEB0] tracking-wider">Cancelado</span>
-                  <p className="text-xl font-black text-[#525D53] dark:text-[#A3BEB0] mt-1">Q{totalCancelado.toFixed(2)}</p>
-                  <span className="text-[10px] font-medium text-[#525D53]/60 dark:text-[#A3BEB0]/50 mt-1 block">{ventas.filter((v) => v.tipo_venta !== "Crédito").length} ventas</span>
-                </div>
-                <div className="bg-rose-500/10 dark:bg-rose-500/5 rounded-2xl p-4 border border-rose-500/20 dark:border-rose-500/15">
-                  <span className="text-[10px] uppercase font-bold text-rose-600 dark:text-rose-400 tracking-wider">Pendiente</span>
-                  <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">Q{totalPendiente.toFixed(2)}</p>
-                  <span className="text-[10px] font-medium text-rose-600/60 dark:text-rose-400/60 mt-1 block">{ventas.filter((v) => v.tipo_venta === "Crédito").length} créditos</span>
-                </div>
+          <div className="flex-1 flex justify-center w-full md:w-auto">
+            {/* Opciones Dia/Mes/Rango */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full md:w-fit mx-auto sm:mx-0">
+              <div className="flex items-center justify-center gap-1 bg-slate-50 dark:bg-zinc-900/50 p-1 rounded-xl border border-slate-100 dark:border-zinc-800 w-full sm:w-auto">
+                {[
+                  { id: "dia", label: "Día" },
+                  { id: "semana", label: "Mes" },
+                  { id: "rango", label: "Rango" },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setTipoFiltroFecha(opt.id)}
+                    className={cn(
+                      "flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                      tipoFiltroFecha === opt.id
+                        ? "bg-white dark:bg-zinc-800 text-[#8DA78E] shadow-sm"
+                        : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
 
-              {/* Gráfica */}
-              <h3 className="text-xs font-black uppercase tracking-widest text-[#525D53] dark:text-[#A3BEB0] mb-4">Tendencia de Compras</h3>
-              <div className="flex-1 min-h-[200px] w-full bg-white dark:bg-zinc-800/60 rounded-2xl border border-[#C1D1C5]/30 dark:border-zinc-700 p-4">
-                {(() => {
-                  if (ventas.length === 0) {
-                    return (
-                      <div className="h-full flex items-center justify-center text-slate-400 text-xs font-medium">
-                        Sin datos suficientes
-                      </div>
-                    );
-                  }
-                  
-                  // Agrupar por mes
-                  const datosMes = ventas.reduce((acc, v) => {
-                    const mesStr = format(new Date(v.created_at), "MMM yyyy", { locale: es });
-                    acc[mesStr] = (acc[mesStr] || 0) + v.total;
-                    return acc;
-                  }, {} as Record<string, number>);
-                  
-                  // Convertir a array y tomar los últimos 6 meses (orden cronológico)
-                  const chartData = Object.entries(datosMes)
-                    .map(([name, total]) => ({ name, total }))
-                    .reverse()
-                    .slice(0, 6)
-                    .reverse();
+              {/* Selector de Fecha específico según tipo */}
+              <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
+                {tipoFiltroFecha === "dia" && (
+                  <CustomDatePicker
+                    value={fechaDia}
+                    onChange={setFechaDia}
+                    align="center"
+                  />
+                )}
 
-                  return (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData}>
-                        <XAxis dataKey="name" stroke="#8DA78E" fontSize={10} tickLine={false} axisLine={false} />
-                        <YAxis stroke="#8DA78E" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `Q${val}`} width={50} />
-                        <Tooltip 
-                          cursor={{ fill: 'rgba(141, 167, 142, 0.1)' }}
-                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
-                          formatter={(value: any) => [`Q${Number(value || 0).toFixed(2)}`, 'Total']}
-                        />
-                        <Bar dataKey="total" fill="#8DA78E" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {/* Lista derecha (Desglose) */}
-            <div className="w-full md:w-3/5 flex flex-col h-full">
-              <div className="px-6 py-4 border-b border-[#C1D1C5]/30 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900 shrink-0">
-                <h3 className="text-xs font-black uppercase tracking-widest text-[#525D53] dark:text-[#A3BEB0]">Desglose de Transacciones</h3>
-              </div>
-              <div className="flex-1 overflow-y-auto px-6 py-4 bg-white dark:bg-zinc-900/50">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="size-8 rounded-full border-2 border-[#8DA78E]/30 border-t-[#8DA78E] animate-spin" />
-                <span className="text-xs font-bold text-slate-400">Cargando historial...</span>
-              </div>
-            ) : ventas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <Receipt className="size-10 text-slate-300 dark:text-slate-600" />
-                <p className="text-sm text-slate-400 font-medium">Sin compras registradas</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {ventas.map((venta, idx) => {
-                  const abonos = venta.fin_transacciones
-                    ? venta.fin_transacciones
-                        .filter((t: any) => t.categoria === "abono_cliente" || t.categoria === "venta")
-                        .reduce((sum: number, t: any) => sum + Number(t.monto), 0)
-                    : 0;
-                  const saldoVenta = Math.max(0, (venta.total || 0) - abonos);
-                  const isPaid = venta.tipo_venta !== "Crédito" || saldoVenta <= 0;
-                  
-                  const date = new Date(venta.created_at);
-                  const dateStr = date.toLocaleDateString("es-GT", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                  });
-                  const timeStr = date.toLocaleTimeString("es-GT", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-                  const isOpen = expandido === venta.id;
-                  const detalles = detallesExpandidos[venta.id];
-
-                  return (
-                    <motion.div
-                      key={venta.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.03 }}
-                      className="bg-white dark:bg-zinc-800/50 rounded-xl border border-[#C1D1C5]/30 dark:border-zinc-700/50 overflow-hidden"
-                    >
-                      {/* Row header */}
+                {tipoFiltroFecha === "semana" && (
+                  <div className="flex items-center gap-2 w-full">
+                    {/* Selector de Mes/Año */}
+                    <div className="relative w-1/2 sm:w-auto" ref={mesDropdownRef}>
                       <button
-                        onClick={() => toggleDetalle(venta.id)}
-                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#8DA78E]/5 dark:hover:bg-[#A3BEB0]/5 transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => setMostrarMesDropdown(!mostrarMesDropdown)}
+                        className="flex items-center justify-between w-full sm:w-[140px] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 hover:border-[#8DA78E] rounded-xl px-2.5 py-1.5 cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-[#8DA78E] transition-all h-[34px]"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="size-8 rounded-lg flex items-center justify-center shrink-0 bg-[#8DA78E]/10 dark:bg-[#8DA78E]/10">
-                            <Receipt className="size-4 text-[#8DA78E] dark:text-[#A3BEB0]" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-xs font-bold text-slate-800 dark:text-white">
-                              Recibo #{venta.id.substring(0, 6).toUpperCase()}
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <Clock className="size-3 text-slate-400" />
-                              <span className="text-[10px] text-slate-400">{dateStr} — {timeStr}</span>
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="size-3.5 text-[#8DA78E]" />
+                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                            {["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"][activeMonth]} {activeYear}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <p className="text-sm font-black text-slate-900 dark:text-white">
-                              Q{venta.tipo_venta === "Crédito" ? saldoVenta.toFixed(2) : venta.total.toFixed(2)}
-                            </p>
-                            <span className={cn(
-                              "text-[8px] font-bold uppercase tracking-wider",
-                              isPaid ? "text-[#8DA78E] dark:text-[#A3BEB0]" : "text-rose-500"
-                            )}>
-                              {isPaid 
-                                ? (venta.tipo_venta === "Crédito" ? "Crédito Pagado" : venta.tipo_venta) 
-                                : "Crédito Pendiente"}
-                            </span>
-                          </div>
-                          <ChevronDown className={cn(
-                            "size-4 text-slate-400 transition-transform duration-200",
-                            isOpen && "rotate-180"
-                          )} />
-                        </div>
+                        <ChevronDown className="size-3 text-slate-400" />
                       </button>
 
-                      {/* Expandable detail */}
                       <AnimatePresence>
-                        {isOpen && (
+                        {mostrarMesDropdown && (
                           <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-48 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-2"
                           >
-                            <div className="px-4 pb-3 border-t border-slate-100 dark:border-zinc-700/50">
-                              {loadingDetalle === venta.id ? (
-                                <div className="flex items-center gap-2 py-3">
-                                  <div className="size-4 rounded-full border-2 border-[#8DA78E]/30 border-t-[#8DA78E] animate-spin" />
-                                  <span className="text-[10px] text-slate-400">Cargando productos...</span>
-                                </div>
-                              ) : (
-                                <div className="pt-2 space-y-1.5">
-                                  {detalles && detalles.length > 0 ? (
-                                    <>
-                                      {detalles.map((d: any) => (
-                                        <div key={d.id} className="flex items-center justify-between text-[11px] py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-zinc-900/50">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-[9px] font-mono text-slate-400 bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
-                                              {d.cantidad}x
-                                            </span>
-                                            <div>
-                                              <span className="font-bold text-slate-700 dark:text-slate-200">
-                                                {d.inv_productos?.nombre || "Producto eliminado"}
-                                              </span>
-                                              {d.inv_productos?.codigo && (
-                                                <span className="text-[9px] text-slate-400 ml-1.5">({d.inv_productos.codigo})</span>
-                                              )}
-                                            </div>
-                                          </div>
-                                          <div className="text-right">
-                                            <span className="font-black text-slate-800 dark:text-white">Q{d.subtotal.toFixed(2)}</span>
-                                            <span className="text-[9px] text-slate-400 ml-1">(Q{d.precio_aplicado.toFixed(2)} c/u)</span>
-                                          </div>
-                                        </div>
-                                      ))}
-                                      {venta.observaciones && (
-                                        <p className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-100 dark:border-zinc-800 mt-1">
-                                          Nota: {venta.observaciones}
-                                        </p>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <p className="text-[10px] text-slate-400 py-1 italic">Sin detalles disponibles.</p>
+                            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100 dark:border-slate-900">
+                              <button
+                                type="button"
+                                onClick={() => setActiveYear((y) => y - 1)}
+                                className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-slate-500 cursor-pointer"
+                              >
+                                <ChevronLeft className="size-3.5" />
+                              </button>
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{activeYear}</span>
+                              <button
+                                type="button"
+                                onClick={() => setActiveYear((y) => y + 1)}
+                                className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-slate-500 cursor-pointer"
+                              >
+                                <ChevronRight className="size-3.5" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1">
+                              {["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"].map((m, idx) => (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMonth(idx);
+                                    setMostrarMesDropdown(false);
+                                    setSelectedWeekIndex(-1); // Reset a todo el mes
+                                  }}
+                                  className={cn(
+                                    "px-1 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
+                                    activeMonth === idx
+                                      ? "bg-[#8DA78E] text-white"
+                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900"
                                   )}
-
-                                  {venta.tipo_venta === "Crédito" && (
-                                    <div className="mt-3 pt-2 border-t border-slate-200 dark:border-zinc-700/50">
-                                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Historial de Abonos</p>
-                                      {venta.fin_transacciones?.filter((t:any) => t.categoria === "abono_cliente").length > 0 ? (
-                                        <div className="space-y-1">
-                                          {venta.fin_transacciones
-                                            .filter((t:any) => t.categoria === "abono_cliente")
-                                            .map((abono: any) => (
-                                              <div key={abono.id} className="flex justify-between items-center text-[10px] py-1 border-b border-slate-100/50 dark:border-zinc-800/50 last:border-0">
-                                                <span className="text-slate-500 dark:text-slate-400">
-                                                  {new Date(abono.fecha_movimiento).toLocaleDateString("es-GT")} - {new Date(abono.fecha_movimiento).toLocaleTimeString("es-GT", { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                                <span className="font-bold text-[#8DA78E]">+ Q{Number(abono.monto).toFixed(2)}</span>
-                                              </div>
-                                            ))}
-                                        </div>
-                                      ) : (
-                                        <p className="text-[10px] text-slate-400 italic">No se han registrado abonos.</p>
-                                      )}
-                                      
-                                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200 dark:border-zinc-700">
-                                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Saldo Pendiente:</span>
-                                        <span className="text-[11px] font-black text-rose-500">
-                                          Q{Math.max(0, (venta.total || 0) - (venta.fin_transacciones?.filter((t:any) => t.categoria === "abono_cliente" || t.categoria === "venta").reduce((sum:number, t:any) => sum + Number(t.monto), 0) || 0)).toFixed(2)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+                                >
+                                  {m}
+                                </button>
+                              ))}
                             </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
+                    </div>
+
+                    {/* Selector de Semana */}
+                    <div className="relative w-1/2 sm:w-auto" ref={semanaDropdownRef}>
+                      <button
+                        type="button"
+                        onClick={() => setMostrarSemanaDropdown(!mostrarSemanaDropdown)}
+                        className="flex items-center justify-between w-full sm:w-[150px] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 hover:border-[#8DA78E] rounded-xl px-2.5 py-1.5 cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-[#8DA78E] transition-all h-[34px]"
+                      >
+                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                          {selectedWeekIndex === -1 ? "Todo el mes" : obtenerSemanasDelMes(activeMonth, activeYear)[selectedWeekIndex]?.label || "Semana"}
+                        </span>
+                        <ChevronDown className="size-3 text-slate-400 shrink-0" />
+                      </button>
+                      
+                      <AnimatePresence>
+                        {mostrarSemanaDropdown && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-[180px] bg-white dark:bg-zinc-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 py-1"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedWeekIndex(-1);
+                                setMostrarSemanaDropdown(false);
+                              }}
+                              className={cn(
+                                "w-full text-left px-3 py-2 text-xs font-bold flex items-center justify-between cursor-pointer",
+                                selectedWeekIndex === -1
+                                  ? "bg-[#8DA78E]/10 text-[#8DA78E]"
+                                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900"
+                              )}
+                            >
+                              <span>Todo el mes</span>
+                              {selectedWeekIndex === -1 && <Check className="size-3" />}
+                            </button>
+                            <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 mx-2" />
+                            {obtenerSemanasDelMes(activeMonth, activeYear).map((sem, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedWeekIndex(idx);
+                                  setMostrarSemanaDropdown(false);
+                                }}
+                                className={cn(
+                                  "w-full text-left px-3 py-2 text-xs font-semibold flex items-center justify-between cursor-pointer",
+                                  selectedWeekIndex === idx
+                                    ? "bg-[#8DA78E]/10 text-[#8DA78E]"
+                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900"
+                                )}
+                              >
+                                <span>{sem.label}</span>
+                                {selectedWeekIndex === idx && <Check className="size-3" />}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                )}
+
+                {tipoFiltroFecha === "rango" && (
+                  <div className="flex items-center justify-center gap-2">
+                    <CustomDatePicker
+                      value={fechaRangoDesde}
+                      onChange={setFechaRangoDesde}
+                      placeholder="Desde"
+                      align="center"
+                    />
+                    <span className="text-slate-400 text-xs">-</span>
+                    <CustomDatePicker
+                      value={fechaRangoHasta}
+                      onChange={setFechaRangoHasta}
+                      placeholder="Hasta"
+                      align="center"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-[#C1D1C5]/30 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0">
-            <button
-              onClick={onClose}
-              className="w-full md:w-auto md:ml-auto py-3 px-8 rounded-xl bg-slate-200 dark:bg-zinc-800 hover:bg-slate-300 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-300 text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              Cerrar Historial
-            </button>
+
+          <button onClick={onClose} className="text-zinc-400 ml-auto md:ml-0 cursor-pointer">
+            <X className="size-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5">
+          <div className="h-64 w-full bg-white dark:bg-zinc-900 rounded-xl">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="fecha" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => `Q${value}`} />
+                <Tooltip 
+                  formatter={(value: any) => [`Q${Number(value).toFixed(2)}`, "Total"]}
+                  labelStyle={{ color: '#000' }}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Line type="monotone" dataKey="total" stroke="#8DA78E" strokeWidth={3} dot={{ r: 4, fill: "#8DA78E", strokeWidth: 0 }} activeDot={{ r: 6, fill: "#525D53" }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-        </motion.div>
+          <div className="mt-8 space-y-2">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-[#525D53] dark:text-[#A3BEB0] mb-3">Detalle de Compras</h4>
+            {ventasFiltradas.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
+                <ShoppingBag className="size-12 mb-3 opacity-20" />
+                <p className="text-sm font-bold">No hay compras registradas en este período.</p>
+              </div>
+            ) : (
+              ventasFiltradas.map(v => (
+                <div key={v.id} className="flex justify-between items-center p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30">
+                  <div>
+                    <p className="font-black text-sm text-zinc-800 dark:text-zinc-100">Q{v.total.toFixed(2)}</p>
+                    <p className="text-[10px] text-zinc-500 font-medium flex items-center gap-1 mt-0.5"><Clock className="size-3" /> {new Date(v.created_at).toLocaleString("es-GT")}</p>
+                  </div>
+                  <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md", v.tipo_venta === "Crédito" ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" : "bg-[#8DA78E]/10 text-[#8DA78E] dark:bg-[#A3BEB0]/10 dark:text-[#A3BEB0]")}>
+                    {v.tipo_venta}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </motion.div>
-    </AnimatePresence>
+    </div>
   );
 }
 
@@ -652,7 +652,6 @@ export function VerClientes() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [clienteParaEditar, setClienteParaEditar] = useState<Cliente | null>(null);
-  const [historialCliente, setHistorialCliente] = useState<Cliente | null>(null);
   
   // Criterio de Orden
   const [criterioOrden, setCriterioOrden] = useState<"nombre-asc" | "nombre-desc" | "compras-desc" | "saldo-asc" | "saldo-desc">("nombre-asc");
@@ -736,7 +735,7 @@ export function VerClientes() {
             nit: row.nit || "C/F",
             totalCompras,
             ultimaCompra,
-            saldo: 0, // ya no se usa como dinero, pero lo dejamos por compatibilidad o lo cambiamos
+            saldo: 0, 
             creditosPendientes,
             activo: true,
           };
@@ -831,13 +830,13 @@ export function VerClientes() {
         startY: 22,
         theme: "striped",
         headStyles: {
-          fillColor: [141, 167, 142], // #8DA78E (Salvia Menta)
-          textColor: [245, 245, 241], // #F5F5F1 (Blanco Hueso)
+          fillColor: [141, 167, 142], 
+          textColor: [245, 245, 241], 
           fontStyle: "bold",
           fontSize: 10
         },
         alternateRowStyles: {
-          fillColor: [245, 245, 241] // #F5F5F1 (Blanco Hueso)
+          fillColor: [245, 245, 241] 
         },
         margin: { top: 40 },
         styles: {
@@ -846,7 +845,6 @@ export function VerClientes() {
         }
       });
       
-      // Descargar PDF
       doc.save(`Reporte_Clientes_${new Date().toISOString().slice(0, 10)}.pdf`);
       
       Swal.fire({
@@ -925,7 +923,7 @@ export function VerClientes() {
           </Select>
           <button
             onClick={handleExportarPDF}
-            className="px-4 py-2.5 rounded-xl border border-[#C1D1C5] dark:border-[#A3BEB0]/30 text-[#525D53] dark:text-[#A3BEB0] hover:bg-[#C1D1C5]/10 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+            className="px-4 py-2.5 rounded-xl border border-[#C1D1C5] dark:border-[#A3BEB0]/30 text-[#525D53] dark:text-[#A3BEB0] transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
           >
             <Download className="size-3.5" /> Exportar PDF
           </button>
@@ -933,7 +931,7 @@ export function VerClientes() {
       </div>
 
       {/* Grid de clientes + detalle */}
-      <div className="flex gap-4 relative w-full overflow-x-hidden p-1">
+      <div className="flex gap-4 relative w-full flex-1 min-h-0 overflow-x-hidden p-1">
         {isLoading && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center z-50 rounded-2xl">
             <div className="flex flex-col items-center gap-3">
@@ -944,9 +942,10 @@ export function VerClientes() {
         )}
 
         {/* Contenedor principal de tarjetas/tabla y paginación */}
-        <div className="flex flex-col flex-1 min-w-0 gap-4">
-          {/* Vista Mobile: Tarjetas */}
-          <div className="md:hidden flex flex-col gap-3 px-1 py-1 w-full">
+        <div className="flex flex-col flex-1 min-w-0 bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 shadow-sm overflow-hidden">
+          <div className="w-full flex-1 overflow-y-auto custom-scrollbar">
+            {/* Vista Mobile: Tarjetas */}
+            <div className="md:hidden flex flex-col gap-3 pr-2 w-full">
           {paginatedClientes.length === 0 ? (
             <div className="text-center py-12 text-slate-400 font-bold text-sm bg-white dark:bg-zinc-900/40 rounded-2xl border border-slate-100 dark:border-zinc-800/40">
               No se encontraron clientes.
@@ -963,12 +962,10 @@ export function VerClientes() {
                   "relative border rounded-xl p-3 flex gap-3 items-center min-h-[96px] transition-all bg-white dark:bg-[#525D53]/10 border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 hover:border-[#8DA78E] dark:hover:border-[#A3BEB0]/60"
                 )}
               >
-                {/* Icon Left */}
                 <div className="shrink-0 size-10 rounded-xl flex items-center justify-center border bg-[#8DA78E]/10 border-[#8DA78E]/20 text-[#8DA78E] dark:text-[#A3BEB0]">
                   <User className="size-5" />
                 </div>
 
-                {/* Content Right */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
                   <div>
                     <div className="flex items-start justify-between gap-1.5">
@@ -999,7 +996,6 @@ export function VerClientes() {
                     </div>
                   </div>
 
-                  {/* Bottom Stats & Action Buttons */}
                   <div className="mt-2 flex items-center justify-between gap-2 pt-1.5 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10">
                     <div className="flex gap-2.5 text-[9px] leading-none">
                       <div>
@@ -1019,13 +1015,6 @@ export function VerClientes() {
                     <div className="flex gap-1 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setHistorialCliente(cliente)}
-                        className="px-2 py-1 bg-[#8DA78E]/10 hover:bg-[#8DA78E]/20 text-[#8DA78E] dark:text-[#A3BEB0] text-[9px] font-bold rounded-md transition-all cursor-pointer uppercase"
-                      >
-                        Historial
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => {
                           setClienteParaEditar(cliente);
                           setIsEditOpen(true);
@@ -1042,9 +1031,8 @@ export function VerClientes() {
           )}
         </div>
 
-        {/* Vista Desktop: Tabla */}
-        <div className="hidden md:block flex-1 bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 overflow-hidden">
-          <div className="overflow-x-auto w-full">
+            {/* Vista Desktop: Tabla */}
+            <div className="hidden md:block overflow-x-auto w-full pb-4">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-[#C1D1C5]/30 dark:border-zinc-800 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -1126,12 +1114,12 @@ export function VerClientes() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
-        </div>
 
-        {/* Paginación */}
-        {!isLoading && clientesOrdenados.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6 px-2.5 md:px-0 text-slate-600 dark:text-slate-400">
+          {/* Paginación */}
+          {!isLoading && clientesOrdenados.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4 pt-4 border-t border-[#C1D1C5]/40 dark:border-zinc-800 text-slate-600 dark:text-slate-400">
             <PageSizeSelect
               pageSize={pageSize}
               setPageSize={(size) => {
@@ -1168,7 +1156,6 @@ export function VerClientes() {
                     setClienteParaEditar(clienteSeleccionado);
                     setIsEditOpen(true);
                   }}
-                  onHistorial={() => setHistorialCliente(clienteSeleccionado)}
                 />
               </div>
             </motion.div>
@@ -1192,15 +1179,7 @@ export function VerClientes() {
         cliente={clienteParaEditar}
       />
 
-      {/* Modal de Historial */}
-      <AnimatePresence>
-        {historialCliente && (
-          <HistorialCliente
-            cliente={historialCliente}
-            onClose={() => setHistorialCliente(null)}
-          />
-        )}
-      </AnimatePresence>
+
     </div>
   );
 }

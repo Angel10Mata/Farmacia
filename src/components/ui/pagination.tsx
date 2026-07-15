@@ -108,14 +108,14 @@ export function PageSizeSelect({ pageSize, setPageSize }: { pageSize: number, se
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="appearance-none bg-white dark:bg-[#171a17] border border-[#C1D1C5]/30 dark:border-[#525D53]/30 text-zinc-600 dark:text-zinc-300 text-xs font-bold rounded-xl pl-4 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/40 cursor-pointer flex items-center justify-between min-w-[80px]"
+        className="bg-white dark:bg-[#171a17] border border-[#C1D1C5]/30 dark:border-[#525D53]/30 text-zinc-600 dark:text-zinc-300 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/40 cursor-pointer flex items-center justify-between gap-3 min-w-[70px]"
       >
-        <span>{pageSize}</span>
-        <ChevronDown className={cn("absolute right-3 size-3 text-zinc-400 transition-transform duration-200", isOpen && "rotate-180")} />
+        <span className="flex-1 text-center">{pageSize}</span>
+        <ChevronDown className={cn("size-3 text-zinc-400 transition-transform duration-200", isOpen && "rotate-180")} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1.5 w-full bg-white dark:bg-[#171a17] border border-[#C1D1C5]/30 dark:border-zinc-800 rounded-xl shadow-lg z-50 py-1 flex flex-col min-w-[90px]">
+        <div className="absolute bottom-full left-0 mb-1.5 w-full bg-white dark:bg-[#171a17] border border-[#C1D1C5]/30 dark:border-zinc-800 rounded-xl shadow-lg z-50 py-1 flex flex-col min-w-[90px]">
           {[10, 50, 100].map((size) => (
             <button
               key={size}

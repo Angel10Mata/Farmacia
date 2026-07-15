@@ -68,7 +68,7 @@ useEffect(() => {
   }, []);
   useEffect(() => {
     if (state?.success) {
-      window.location.href = "/kore";
+      window.location.href = "/farmacia-la-salud";
     } else if (state?.message === "DEVICE_LIMIT") {
       window.location.href = "/esperando-acceso?reason=limit";
     } else if (state?.message === "DEVICE_PENDING") {
@@ -88,7 +88,7 @@ useEffect(() => {
 
       if (verification.success) {
         localStorage.setItem("cermad-device-passkey-enabled", "true");
-        window.location.href = "/kore";
+        window.location.href = "/farmacia-la-salud";
       } else if (verification.error === "DEVICE_LIMIT") {
         window.location.href = "/esperando-acceso?reason=limit";
       } else if (verification.error === "DEVICE_PENDING") {
@@ -267,7 +267,7 @@ useEffect(() => {
                   <button
                     type="button"
                     onClick={handlePasskeyLogin}
-                    className="w-full py-5 flex flex-col items-center justify-center gap-3 rounded-xl transition-all duration-300 bg-[#C1D1C5]/20 dark:bg-[#525D53]/30 border border-[#8DA78E]/30 dark:border-[#A3BEB0]/20 text-slate-700 dark:text-[#A3BEB0] cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                    className="w-fit max-w-full py-5 flex flex-col items-center justify-center gap-3 rounded-xl transition-all duration-300 bg-[#C1D1C5]/20 dark:bg-[#525D53]/30 border border-[#8DA78E]/30 dark:border-[#A3BEB0]/20 text-slate-700 dark:text-[#A3BEB0] cursor-pointer active:scale-[0.98] disabled:opacity-50"
                     disabled={isPending || isPasskeyPending}
                   >
                     {isPasskeyPending ? (

@@ -172,7 +172,7 @@ export default function ImageEditorModal({
             type="button"
             onClick={onCancel}
             disabled={applying}
-            className="px-4 py-2 text-sm rounded-lg bg-gray-200 dark:bg-neutral-700 hover:bg-gray-300 dark:hover:bg-neutral-600 transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-lg bg-gray-200 dark:bg-neutral-700 transition-colors disabled:opacity-50 cursor-pointer"
           >
             Cancelar
           </button>
@@ -180,7 +180,7 @@ export default function ImageEditorModal({
             type="button"
             onClick={handleApply}
             disabled={applying}
-            className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
           >
             {applying && <Loader2 size={16} className="animate-spin" />}
             Aplicar y subir

@@ -453,14 +453,14 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
             variant="outline"
             onClick={handleClose}
             disabled={isLoading}
-            className="rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all text-xs"
+            className="rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold transition-all text-xs cursor-pointer"
           >
             Cancelar
           </Button>
           <Button
             type="submit"
             disabled={isLoading || isUploadingImage}
-            className="rounded-xl bg-[#8DA78E] text-[#F5F5F1] font-bold transition-all text-xs"
+            className="rounded-xl bg-[#8DA78E] text-[#F5F5F1] font-bold transition-all text-xs cursor-pointer"
           >
             {isLoading ? "Guardando..." : "Guardar Cambios"}
           </Button>

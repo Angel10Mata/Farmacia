@@ -186,7 +186,7 @@ export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, 
           </div>
           <button 
             onClick={onClose}
-            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            className="p-2 rounded-xl text-zinc-400 transition-colors cursor-pointer"
           >
             <X className="size-5" />
           </button>
@@ -337,11 +337,11 @@ export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, 
               type="submit"
               disabled={isSubmitting}
               className={cn(
-                "w-full flex items-center justify-center gap-2 text-white px-5 py-3.5 rounded-xl text-sm font-bold transition-all mt-2 active:scale-[0.98]",
+                "w-fit max-w-full flex items-center justify-center gap-2 text-white px-5 py-3.5 rounded-xl text-sm font-bold transition-all mt-2 active:scale-[0.98] cursor-pointer",
                 tipo === "ingreso" 
-                  ? "bg-[#8DA78E]" 
-                  : "bg-rose-500 hover:bg-rose-600",
-                isSubmitting && "opacity-70 pointer-events-none"
+                  ? "bg-[#8DA78E] cursor-pointer" 
+                  : "bg-rose-500 cursor-pointer",
+                isSubmitting && "opacity-70 pointer-events-none cursor-pointer"
               )}
             >
               {isSubmitting ? (

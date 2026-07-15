@@ -443,7 +443,7 @@ export function InfoUser({ userId, canEdit }: InfoUserProps) {
                 type="button"
                 onClick={handleSave}
                 disabled={!hasChanges || mutation.isPending}
-                className="w-full h-9 mt-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                className="w-fit max-w-full h-9 mt-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
               >
                 {mutation.isPending ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -549,7 +549,7 @@ const SuccessView = ({
       <button
         type="button"
         onClick={onBack}
-        className="w-full h-9 border rounded-lg text-xs font-bold uppercase hover:bg-muted flex items-center justify-center gap-2 transition-colors cursor-pointer"
+        className="w-fit max-w-full h-9 border rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
       >
         <ArrowLeft size={14} /> Volver
       </button>

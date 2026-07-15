@@ -355,7 +355,7 @@ export const InfoPerfil = ({ userId, canEdit }: InfoPerfilProps) => {
             onClick={handleSave}
             disabled={!hasChanges || saving}
             className={cn(
-              "flex items-center justify-center gap-2 h-12 md:h-10 px-8 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-40 disabled:grayscale w-full md:w-auto",
+              "flex items-center justify-center gap-2 h-12 md:h-10 px-8 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-40 disabled:grayscale w-fit max-w-full md:w-auto cursor-pointer",
             )}
           >
             {saving ? (

@@ -42,7 +42,7 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
             className="w-full h-full flex items-center justify-center pointer-events-none"
           >
             <div
-              className="pointer-events-auto flex flex-col items-center justify-center gap-4 select-none"
+              className="pointer-events-auto flex flex-col items-center justify-center gap-0 select-none"
             >
               {/* Farmacia Salud logo */}
               <motion.div
@@ -52,11 +52,11 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
                 className="flex-shrink-0"
               >
                 <Image
-                  src="/kore/farmacia-salud-logo.png"
+                  src="/farmacia-la-salud/logo.png"
                   alt="Farmacia Salud"
-                  width={320}
-                  height={320}
-                  className="w-[160px] sm:w-[220px] lg:w-[280px] h-[160px] sm:h-[220px] lg:h-[280px] object-cover rounded-full"
+                  width={400}
+                  height={400}
+                  className="w-[240px] sm:w-[320px] lg:w-[400px] h-[240px] sm:h-[320px] lg:h-[400px] object-contain"
                   priority
                 />
               </motion.div>
@@ -66,7 +66,7 @@ export default function AnimacionLogoKore({ isOpen, onClose }: AnimacionLogoKore
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
-                className="flex flex-col items-center leading-none gap-0"
+                className="flex flex-col items-center leading-none gap-0 -mt-6 sm:-mt-10 lg:-mt-14"
               >
                 <span className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-[#1a6aa5] dark:text-[#4da8da]">Farmacia</span>
                 <span className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-[#4caf50] dark:text-[#66bb6a]">Salud</span>

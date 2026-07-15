@@ -347,7 +347,7 @@ const CustomDatePicker = ({
               <button
                 type="button"
                 onClick={handlePrevMonth}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg cursor-pointer text-slate-500 hover:text-[#8DA78E] dark:hover:text-[#A3BEB0] transition-colors"
+                className="p-1.5 rounded-lg cursor-pointer text-slate-500 transition-colors"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -359,7 +359,7 @@ const CustomDatePicker = ({
               <button
                 type="button"
                 onClick={handleNextMonth}
-                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg cursor-pointer text-slate-500 hover:text-[#8DA78E] dark:hover:text-[#A3BEB0] transition-colors"
+                className="p-1.5 rounded-lg cursor-pointer text-slate-500 transition-colors"
               >
                 <ChevronRight className="size-4" />
               </button>
@@ -539,7 +539,7 @@ function ProductoDetalle({
         </div>
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-[#525D53] dark:hover:text-[#A3BEB0] transition-colors text-base font-bold px-1.5 cursor-pointer shrink-0"
+          className="text-slate-400 transition-colors text-base font-bold px-1.5 cursor-pointer shrink-0"
         >
           ✕
         </button>
@@ -789,7 +789,7 @@ function ProductoDetalle({
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full py-2 px-4 rounded-xl bg-[#A3BEB0] hover:bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
+              className="w-fit max-w-full py-2 px-4 rounded-xl bg-[#A3BEB0] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
             >
               {isSaving ? "Guardando..." : "Guardar"}
             </button>
@@ -1014,7 +1014,7 @@ export function VerInventario() {
 
 
   const handleNuevoProducto = () => {
-    router.push("/kore/inventario/nuevo");
+    router.push("/farmacia-la-salud/inventario/nuevo");
   };
 
   const handleEliminarProducto = async (producto: Producto) => {
@@ -1250,7 +1250,7 @@ export function VerInventario() {
 
           <button
             onClick={handleExportarPDF}
-            className="w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border border-[#C1D1C5] dark:border-[#A3BEB0]/30 text-[#525D53] dark:text-[#A3BEB0] hover:bg-[#C1D1C5]/10 transition-all flex items-center gap-1 text-[11px] md:text-xs font-bold shrink-0 cursor-pointer"
+            className="w-fit max-w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border border-[#C1D1C5] dark:border-[#A3BEB0]/30 text-[#525D53] dark:text-[#A3BEB0] transition-all flex items-center gap-1 text-[11px] md:text-xs font-bold shrink-0 cursor-pointer"
           >
             <Download className="size-3 md:size-3.5" /> Exportar
           </button>
@@ -1258,7 +1258,7 @@ export function VerInventario() {
       </div>
 
       {/* Grid de productos + detalle */}
-      <div className="flex gap-4 flex-1 relative min-h-[800px]">
+      <div className="flex gap-4 flex-1 relative min-h-0">
         {isLoading && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center z-50 rounded-2xl">
             <div className="flex flex-col items-center gap-3">
@@ -1269,9 +1269,10 @@ export function VerInventario() {
         )}
 
         {/* Lista */}
-        <div className="flex-1 flex flex-col gap-4 min-w-0">
-          {/* Mobile: Product Cards */}
-          <div className="md:hidden flex flex-col gap-3 px-2.5">
+        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-3xl p-5 shadow-sm overflow-hidden">
+          <div className="w-full flex-1 overflow-y-auto custom-scrollbar">
+            {/* Mobile: Product Cards */}
+            <div className="md:hidden flex flex-col gap-3 pr-2">
             {productosPaginados.length === 0 ? (
               <div className="text-center py-14 text-slate-400 font-bold text-sm">
                 No se encontraron productos
@@ -1296,9 +1297,8 @@ export function VerInventario() {
             )}
           </div>
 
-          {/* Desktop: Table */}
-          <div className="hidden md:block bg-white dark:bg-[#525D53]/10 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-3xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            {/* Desktop: Table */}
+            <div className="hidden md:block overflow-x-auto w-full pb-4">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-[#F5F5F1] dark:bg-[#525D53]/20 text-[#525D53] dark:text-[#A3BEB0] font-bold uppercase tracking-wider border-b border-[#C1D1C5]/40 dark:border-[#A3BEB0]/20">
@@ -1435,7 +1435,7 @@ export function VerInventario() {
 
           {/* Barra de Paginación */}
           {totalItems > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 px-2.5 md:px-0 text-slate-600 dark:text-slate-400">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t border-[#C1D1C5]/40 dark:border-zinc-800 text-slate-600 dark:text-slate-400">
               <PageSizeSelect
                 pageSize={pageSize}
                 setPageSize={(size) => {
