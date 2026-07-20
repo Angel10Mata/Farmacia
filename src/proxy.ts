@@ -3,9 +3,13 @@ import { createClient } from "@/utils/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
   const { supabase, response } = createClient(request);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (error) {
+    console.error("Supabase auth error in proxy:", error);
+  }
   const pathname = request.nextUrl.pathname;
 
   if (!user && pathname.startsWith("/farmacia-la-salud")) {

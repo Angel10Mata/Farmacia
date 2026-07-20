@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { sendPushNotification } from "@/utils/pushServer";
 
@@ -529,4 +530,47 @@ export async function eliminarDetalleVentaDirecto(params: {
   }
 }
 
+export async function validarCredencialesAdmin(username: string, clave: string) {
+  try {
+    const email = username.includes("@") ? username : `${username}@app.com`;
+    
+    // Crear un cliente temporal que no maneje sesiones ni cookies en el servidor
+    const supabaseTemp = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        }
+      }
+    );
 
+    const { data: authData, error: authError } = await supabaseTemp.auth.signInWithPassword({
+      email,
+      password: clave,
+    });
+
+    if (authError || !authData.user) {
+      return { success: false, error: "Credenciales incorrectas." };
+    }
+
+    // Verificar el rol del usuario autenticado
+    const { data: profile } = await supabaseTemp
+      .from("profiles")
+      .select("rol")
+      .eq("id", authData.user.id)
+      .single();
+      
+    const rol = profile?.rol || authData.user.user_metadata?.rol || "user";
+    
+    if (rol !== "admin" && rol !== "super") {
+      return { success: false, error: "El usuario ingresado no tiene permisos de administrador." };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error en validarCredencialesAdmin:", error);
+    return { success: false, error: "Error al validar credenciales." };
+  }
+}

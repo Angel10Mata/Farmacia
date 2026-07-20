@@ -37,8 +37,10 @@ import {
   anularVenta,
   ItemVentaInput,
   editarDetalleVentaDirecto,
-  eliminarDetalleVentaDirecto
+  eliminarDetalleVentaDirecto,
+  validarCredencialesAdmin
 } from "./actions";
+import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { toBlob } from "html-to-image";
 import { ReciboVenta, buildReciboProps } from "./ReciboVenta";
 import { formatFechaRecibo, obtenerCodigoRecibo } from "./recibo-utils";
@@ -393,6 +395,7 @@ interface Venta {
 }
 
 export function VerVentas() {
+  const { effectiveRole } = useUserContext();
   const [activeTab, setActiveTab] = useState<"pos" | "historial">("pos");
   
   // Datos maestros
@@ -906,6 +909,52 @@ export function VerVentas() {
     }
   };
 
+  const promptAdminCredentials = async () => {
+    const result = await Swal.fire({
+      title: "Autorización Requerida",
+      html: `
+        <input id="swal-admin-user" class="swal2-input" style="width: 80%;" placeholder="Usuario" autocomplete="off" />
+        <input id="swal-admin-pass" class="swal2-input" style="width: 80%;" type="password" placeholder="Contraseña" autocomplete="off" />
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Autorizar",
+      cancelButtonText: "Cancelar",
+      ...getSwalThemeOpts(),
+      preConfirm: () => {
+        const user = (document.getElementById("swal-admin-user") as HTMLInputElement).value;
+        const pass = (document.getElementById("swal-admin-pass") as HTMLInputElement).value;
+        if (!user || !pass) {
+          Swal.showValidationMessage("Ambos campos son obligatorios");
+        }
+        return { username: user, password: pass };
+      }
+    });
+
+    if (!result.isConfirmed) return false;
+
+    Swal.fire({
+      title: "Verificando...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+      ...getSwalThemeOpts()
+    });
+
+    const res = await validarCredencialesAdmin(result.value.username, result.value.password);
+    
+    if (!res.success) {
+      await Swal.fire({
+        title: "Denegado",
+        text: res.error,
+        icon: "error",
+        ...getSwalThemeOpts()
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleAnularVenta = async (ventaId: string) => {
     const resConfirm = await Swal.fire({
       title: "¿Anular esta venta?",
@@ -919,6 +968,11 @@ export function VerVentas() {
     });
 
     if (!resConfirm.isConfirmed) return;
+
+    if (effectiveRole === "user") {
+      const authorized = await promptAdminCredentials();
+      if (!authorized) return;
+    }
 
     setIsLoading(true);
     try {
@@ -1127,6 +1181,11 @@ export function VerVentas() {
       return;
     }
 
+    if (effectiveRole === "user") {
+      const authorized = await promptAdminCredentials();
+      if (!authorized) return;
+    }
+
     setIsSavingDetalle(true);
     try {
       const res = await editarDetalleVentaDirecto({
@@ -1184,6 +1243,11 @@ export function VerVentas() {
       ...getSwalThemeOpts()
     }).then(async (result) => {
       if (result.isConfirmed) {
+        if (effectiveRole === "user") {
+          const authorized = await promptAdminCredentials();
+          if (!authorized) return;
+        }
+
         try {
           Swal.fire({
             title: "Procesando...",

@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Search, Truck, ImageIcon } from "lucide-react";
 import Swal from "sweetalert2";
 import ImageUploader from "@/components/imgs/ImageUploader";
+import { CustomDatePicker } from "@/components/ui/CustomDatePicker";
 
 interface CrearProductoProps {
   onClose: () => void;
@@ -366,11 +367,10 @@ export function CrearProducto({ onClose, onSuccess }: CrearProductoProps) {
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
                 Vencimiento
               </label>
-              <input
-                type="date"
+              <CustomDatePicker
                 value={fechaVencimiento}
-                onChange={(e) => setFechaVencimiento(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors"
+                onChange={(val) => setFechaVencimiento(val)}
+                placeholder="Seleccionar fecha..."
               />
             </div>
           </div>
