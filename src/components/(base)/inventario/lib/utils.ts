@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { fmtNum, fmtQ } from "@/lib/utils";
 
 export const getSwalThemeOpts = () => {
   const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
@@ -30,9 +31,9 @@ export const exportarPDF = (productos: any[]) => {
     p.codigo || "Sin Código",
     p.nombre,
     p.inv_proveedores?.nombre || p.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre || "Sin Proveedor",
-    p.stock_actual,
+    fmtNum(p.stock_actual),
     p.stock_actual <= p.stock_minimo ? "STOCK BAJO" : "OK",
-    `Q${p.precio_base.toFixed(2)}`
+    fmtQ(p.precio_base)
   ]);
   
   // Table

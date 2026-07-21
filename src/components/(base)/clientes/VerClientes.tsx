@@ -29,7 +29,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { createClient } from "@/utils/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, fmtQ } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -606,7 +606,7 @@ function HistorialComprasModal({
                 <XAxis dataKey="fecha" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
                 <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => `Q${value}`} />
                 <Tooltip 
-                  formatter={(value: any) => [`Q${Number(value).toFixed(2)}`, "Total"]}
+                  formatter={(value: any) => [fmtQ(Number(value)), "Total"]}
                   labelStyle={{ color: '#000' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
@@ -625,7 +625,7 @@ function HistorialComprasModal({
               ventasFiltradas.map(v => (
                 <div key={v.id} className="flex justify-between items-center p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30">
                   <div>
-                    <p className="font-black text-sm text-zinc-800 dark:text-zinc-100">Q{v.total.toFixed(2)}</p>
+                    <p className="font-black text-sm text-zinc-800 dark:text-zinc-100">{fmtQ(v.total)}</p>
                     <p className="text-[10px] text-zinc-500 font-medium flex items-center gap-1 mt-0.5"><Clock className="size-3" /> {new Date(v.created_at).toLocaleString("es-GT")}</p>
                   </div>
                   <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md", v.tipo_venta === "Crédito" ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" : "bg-[#8DA78E]/10 text-[#8DA78E] dark:bg-[#A3BEB0]/10 dark:text-[#A3BEB0]")}>
@@ -821,7 +821,7 @@ export function VerClientes() {
         c.email,
         c.nit,
         c.totalCompras.toString(),
-        `Q${c.saldo.toFixed(2)}`
+        `${fmtQ(c.saldo)}`
       ]);
       
       autoTable(doc, {
@@ -1007,7 +1007,7 @@ export function VerClientes() {
                       <div>
                         <span className="text-[#525D53]/60 dark:text-[#A3BEB0]/50 font-bold uppercase">Saldo:</span>
                         <span className="font-black ml-0.5 text-[#8DA78E] dark:text-[#A3BEB0] tabular-nums tracking-tight">
-                          Q{cliente.saldo.toFixed(2)}
+                          {fmtQ(cliente.saldo)}
                         </span>
                       </div>
                     </div>
@@ -1094,7 +1094,7 @@ export function VerClientes() {
                         {cliente.totalCompras}
                       </td>
                       <td className="px-5 py-3.5 text-right font-black text-[#8DA78E] dark:text-[#A3BEB0]">
-                        Q{cliente.saldo.toFixed(2)}
+                        {fmtQ(cliente.saldo)}
                       </td>
                       <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-2">

@@ -20,13 +20,15 @@ import {
   Edit,
   Package,
   X,
-  UserPlus
+  UserPlus,
+  MapPin,
+  AlertTriangle
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { cn } from "@/lib/utils";
+import { cn, fmtQ, fmtNum } from "@/lib/utils";
 import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
 import { CrearCliente } from "@/components/(base)/clientes/forms/CrearCliente";
 import {
@@ -357,6 +359,7 @@ interface Producto {
   imagen_url?: string | null;
   imagen_url_2?: string | null;
   imagen_url_3?: string | null;
+  ubicacion?: string;
   activo: boolean;
 }
 
@@ -442,6 +445,9 @@ export function VerVentas() {
     detalles: any[];
     clienteCompleto?: Cliente | null;
   } | null>(null);
+
+  // Modal de Ubicaciones previo al cobro
+  const [showUbicacionModal, setShowUbicacionModal] = useState(false);
 
   useEffect(() => {
     if (ticketParaImprimir) {
@@ -823,7 +829,7 @@ export function VerVentas() {
 
     const resConfirm = await Swal.fire({
       title: "¿Confirmar cobro?",
-      text: `Se registrará la venta por un total de Q${totalCarrito.toFixed(2)} (${tipoVenta}).`,
+      text: `Se registrará la venta por un total de ${fmtQ(totalCarrito)} (${tipoVenta}).`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Sí, registrar",
@@ -833,6 +839,13 @@ export function VerVentas() {
 
     if (!resConfirm.isConfirmed) return;
 
+    // Abrir el modal de ubicaciones en lugar de cobrar directamente
+    setShowUbicacionModal(true);
+  };
+
+  // Función que realmente ejecuta el cobro tras confirmar en el modal
+  const ejecutarCobro = async () => {
+    setShowUbicacionModal(false);
     setIsProcesandoVenta(true);
     try {
       const itemsFormatted: ItemVentaInput[] = carrito.map((i) => ({
@@ -1129,7 +1142,7 @@ export function VerVentas() {
       let productListText = "";
       detalles.forEach(d => {
         const nombreProducto = d.producto?.nombre || d.ven_productos?.nombre || "Producto desconocido";
-        productListText += "* " + d.cantidad + "x - " + nombreProducto + " - Q" + (d.subtotal || 0).toFixed(2) + "\n";
+        productListText += "* " + d.cantidad + "x - " + nombreProducto + " - " + fmtQ(d.subtotal || 0) + "\n";
       });
 
       // Fetch emojis from base64 data URI (immune to file encoding)
@@ -1143,7 +1156,7 @@ export function VerVentas() {
         emojiData.person + " Cliente: " + clientName + "\n\n" +
         emojiData.cart + " Detalle de compra :\n" +
         productListText.trimEnd() + "\n\n" +
-        emojiData.money + " Total: Q" + venta.total.toFixed(2) + "\n\n" +
+        emojiData.money + " Total: " + fmtQ(venta.total) + "\n\n" +
         emojiData.sparkle + " " + String.fromCharCode(0xA1) + "GRACIAS POR TU COMPRA! " + emojiData.sparkle + "\n\n" +
         " " + emojiData.seedling + emojiData.green + " FARMACIA LA SALUD\n" +
         " Cuidando siempre de tu salud y bienestar\n";
@@ -1424,8 +1437,8 @@ export function VerVentas() {
         body: detalles.map((d) => [
           d.cantidad,
           d.inv_productos?.nombre || "Pedido",
-          `Q${d.precio_aplicado.toFixed(2)}`,
-          `Q${d.subtotal.toFixed(2)}`
+          `${fmtQ(d.precio_aplicado)}`,
+          `${fmtQ(d.subtotal)}`
         ]),
         theme: "plain",
         styles: {
@@ -1455,7 +1468,7 @@ export function VerVentas() {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.setTextColor(82, 93, 83);
-      doc.text(`TOTAL A PAGAR: Q${venta.total.toFixed(2)}`, 75, finalY + 6, { align: "right" });
+      doc.text(`TOTAL A PAGAR: ${fmtQ(venta.total)}`, 75, finalY + 6, { align: "right" });
 
       if (venta.observaciones) {
         doc.setFont("helvetica", "italic");
@@ -1485,6 +1498,89 @@ export function VerVentas() {
         onClose={() => setIsCrearClienteOpen(false)}
         onSuccess={cargarDatos}
       />
+
+      {/* Modal de Ubicaciones */}
+      <AnimatePresence>
+        {showUbicacionModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-zinc-900 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="bg-[#8DA78E] dark:bg-[#A3BEB0] p-6 text-center relative shrink-0">
+                <button
+                  onClick={() => setShowUbicacionModal(false)}
+                  className="absolute right-4 top-4 text-white/80 hover:text-white transition-colors"
+                >
+                  <X className="size-6" />
+                </button>
+                <div className="w-16 h-16 mx-auto bg-white/20 rounded-2xl flex items-center justify-center mb-3 backdrop-blur-sm">
+                  <Package className="size-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-black text-[#F5F5F1] tracking-tight">Recolección de Productos</h3>
+                <p className="text-sm text-white/80 font-medium mt-1">
+                  Busque los siguientes productos antes de generar el comprobante.
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-zinc-950/50">
+                <div className="flex flex-col gap-3">
+                  {carrito.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-slate-900 dark:text-white text-lg">
+                          {item.cantidad}x {item.producto.nombre}
+                        </span>
+                        {(!item.producto.ubicacion || item.producto.ubicacion === 'Sin asignar') ? (
+                          <div className="flex items-center gap-1.5 text-amber-500 font-bold bg-amber-50 dark:bg-amber-500/10 w-fit px-2.5 py-1 rounded-md">
+                            <AlertTriangle className="size-4" />
+                            <span className="text-sm">Sin ubicación asignada</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-[#8DA78E] font-bold bg-[#8DA78E]/10 w-fit px-2.5 py-1 rounded-md">
+                            <Package className="size-4" />
+                            <span className="text-sm">{item.producto.ubicacion}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-center size-8 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 opacity-50">
+                        {/* Checkbox circle for mental checklist */}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-6 bg-white dark:bg-zinc-900 border-t border-slate-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-end gap-3 shrink-0">
+                <button
+                  onClick={() => setShowUbicacionModal(false)}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-800 font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  Regresar
+                </button>
+                <button
+                  onClick={ejecutarCobro}
+                  disabled={isProcesandoVenta}
+                  className="w-full sm:w-auto px-8 py-3 rounded-xl bg-[#8DA78E] text-white font-black hover:bg-[#7a937b] transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  {isProcesandoVenta ? (
+                    <>
+                      <div className="size-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="size-5" /> Confirmar y Cobrar
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Modal de Confirmación de Pago y Recibo */}
       <AnimatePresence>
@@ -1898,11 +1994,23 @@ export function VerVentas() {
                                 )}
                                 <div>
                                   <p className="font-bold text-slate-950 dark:text-white">{p.nombre}</p>
-                                  <p className="text-[10px] text-slate-500">Cód: {p.codigo || "C/F"}</p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <p className="text-[10px] text-slate-500">Cód: {p.codigo || "C/F"}</p>
+                                    <span className="text-[10px] text-slate-300">|</span>
+                                    {(!p.ubicacion || p.ubicacion === 'Sin asignar') ? (
+                                      <p className="text-[10px] font-bold text-amber-500 flex items-center gap-1">
+                                        <AlertTriangle className="size-3" /> Sin ubicación
+                                      </p>
+                                    ) : (
+                                      <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                                        {p.ubicacion}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="font-black text-[#8DA78E]">Q{p.precio_base.toFixed(2)}</p>
+                                <p className="font-black text-[#8DA78E]">{fmtQ(p.precio_base)}</p>
                                 <p className={`text-[9px] font-bold ${isOut ? "text-red-500" : isLow ? "text-amber-500" : "text-slate-400"}`}>
                                   Stock: {p.stock_actual}
                                 </p>
@@ -2137,13 +2245,22 @@ export function VerVentas() {
                                 )}
                               </div>
 
-                              {/* Name and Unit Price */}
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate" title={item.producto.nombre}>
-                                  {item.producto.nombre}
-                                </h4>
-                                <div className="flex items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium gap-1 mt-0.5">
-                                  <span>Unitario: Q</span>
+                                {/* Name and Unit Price */}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate" title={item.producto.nombre}>
+                                    {item.producto.nombre}
+                                  </h4>
+                                  {(!item.producto.ubicacion || item.producto.ubicacion === 'Sin asignar') ? (
+                                    <p className="text-[10px] font-bold text-amber-500 flex items-center gap-1 mt-0.5">
+                                      <AlertTriangle className="size-3" /> Sin ubicación
+                                    </p>
+                                  ) : (
+                                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                                      {item.producto.ubicacion}
+                                    </p>
+                                  )}
+                                  <div className="flex items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium gap-1 mt-1">
+                                    <span>Unitario: Q</span>
                                   <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded bg-white dark:bg-zinc-900 px-1 py-0.5 transition-colors focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
                                     <input
                                       type="number"
@@ -2196,7 +2313,7 @@ export function VerVentas() {
 
                               {/* Subtotal */}
                               <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0] min-w-[75px] text-right shrink-0">
-                                Q{item.subtotal.toFixed(2)}
+                                {fmtQ(item.subtotal)}
                               </span>
 
                               {/* Action Buttons */}
@@ -2235,7 +2352,7 @@ export function VerVentas() {
               <div className="border-t border-[#C1D1C5]/30 pt-3 mt-auto space-y-2 text-left">
                 <div className="flex items-center justify-between text-sm font-black text-slate-800 dark:text-white pt-1">
                   <span>Total a pagar:</span>
-                  <span className="text-base text-[#8DA78E]">Q{totalCarrito.toFixed(2)}</span>
+                  <span className="text-base text-[#8DA78E]">{fmtQ(totalCarrito)}</span>
                 </div>
               </div>
 
@@ -2605,7 +2722,7 @@ export function VerVentas() {
                           Recibo {obtenerCodigoRecibo(v.id)}
                         </span>
                         <span className="text-sm font-black text-[#8DA78E] dark:text-[#A3BEB0]">
-                          Q{v.total.toFixed(2)}
+                          {fmtQ(v.total)}
                         </span>
                       </div>
 
@@ -2715,7 +2832,7 @@ export function VerVentas() {
                               </span>
                             </td>
                             <td className="px-5 py-3.5 text-right font-black text-[#8DA78E] dark:text-[#A3BEB0] whitespace-nowrap">
-                              Q{v.total.toFixed(2)}
+                              {fmtQ(v.total)}
                             </td>
                             <td className="px-5 py-3.5 whitespace-nowrap">
                               <div className="flex items-center justify-center gap-2">
@@ -2902,12 +3019,12 @@ export function VerVentas() {
                                     <div>
                                       <p className="font-bold text-slate-900 dark:text-white">{d.inv_productos?.nombre}</p>
                                       <p className="text-[10px] text-slate-400">
-                                        {d.cantidad} ud(s) x Q{d.precio_aplicado.toFixed(2)}
+                                        {d.cantidad} ud(s) x {fmtQ(d.precio_aplicado)}
                                       </p>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className="font-bold text-[#8DA78E]">Q{d.subtotal.toFixed(2)}</span>
+                                    <span className="font-bold text-[#8DA78E]">{fmtQ(d.subtotal)}</span>
                                     <button
                                       onClick={() => {
                                         setEditingDetalleId(d.id);
@@ -2949,7 +3066,7 @@ export function VerVentas() {
                   {/* Resumen Totales */}
                   <div className="bg-[#8DA78E]/5 border border-[#8DA78E]/20 p-4 rounded-2xl flex justify-between items-center mt-6">
                     <span className="text-xs font-black uppercase tracking-wider text-[#525D53] dark:text-[#A3BEB0]">Total de la Venta</span>
-                    <span className="text-lg font-black text-[#8DA78E]">Q{ventaDetalleSeleccionada.total.toFixed(2)}</span>
+                    <span className="text-lg font-black text-[#8DA78E]">{fmtQ(ventaDetalleSeleccionada.total)}</span>
                   </div>
                 </div>
 

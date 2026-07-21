@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Truck, Clock, Calendar, ChevronDown, ChevronLeft, ChevronRight, Check, X, Receipt, ShoppingBag } from "lucide-react";
+import { Truck, Clock, Calendar, ChevronDown, ChevronLeft, ChevronRight, Receipt, ShoppingBag } from "lucide-react";
 import Swal from "sweetalert2";
 import { guardarProveedor, eliminarProveedor } from "../actions";
+import { ArrowLeft, Check, Copy, Pencil, X, Mail, Phone, MapPin, Building, Info, FileText, FileDown, Plus } from "lucide-react";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { cn, fmtQ } from "@/lib/utils";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { createClient } from "@/utils/supabase/client";
-import { cn } from "@/lib/utils";
 import { CustomDatePicker, obtenerSemanasDelMes } from "@/components/ui/CustomDatePicker";
 
 interface Proveedor {
@@ -770,7 +773,7 @@ function HistorialComprasProveedorModal({
                 <XAxis dataKey="fecha" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
                 <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => `Q${value}`} />
                 <Tooltip 
-                  formatter={(value: any) => [`Q${Number(value).toFixed(2)}`, "Total"]}
+                  formatter={(value: any) => [fmtQ(Number(value)), "Total"]}
                   labelStyle={{ color: '#000' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
@@ -794,7 +797,7 @@ function HistorialComprasProveedorModal({
                 return (
                   <div key={c.id} className="flex justify-between items-center p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30">
                     <div>
-                      <p className="font-black text-sm text-zinc-800 dark:text-zinc-100">Q{c.total.toFixed(2)}</p>
+                      <p className="font-black text-sm text-zinc-800 dark:text-zinc-100">{fmtQ(c.total)}</p>
                       <p className="text-[10px] text-zinc-500 font-medium flex items-center gap-1 mt-0.5"><Clock className="size-3" /> {new Date(c.created_at).toLocaleString("es-GT")}</p>
                     </div>
                     <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md", isPaid ? "bg-[#8DA78E]/10 text-[#8DA78E] dark:bg-[#A3BEB0]/10 dark:text-[#A3BEB0]" : "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400")}>

@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn, fmtQ } from "@/lib/utils";
 import { formatFechaRecibo, formatMonedaRecibo, obtenerCodigoRecibo } from "./recibo-utils";
 
 export interface ReciboVentaItem {
@@ -152,9 +152,9 @@ export function mapDetallesToReciboItems(detalles: any[]): ReciboVentaItem[] {
     cantidad: d.cantidad,
     nombre: d.inv_productos?.nombre || "Producto",
     descripcion: d.inv_productos?.codigo
-      ? `${d.inv_productos.codigo}${d.precio_aplicado ? ` · Q${d.precio_aplicado.toFixed(2)} c/u` : ""}`
+      ? `${d.inv_productos.codigo}${d.precio_aplicado ? ` · ${fmtQ(d.precio_aplicado)} c/u` : ""}`
       : d.precio_aplicado
-        ? `Q${d.precio_aplicado.toFixed(2)} c/u`
+        ? `${fmtQ(d.precio_aplicado)} c/u`
         : null,
     subtotal: d.subtotal,
   }));

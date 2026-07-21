@@ -12,6 +12,7 @@ export const productSchema = z.object({
   imagen_url_2: z.string().nullable().optional(),
   imagen_url_3: z.string().nullable().optional(),
   proveedor_id: z.string().nullable().optional(),
+  ubicacion: z.string().optional(),
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;

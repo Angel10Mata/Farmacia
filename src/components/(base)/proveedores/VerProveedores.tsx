@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { createClient } from "@/utils/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, fmtQ, fmtNum } from "@/lib/utils";
 import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
 import { CrearProveedor } from "./forms/CrearProveedor";
 import { EditarProveedor } from "./forms/EditarProveedor";
@@ -704,7 +704,7 @@ export function VerProveedores() {
 
     const confirm = await Swal.fire({
       title: "¿Registrar esta Compra?",
-      text: `Se cargará una compra por Q${totalCarrito.toFixed(2)} al proveedor ${proveedorSeleccionado.nombre}. Se actualizará el inventario.`,
+      text: `Se cargará una compra por ${fmtQ(totalCarrito)} al proveedor ${proveedorSeleccionado.nombre}. Se actualizará el inventario.`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Sí, registrar",
@@ -887,7 +887,7 @@ export function VerProveedores() {
 
       Swal.fire({
         title: "Abono Registrado",
-        text: `Se registró un abono de Q${amount.toFixed(2)} correctamente.`,
+        text: `Se registró un abono de ${fmtQ(amount)} correctamente.`,
         icon: "success",
         timer: 2000,
         showConfirmButton: false,
@@ -1192,7 +1192,7 @@ export function VerProveedores() {
                               {item.producto.nombre}
                             </h4>
                             <p className="text-[10px] text-slate-400 mt-0.5">
-                              Código: {item.producto.codigo || "N/A"} | Costo: Q{item.precio_costo.toFixed(2)}
+                              Código: {item.producto.codigo || "N/A"} | Costo: {fmtQ(item.precio_costo)}
                             </p>
                           </div>
 
@@ -1219,7 +1219,7 @@ export function VerProveedores() {
                             <div className="flex items-center gap-3">
                               {/* Subtotal */}
                               <span className="w-16 text-right text-xs font-black text-slate-800 dark:text-white">
-                                Q{item.subtotal.toFixed(2)}
+                                {fmtQ(item.subtotal)}
                               </span>
 
                               {/* Eliminar */}
@@ -1367,7 +1367,7 @@ export function VerProveedores() {
                 <div className="border-t border-[#C1D1C5]/30 pt-3 mt-auto space-y-2 text-left">
                   <div className="flex items-center justify-between text-sm font-black text-slate-800 dark:text-white pt-1">
                     <span>Total a pagar:</span>
-                    <span className="text-base text-[#8DA78E]">Q{totalCarrito.toFixed(2)}</span>
+                    <span className="text-base text-[#8DA78E]">{fmtQ(totalCarrito)}</span>
                   </div>
                 </div>
 
@@ -1760,7 +1760,7 @@ export function VerProveedores() {
                                       {saldoCompra < c.total && saldoCompra > 0 ? "Saldo Pendiente" : "Total"}
                                     </span>
                                     <span className="text-xs font-black text-[#8DA78E] mt-1">
-                                      Q{(saldoCompra < c.total && saldoCompra > 0 ? saldoCompra : c.total).toFixed(2)}
+                                      {fmtQ(saldoCompra < c.total && saldoCompra > 0 ? saldoCompra : c.total)}
                                     </span>
                                   </div>
                                   <div className="flex gap-2">
@@ -1837,7 +1837,7 @@ export function VerProveedores() {
                                       {saldoCompra < c.total && saldoCompra > 0 ? "Saldo" : "Total"}
                                     </span>
                                     <span>
-                                      Q{(saldoCompra < c.total && saldoCompra > 0 ? saldoCompra : c.total).toFixed(2)}
+                                      {fmtQ(saldoCompra < c.total && saldoCompra > 0 ? saldoCompra : c.total)}
                                     </span>
                                   </div>
                                 </td>
@@ -2206,10 +2206,10 @@ export function VerProveedores() {
                                       {c.inv_proveedores?.nombre || "Proveedor Desconocido"}
                                     </td>
                                     <td className="px-5 py-3.5 text-right font-black text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                                      Q{c.total.toFixed(2)}
+                                      {fmtQ(c.total)}
                                     </td>
                                     <td className="px-5 py-3.5 text-right font-black text-[#8DA78E] dark:text-[#A3BEB0] whitespace-nowrap">
-                                      Q{saldoCompra.toFixed(2)}
+                                      {fmtQ(saldoCompra)}
                                     </td>
                                     <td className="px-5 py-3.5 whitespace-nowrap text-center">
                                       <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -2280,11 +2280,11 @@ export function VerProveedores() {
                               <div className="grid grid-cols-2 gap-2 text-xs py-2 border-y border-slate-100 dark:border-zinc-800 text-slate-500 dark:text-slate-400">
                                 <div className="flex flex-col">
                                   <span className="font-bold text-[10px] uppercase">Monto Total</span>
-                                  <span>Q{c.total.toFixed(2)}</span>
+                                  <span>{fmtQ(c.total)}</span>
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <span className="font-bold text-[10px] uppercase text-[#8DA78E] dark:text-[#A3BEB0]">Saldo Pendiente</span>
-                                  <span className="font-black text-[#8DA78E] dark:text-[#A3BEB0]">Q{saldoCompra.toFixed(2)}</span>
+                                  <span className="font-black text-[#8DA78E] dark:text-[#A3BEB0]">{fmtQ(saldoCompra)}</span>
                                 </div>
                               </div>
                               <div className="flex justify-end pt-1">
@@ -2409,11 +2409,11 @@ export function VerProveedores() {
                                   {d.inv_productos?.nombre || "Pedido"}
                                 </p>
                                 <p className="text-[10px] text-slate-400 mt-0.5">
-                                  Costo: Q{d.precio_costo.toFixed(2)} | Cant: {d.cantidad}
+                                  Costo: {fmtQ(d.precio_costo)} | Cant: {d.cantidad}
                                 </p>
                               </div>
                               <span className="font-black text-slate-900 dark:text-white shrink-0">
-                                Q{d.subtotal.toFixed(2)}
+                                {fmtQ(d.subtotal)}
                               </span>
                             </div>
                           ))}
@@ -2447,7 +2447,7 @@ export function VerProveedores() {
                                       </div>
                                       <div className="text-right">
                                         <span className="font-black text-[#8DA78E] block">
-                                          Q{Math.abs(Number(pago.monto)).toFixed(2)}
+                                          {fmtQ(Math.abs(Number(pago.monto)))}
                                         </span>
                                       </div>
                                     </div>
@@ -2481,7 +2481,7 @@ export function VerProveedores() {
                     {/* Resumen Totales */}
                     <div className="bg-[#8DA78E]/5 border border-[#8DA78E]/20 p-4 rounded-2xl flex justify-between items-center mt-auto">
                       <span className="text-xs font-black uppercase tracking-wider text-[#525D53] dark:text-[#A3BEB0]">Total de la Compra</span>
-                      <span className="text-lg font-black text-[#8DA78E]">Q{compraDetalleSeleccionada.total.toFixed(2)}</span>
+                      <span className="text-lg font-black text-[#8DA78E]">{fmtQ(compraDetalleSeleccionada.total)}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -2528,7 +2528,7 @@ export function VerProveedores() {
                   return (
                     <div className="bg-[#8DA78E]/10 border border-[#8DA78E]/20 p-4 rounded-2xl flex justify-between items-center">
                       <span className="text-xs font-black uppercase tracking-wider text-[#525D53] dark:text-[#A3BEB0]">Saldo Actual</span>
-                      <span className="text-xl font-black text-[#8DA78E]">Q{saldoCompra.toFixed(2)}</span>
+                      <span className="text-xl font-black text-[#8DA78E]">{fmtQ(saldoCompra)}</span>
                     </div>
                   );
                 })()}

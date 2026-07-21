@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { createClient } from "@/utils/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, Truck, ImageIcon } from "lucide-react";
+import { Search, Truck, ImageIcon, MapPin, Plus } from "lucide-react";
 import Swal from "sweetalert2";
 import ImageUploader from "@/components/imgs/ImageUploader";
 
@@ -24,6 +24,7 @@ interface Producto {
   imagen_url?: string | null;
   fecha_vencimiento?: string | null;
   numero_lote?: string | null;
+  ubicacion?: string | null;
 }
 
 interface EditarProductoProps {
@@ -44,6 +45,7 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
   const [numeroLote, setNumeroLote] = useState("");
   const [imagenUrl, setImagenUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [ubicacion, setUbicacion] = useState("");
 
   // Proveedores state
   const [proveedores, setProveedores] = useState<{ id: string; nombre: string; nit: string | null }[]>([]);
@@ -55,6 +57,11 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const provDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Ubicaciones state
+  const [ubicacionesExistentes, setUbicacionesExistentes] = useState<string[]>([]);
+  const [mostrarSugerenciasUbicacion, setMostrarSugerenciasUbicacion] = useState(false);
+  const ubiDropdownRef = useRef<HTMLDivElement>(null);
 
   // Cargar proveedores desde Supabase
   useEffect(() => {
@@ -75,11 +82,46 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
     fetchProveedores();
   }, []);
 
+  // Cargar ubicaciones únicas desde Supabase
+  useEffect(() => {
+    const fetchUbicaciones = async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("inv_productos")
+          .select("ubicacion")
+          .not("ubicacion", "is", null)
+          .not("ubicacion", "eq", "")
+          .not("ubicacion", "eq", "Sin asignar");
+        if (!error && data) {
+          const uniqueUbis = Array.from(new Set(data.map((d: any) => d.ubicacion))).filter(Boolean) as string[];
+          setUbicacionesExistentes(uniqueUbis.sort());
+        }
+      } catch (err) {
+        console.error("Error al cargar ubicaciones:", err);
+      }
+    };
+    fetchUbicaciones();
+  }, []);
+
   // Click outside listener para cerrar dropdown de proveedores
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (provDropdownRef.current && !provDropdownRef.current.contains(event.target as Node)) {
         setMostrarSugerenciasProv(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Click outside listener para cerrar dropdown de ubicaciones
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ubiDropdownRef.current && !ubiDropdownRef.current.contains(event.target as Node)) {
+        setMostrarSugerenciasUbicacion(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -101,6 +143,7 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
       setImagenUrl(producto.imagen_url || null);
       setFechaVencimiento(producto.fecha_vencimiento || "");
       setNumeroLote(producto.numero_lote || "");
+      setUbicacion(producto.ubicacion || "");
 
       if (producto.proveedor_id) {
         const pNombre = producto.inv_proveedores?.nombre || "";
@@ -130,6 +173,10 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
         p.nombre.toLowerCase().includes(proveedorBusqueda.toLowerCase()) ||
         (p.nit && p.nit.toLowerCase().includes(proveedorBusqueda.toLowerCase()))
       );
+
+  const sugerenciasUbicaciones = ubicacion.trim() === ""
+    ? ubicacionesExistentes
+    : ubicacionesExistentes.filter((u) => u.toLowerCase().includes(ubicacion.toLowerCase()));
 
   // Helper para obtener colores de SweetAlert según el tema activo (claro/oscuro)
   const getSwalThemeOpts = () => {
@@ -195,6 +242,7 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
           imagen_url: imagenUrl,
           fecha_vencimiento: fechaVencimiento || null,
           numero_lote: numeroLote.trim() || null,
+          ubicacion: ubicacion.trim() || "Sin asignar",
           activo: activo
         })
         .eq("id", producto.id);
@@ -273,6 +321,92 @@ export function EditarProducto({ onClose, onSuccess, producto }: EditarProductoP
               onChange={(e) => setDescripcion(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-20 resize-none"
             />
+          </div>
+
+          <div className="relative text-left" ref={ubiDropdownRef}>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
+                Ubicación
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  Swal.fire({
+                    title: "Nueva Ubicación",
+                    input: "text",
+                    inputPlaceholder: "Ej: Estante A3, Nivel 1",
+                    showCancelButton: true,
+                    confirmButtonText: "Agregar",
+                    cancelButtonText: "Cancelar",
+                    ...getSwalThemeOpts()
+                  }).then((result) => {
+                    if (result.isConfirmed && result.value) {
+                      const nueva = result.value.trim();
+                      if (nueva) {
+                        setUbicacion(nueva);
+                        if (!ubicacionesExistentes.includes(nueva)) {
+                          setUbicacionesExistentes([...ubicacionesExistentes, nueva].sort());
+                        }
+                      }
+                    }
+                  });
+                }}
+                className="text-[10px] font-bold text-[#8DA78E] hover:text-[#7a937b] flex items-center gap-1 transition-colors px-2 py-0.5 rounded-full bg-[#8DA78E]/10 cursor-pointer"
+              >
+                <Plus className="size-3" /> Nueva
+              </button>
+            </div>
+            
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+              <input
+                type="text"
+                value={ubicacion}
+                onChange={(e) => {
+                  setUbicacion(e.target.value);
+                  setMostrarSugerenciasUbicacion(true);
+                }}
+                onFocus={() => setMostrarSugerenciasUbicacion(true)}
+                onBlur={() => {
+                  setTimeout(() => {
+                    setUbicacion((currentUbi) => {
+                      if (currentUbi && !ubicacionesExistentes.includes(currentUbi)) {
+                        return "";
+                      }
+                      return currentUbi;
+                    });
+                  }, 200);
+                }}
+                placeholder="Seleccionar o escribir ubicación..."
+                className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors h-[38px]"
+              />
+            </div>
+
+            <AnimatePresence>
+              {mostrarSugerenciasUbicacion && sugerenciasUbicaciones.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  className="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl overflow-hidden max-h-[150px] overflow-y-auto"
+                >
+                  {sugerenciasUbicaciones.map((ubi) => (
+                    <div
+                      key={ubi}
+                      onClick={() => {
+                        setUbicacion(ubi);
+                        setMostrarSugerenciasUbicacion(false);
+                      }}
+                      className="px-4 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer flex items-center justify-between text-sm transition-colors border-b border-slate-100 dark:border-slate-800/50 last:border-0"
+                    >
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {ubi}
+                      </span>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <div>

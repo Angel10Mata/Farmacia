@@ -14,6 +14,7 @@ import {
   Check,
   Truck,
   Calendar,
+  MapPin,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import Swal from "sweetalert2";
@@ -21,7 +22,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
-import { cn } from "@/lib/utils";
+import { cn, fmtNum, fmtQ } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/imgs/ImageUploader";
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
@@ -42,6 +43,7 @@ interface Producto {
   imagen_url_3?: string | null;
   fecha_vencimiento?: string | null;
   numero_lote?: string | null;
+  ubicacion?: string | null;
   created_at?: string;
   proveedor_id?: string | null;
   inv_proveedores?: {
@@ -137,6 +139,11 @@ function ProductoCard({
               <Truck className="size-3 text-[#8DA78E] dark:text-[#A3BEB0]" /> {producto.inv_proveedores?.nombre || producto.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre}
             </p>
           )}
+          {producto.ubicacion && producto.ubicacion !== "Sin asignar" && (
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 uppercase flex items-center gap-1">
+              <MapPin className="size-3 text-[#8DA78E] dark:text-[#A3BEB0]" /> {producto.ubicacion}
+            </p>
+          )}
         </div>
 
         {/* Bottom stats and action buttons side by side */}
@@ -148,13 +155,13 @@ function ProductoCard({
                 "font-black ml-0.5",
                 isLowStock ? "text-red-500 animate-pulse" : "text-slate-700 dark:text-slate-300"
               )}>
-                {producto.stock_actual}
+                {fmtNum(producto.stock_actual)}
               </span>
             </div>
             <div>
               <span className="text-[#525D53]/60 dark:text-[#A3BEB0]/50 font-bold uppercase">Precio:</span>
               <span className="font-black ml-0.5 text-[#8DA78E] dark:text-[#A3BEB0]">
-                Q{producto.precio_base.toFixed(2)}
+                {fmtQ(producto.precio_base)}
               </span>
             </div>
           </div>
@@ -482,7 +489,8 @@ function ProductoDetalle({
           imagen_url_2: formData.imagen_url_2,
           imagen_url_3: formData.imagen_url_3,
           fecha_vencimiento: formData.fecha_vencimiento || null,
-          numero_lote: formData.numero_lote?.trim() || null
+          numero_lote: formData.numero_lote?.trim() || null,
+          ubicacion: formData.ubicacion?.trim() || "Sin asignar"
         })
         .eq("id", producto.id);
 
@@ -646,7 +654,7 @@ function ProductoDetalle({
                 className="w-12 text-xs font-bold text-center bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-md py-0.5 text-[#8DA78E] dark:text-[#A3BEB0] focus:ring-1 focus:ring-[#8DA78E] outline-none"
               />
             ) : (
-              <span className={`text-xs font-black ${isLowStock ? "text-red-400" : "text-[#8DA78E] dark:text-[#A3BEB0]"}`}>{formData.stock_actual}</span>
+              <span className={`text-xs font-black ${isLowStock ? "text-red-400" : "text-[#8DA78E] dark:text-[#A3BEB0]"}`}>{fmtNum(formData.stock_actual)}</span>
             )}
           </div>
 
@@ -661,7 +669,7 @@ function ProductoDetalle({
                 className="w-12 text-xs font-bold text-center bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-md py-0.5 text-[#8DA78E] dark:text-[#A3BEB0] focus:ring-1 focus:ring-[#8DA78E] outline-none"
               />
             ) : (
-              <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">{formData.stock_minimo}</span>
+              <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">{fmtNum(formData.stock_minimo)}</span>
             )}
           </div>
 
@@ -680,7 +688,7 @@ function ProductoDetalle({
                 />
               </div>
             ) : (
-              <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">Q{formData.precio_base.toFixed(2)}</span>
+              <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">{fmtQ(formData.precio_base)}</span>
             )}
           </div>
 
@@ -690,6 +698,24 @@ function ProductoDetalle({
             <p className="text-xs font-bold text-[#8DA78E] dark:text-[#A3BEB0] truncate">
               {formData.inv_proveedores?.nombre || formData.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre || "Sin Proveedor"}
             </p>
+          </div>
+
+          {/* Ubicación */}
+          <div className="col-span-3 bg-white dark:bg-[#525D53]/10 rounded-xl p-2.5 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10">
+            <span className="text-[9px] text-[#525D53] dark:text-[#A3BEB0]/70 font-semibold uppercase tracking-wide block mb-0.5">Ubicación</span>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.ubicacion || ""}
+                onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
+                placeholder="Ej: Estante A3, Bodega - Refrigerador 2"
+                className="w-full text-xs font-bold bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-lg px-3 py-2 text-[#8DA78E] dark:text-[#A3BEB0] focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all shadow-sm"
+              />
+            ) : (
+              <p className="text-xs font-bold text-[#8DA78E] dark:text-[#A3BEB0] truncate flex items-center gap-1">
+                <MapPin className="size-3 shrink-0" /> {formData.ubicacion || "Sin asignar"}
+              </p>
+            )}
           </div>
 
           {/* Vencimiento y Lote */}
@@ -774,14 +800,14 @@ function ProductoDetalle({
       </div>
 
       {/* Acciones */}
-      <div className="space-y-2 mt-4 pt-3 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10 shrink-0">
+      <div className="flex justify-start items-center mt-4 pt-3 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10 shrink-0">
         {isEditing ? (
-          <div className="grid grid-cols-2 gap-2 w-full">
+          <div className="flex items-center justify-start gap-3 w-full">
             <button
               type="button"
               onClick={() => setIsEditing(false)}
               disabled={isSaving}
-              className="w-full py-2 px-4 rounded-xl bg-transparent border border-[#8DA78E] hover:bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0] dark:border-[#A3BEB0]/30 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-fit py-2 px-6 rounded-xl bg-transparent border border-[#8DA78E] hover:bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0] dark:border-[#A3BEB0]/30 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               Cancelar
             </button>
@@ -789,7 +815,7 @@ function ProductoDetalle({
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="w-fit max-w-full py-2 px-4 rounded-xl bg-[#A3BEB0] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
+              className="w-fit py-2 px-6 rounded-xl bg-[#A3BEB0] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
             >
               {isSaving ? "Guardando..." : "Guardar"}
             </button>
@@ -798,7 +824,7 @@ function ProductoDetalle({
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="w-full py-2.5 px-4 rounded-xl bg-[#A3BEB0] hover:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            className="w-fit py-2.5 px-8 rounded-xl bg-[#A3BEB0] hover:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
           >
             Editar Producto
           </button>
@@ -815,6 +841,7 @@ export function VerInventario() {
   const [filtroStockBajo, setFiltroStockBajo] = useState(false);
   const [filtroProximoVencer, setFiltroProximoVencer] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "activos" | "inactivos">("activos");
+  const [filtroUbicacion, setFiltroUbicacion] = useState("");
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
   const [modoEdicionDetalle, setModoEdicionDetalle] = useState(false);
 
@@ -875,6 +902,7 @@ export function VerInventario() {
           imagen_url_3: row.imagen_url_3 || null,
           fecha_vencimiento: row.fecha_vencimiento || null,
           numero_lote: row.numero_lote || null,
+          ubicacion: row.ubicacion || null,
           proveedor_id: row.proveedor_id || null,
           inv_proveedores: row.inv_proveedores || null,
           inv_compras_detalles: row.inv_compras_detalles || []
@@ -961,6 +989,14 @@ export function VerInventario() {
   }, [barcodeBuffer, productos]);
 
   // Filtrado de productos
+  const ubicacionesUnicas = Array.from(
+    new Set(
+      productos
+        .map((p) => p.ubicacion || "Sin asignar")
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
   const productosFiltrados = productos.filter((p) => {
     const matchesSearch =
       p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -985,7 +1021,9 @@ export function VerInventario() {
         filtroEstado === "activos" ? p.activo :
           !p.activo;
 
-    return matchesSearch && matchesStock && matchesEstado && matchesExpiring;
+    const matchesUbicacion = !filtroUbicacion || (p.ubicacion || "Sin asignar") === filtroUbicacion;
+
+    return matchesSearch && matchesStock && matchesEstado && matchesExpiring && matchesUbicacion;
   }).sort((a, b) => {
     const aLow = a.stock_actual <= a.stock_minimo ? 0 : 1;
     const bLow = b.stock_actual <= b.stock_minimo ? 0 : 1;
@@ -1096,14 +1134,15 @@ export function VerInventario() {
       // Generar tabla
       autoTable(doc, {
         startY: 42,
-        head: [["Código", "Nombre del Producto", "Proveedor", "Stock Actual", "Mínimo", "Precio Venta", "Estado"]],
+        head: [["Código", "Nombre del Producto", "Ubicación", "Proveedor", "Stock Actual", "Mínimo", "Precio Venta", "Estado"]],
         body: productosFiltrados.map((p) => [
           p.codigo || "Sin Código",
           p.nombre,
+          p.ubicacion || "Sin asignar",
           p.inv_proveedores?.nombre || p.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre || "—",
-          p.stock_actual,
-          p.stock_minimo,
-          `Q${p.precio_base.toFixed(2)}`,
+          fmtNum(p.stock_actual),
+          fmtNum(p.stock_minimo),
+          fmtQ(p.precio_base),
           p.activo ? "Activo" : "Inactivo"
         ]),
         headStyles: {
@@ -1217,43 +1256,64 @@ export function VerInventario() {
           />
         </div>
 
-        <div className="grid grid-cols-3 md:flex md:w-auto gap-2 w-full pb-1 md:pb-0 select-none">
-          <button
-            onClick={() => {
-              const nextVal = !filtroStockBajo;
-              setFiltroStockBajo(nextVal);
-              if (nextVal) setFiltroProximoVencer(false);
-              setCurrentPage(1);
-            }}
-            className={`w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border text-[11px] md:text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer ${filtroStockBajo
-                ? "border-red-400 bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800"
-                : "border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
-              } ${hayStockBajoGlobal && !filtroStockBajo ? "animate-pulse" : ""}`}
-          >
-            <AlertTriangle className="size-3 md:size-3.5" /> Stock Bajo
-          </button>
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-2 w-full md:w-auto pb-1 md:pb-0 select-none justify-end">
+          {/* Filtro por Ubicación */}
+          {ubicacionesUnicas.length > 1 && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <select
+                value={filtroUbicacion}
+                onChange={(e) => {
+                  setFiltroUbicacion(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-zinc-900/60 text-[11px] md:text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/30 focus:border-[#8DA78E] transition-all cursor-pointer h-full"
+              >
+                <option value="">Todas las ubicaciones</option>
+                {ubicacionesUnicas.map((ub) => (
+                  <option key={ub} value={ub}>{ub}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          <button
-            onClick={() => {
-              const nextVal = !filtroProximoVencer;
-              setFiltroProximoVencer(nextVal);
-              if (nextVal) setFiltroStockBajo(false);
-              setCurrentPage(1);
-            }}
-            className={`w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border text-[11px] md:text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer ${filtroProximoVencer
-                ? "border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
-                : "border-amber-200 dark:border-amber-900/50 text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
-              } ${hayProximoVencerGlobal && !filtroProximoVencer ? "animate-pulse" : ""}`}
-          >
-            <Calendar className="size-3 md:size-3.5" /> Vencimiento
-          </button>
+          <div className="grid grid-cols-3 md:flex gap-2 w-full md:w-auto shrink-0">
+            <button
+              onClick={() => {
+                const nextVal = !filtroStockBajo;
+                setFiltroStockBajo(nextVal);
+                if (nextVal) setFiltroProximoVencer(false);
+                setCurrentPage(1);
+              }}
+              className={`w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border text-[11px] md:text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer ${filtroStockBajo
+                  ? "border-red-400 bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800"
+                  : "border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                } ${hayStockBajoGlobal && !filtroStockBajo ? "animate-pulse" : ""}`}
+            >
+              <AlertTriangle className="size-3 md:size-3.5" /> Stock Bajo
+            </button>
 
-          <button
-            onClick={handleExportarPDF}
-            className="w-fit max-w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border border-[#C1D1C5] dark:border-[#A3BEB0]/30 text-[#525D53] dark:text-[#A3BEB0] transition-all flex items-center gap-1 text-[11px] md:text-xs font-bold shrink-0 cursor-pointer"
-          >
-            <Download className="size-3 md:size-3.5" /> Exportar
-          </button>
+            <button
+              onClick={() => {
+                const nextVal = !filtroProximoVencer;
+                setFiltroProximoVencer(nextVal);
+                if (nextVal) setFiltroStockBajo(false);
+                setCurrentPage(1);
+              }}
+              className={`w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border text-[11px] md:text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer ${filtroProximoVencer
+                  ? "border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+                  : "border-amber-200 dark:border-amber-900/50 text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                } ${hayProximoVencerGlobal && !filtroProximoVencer ? "animate-pulse" : ""}`}
+            >
+              <Calendar className="size-3 md:size-3.5" /> Vencimiento
+            </button>
+
+            <button
+              onClick={handleExportarPDF}
+              className="w-fit max-w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border border-[#C1D1C5] dark:border-[#A3BEB0]/30 text-[#525D53] dark:text-[#A3BEB0] transition-all flex items-center gap-1 text-[11px] md:text-xs font-bold shrink-0 cursor-pointer"
+            >
+              <Download className="size-3 md:size-3.5" /> Exportar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1304,6 +1364,7 @@ export function VerInventario() {
                   <tr className="bg-[#F5F5F1] dark:bg-[#525D53]/20 text-[#525D53] dark:text-[#A3BEB0] font-bold uppercase tracking-wider border-b border-[#C1D1C5]/40 dark:border-[#A3BEB0]/20">
                     <th className="px-5 py-3.5">Código</th>
                     <th className="px-5 py-3.5">Producto</th>
+                    <th className="px-5 py-3.5">Ubicación</th>
                     <th className="px-5 py-3.5">Venc./Lote</th>
                     <th className="px-5 py-3.5">Proveedor</th>
                     <th className="px-5 py-3.5">Existencias</th>
@@ -1315,7 +1376,7 @@ export function VerInventario() {
                 <tbody className="divide-y divide-[#C1D1C5]/20 dark:divide-zinc-800/40 text-slate-700 dark:text-slate-300">
                   {productosPaginados.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-14 text-slate-400 font-bold">
+                      <td colSpan={9} className="text-center py-14 text-slate-400 font-bold">
                         No se encontraron productos
                       </td>
                     </tr>
@@ -1330,7 +1391,7 @@ export function VerInventario() {
                       if (prevWasLowStock && !isLowStock && index > 0) {
                         acc.push(
                           <tr key={`separator-${p.id}`} className="bg-[#C1D1C5]/20 dark:bg-zinc-800/40 pointer-events-none">
-                            <td colSpan={8} className="px-5 py-2 text-center text-[10px] font-black uppercase tracking-widest text-[#525D53] dark:text-[#A3BEB0]">
+                            <td colSpan={9} className="px-5 py-2 text-center text-[10px] font-black uppercase tracking-widest text-[#525D53] dark:text-[#A3BEB0]">
                               — Stock Normal —
                             </td>
                           </tr>
@@ -1366,6 +1427,11 @@ export function VerInventario() {
                             {p.nombre}
                           </td>
                           <td className="px-5 py-3.5">
+                            <span className="font-semibold text-slate-600 dark:text-slate-400 truncate max-w-[120px] block">
+                              {p.ubicacion || "Sin asignar"}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5">
                             <div className="flex flex-col">
                               {p.fecha_vencimiento ? (
                                 <span className={cn("font-semibold", isExpiringSoon ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300")}>
@@ -1385,7 +1451,7 @@ export function VerInventario() {
                               "font-semibold",
                               isLowStock ? "font-bold" : "text-slate-700 dark:text-slate-300"
                             )}>
-                              {p.stock_actual}
+                              {fmtNum(p.stock_actual)}
                             </span>
                             {isLowStock && (
                               <span className="ml-1.5 px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 text-[9px] font-bold uppercase tracking-wide">
@@ -1402,7 +1468,7 @@ export function VerInventario() {
                             </span>
                           </td>
                           <td className="px-5 py-3.5 text-right font-black text-[#8DA78E] dark:text-[#A3BEB0]">
-                            Q{p.precio_base.toFixed(2)}
+                            {fmtQ(p.precio_base)}
                           </td>
                           <td className="px-5 py-3.5" onClick={e => e.stopPropagation()}>
                             <div className="flex items-center justify-center">

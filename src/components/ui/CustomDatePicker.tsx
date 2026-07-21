@@ -100,12 +100,14 @@ export const CustomDatePicker = ({
   value,
   onChange,
   placeholder,
-  align = "left"
+  align = "left",
+  dropDirection = "down"
 }: {
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
   align?: "left" | "right" | "center";
+  dropDirection?: "up" | "down";
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -199,7 +201,8 @@ export const CustomDatePicker = ({
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
             className={cn(
-              "absolute mt-2 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl shadow-slate-100/50 dark:shadow-none z-50 p-4 min-w-[280px]",
+              "absolute bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl shadow-slate-100/50 dark:shadow-none z-50 p-4 min-w-[280px]",
+              dropDirection === "down" ? "mt-2" : "bottom-full mb-2",
               align === "left" && "left-0",
               align === "right" && "right-0",
               align === "center" && "left-1/2 -translate-x-1/2"

@@ -19,7 +19,7 @@ import {
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { createClient } from "@/utils/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, fmtQ } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -61,7 +61,7 @@ function ModalAbono({
       return;
     }
     if (val > saldoRestante) {
-      Swal.fire({ title: "Atención", text: `El monto no puede ser mayor al saldo restante (Q${saldoRestante.toFixed(2)})`, icon: "warning" });
+      Swal.fire({ title: "Atención", text: `El monto no puede ser mayor al saldo restante (${fmtQ(saldoRestante)})`, icon: "warning" });
       return;
     }
 
@@ -101,7 +101,7 @@ function ModalAbono({
         <div className="p-4 space-y-4">
           <div>
             <label className="block text-xs font-bold text-zinc-500 mb-1 uppercase">Saldo Pendiente</label>
-            <p className="text-lg font-black text-rose-500">Q{saldoRestante.toFixed(2)}</p>
+            <p className="text-lg font-black text-rose-500">{fmtQ(saldoRestante)}</p>
           </div>
           <div>
             <label className="block text-xs font-bold text-zinc-500 mb-1 uppercase">Monto a Abonar (Q)</label>
@@ -194,9 +194,9 @@ function CreditoDetalle({
         tableData.push([
           fecha,
           `Compra Crédito #${v.id.substring(0,6).toUpperCase()}`,
-          `Q${v.total.toFixed(2)}`,
+          `${fmtQ(v.total)}`,
           "-",
-          `Q${saldoAcumulado.toFixed(2)}`
+          `${fmtQ(saldoAcumulado)}`
         ]);
 
         const abonos = v.fin_transacciones?.filter((t:any) => t.categoria === "abono_cliente" || t.categoria === "venta") || [];
@@ -209,8 +209,8 @@ function CreditoDetalle({
             fechaAb,
             `Abono`,
             "-",
-            `Q${a.monto.toFixed(2)}`,
-            `Q${Math.max(0, saldoAcumulado).toFixed(2)}`
+            `${fmtQ(a.monto)}`,
+            `${fmtQ(Math.max(0, saldoAcumulado))}`
           ]);
         });
       });
@@ -254,11 +254,11 @@ function CreditoDetalle({
       <div className="grid grid-cols-2 gap-3 shrink-0">
         <div className="bg-white dark:bg-zinc-800 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700">
           <span className="text-[10px] uppercase font-bold text-zinc-500">Saldo Pendiente</span>
-          <p className="text-xl font-black text-rose-500">Q{cliente.saldo_pendiente.toFixed(2)}</p>
+          <p className="text-xl font-black text-rose-500">{fmtQ(cliente.saldo_pendiente)}</p>
         </div>
         <div className="bg-white dark:bg-zinc-800 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700">
           <span className="text-[10px] uppercase font-bold text-zinc-500">Total Consumido</span>
-          <p className="text-xl font-black text-[#8DA78E]">Q{cliente.total_consumido.toFixed(2)}</p>
+          <p className="text-xl font-black text-[#8DA78E]">{fmtQ(cliente.total_consumido)}</p>
         </div>
       </div>
 
@@ -282,9 +282,9 @@ function CreditoDetalle({
                     <p className="text-[10px] text-zinc-500">{new Date(v.created_at).toLocaleDateString("es-GT")}</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm font-black text-zinc-800 dark:text-zinc-100">Q{v.total.toFixed(2)}</span>
+                    <span className="text-sm font-black text-zinc-800 dark:text-zinc-100">{fmtQ(v.total)}</span>
                     <p className={cn("text-[9px] font-bold uppercase", isPagado ? "text-[#8DA78E]" : "text-rose-500")}>
-                      {isPagado ? "Cancelado" : `Pendiente: Q${saldo.toFixed(2)}`}
+                      {isPagado ? "Cancelado" : `Pendiente: ${fmtQ(saldo)}`}
                     </p>
                   </div>
                 </div>
@@ -293,7 +293,7 @@ function CreditoDetalle({
                     {abonos.map((a:any) => (
                       <div key={a.id} className="flex justify-between items-center px-2 py-1 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
                         <span className="text-[10px] text-zinc-500">{new Date(a.fecha_movimiento).toLocaleDateString("es-GT")}</span>
-                        <span className="text-[10px] font-bold text-[#8DA78E]">+ Q{Number(a.monto).toFixed(2)}</span>
+                        <span className="text-[10px] font-bold text-[#8DA78E]">+ {fmtQ(Number(a.monto))}</span>
                       </div>
                     ))}
                   </div>
@@ -405,8 +405,8 @@ export function VerCreditos() {
         c.nombre,
         c.nit,
         c.limite_credito,
-        `Q${c.total_consumido.toFixed(2)}`,
-        `Q${c.saldo_pendiente.toFixed(2)}`,
+        `${fmtQ(c.total_consumido)}`,
+        `${fmtQ(c.saldo_pendiente)}`,
         c.estado
       ]);
       
@@ -553,14 +553,14 @@ export function VerCreditos() {
                         </div>
                         <div className="bg-white/50 dark:bg-black/20 p-2 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50 text-right">
                           <p className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider mb-0.5">Consumido</p>
-                          <p className="font-medium text-zinc-900 dark:text-zinc-100">Q{c.total_consumido.toFixed(2)}</p>
+                          <p className="font-medium text-zinc-900 dark:text-zinc-100">{fmtQ(c.total_consumido)}</p>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-700/50 mt-1">
                         <div>
                           <p className="text-zinc-500 text-[9px] uppercase font-bold tracking-wider mb-0.5">Saldo Pendiente</p>
-                          <p className="font-black text-[#8DA78E] text-sm">Q{c.saldo_pendiente.toFixed(2)}</p>
+                          <p className="font-black text-[#8DA78E] text-sm">{fmtQ(c.saldo_pendiente)}</p>
                         </div>
                         <button
                           onClick={() => setClienteSeleccionado(c)}
@@ -602,8 +602,8 @@ export function VerCreditos() {
                           <td className={cn("px-5 py-3.5 font-mono font-semibold", c.estado === 'Solventado' ? 'text-emerald-600 dark:text-emerald-400' : 30 - c.dias_atraso < 0 ? 'text-rose-600 dark:text-rose-400' : 30 - c.dias_atraso <= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-700 dark:text-zinc-300')}>
                             {c.estado === 'Solventado' ? 'Pagado' : 30 - c.dias_atraso < 0 ? 'Vencido' : `${30 - c.dias_atraso} días`}
                           </td>
-                          <td className="px-5 py-3.5 text-right font-medium">Q{c.total_consumido.toFixed(2)}</td>
-                          <td className="px-5 py-3.5 text-right font-black text-[#8DA78E]">Q{c.saldo_pendiente.toFixed(2)}</td>
+                          <td className="px-5 py-3.5 text-right font-medium">{fmtQ(c.total_consumido)}</td>
+                          <td className="px-5 py-3.5 text-right font-black text-[#8DA78E]">{fmtQ(c.saldo_pendiente)}</td>
                           <td className="px-5 py-3.5 text-center">
                             <span className={cn(
                               "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase",
