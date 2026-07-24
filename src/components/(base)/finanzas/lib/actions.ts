@@ -9,7 +9,7 @@ import {
   type FiltroTipo,
   type CuentaPorCobrar,
   type CuentaPorPagar,
-} from "./schemas";
+} from "./zod";
 
 const FINANZAS_PATH = "/farmacia-la-salud/finanzas";
 const DEFAULT_PAGE_SIZE = 50;
@@ -122,7 +122,7 @@ export async function obtenerResumenFinanciero(): Promise<ResumenFinanciero> {
 
 export async function registrarMovimiento(
   input: unknown
-): Promise<{ success: true; data: TransaccionFinanciera }> {
+): Promise<{ success: true; data: TransaccionFinanciera } | { success: false; error: string }> {
   try {
     const supabase = await createClient();
     const {
@@ -164,11 +164,11 @@ export async function registrarMovimiento(
     return { success: true, data: data as TransaccionFinanciera };
   } catch (error: unknown) {
     console.error("Error al registrar movimiento:", error);
-    throw new Error(toErrorMessage(error, "No se pudo registrar el movimiento."));
+    return { success: false, error: toErrorMessage(error, "No se pudo registrar el movimiento.") };
   }
 }
 
-export async function eliminarMovimiento(id: string): Promise<{ success: true }> {
+export async function eliminarMovimiento(id: string): Promise<{ success: true } | { success: false; error: string }> {
   try {
     if (!id || typeof id !== "string") {
       throw new Error("ID de movimiento inválido.");
@@ -221,7 +221,7 @@ export async function eliminarMovimiento(id: string): Promise<{ success: true }>
     return { success: true };
   } catch (error: unknown) {
     console.error("Error al anular movimiento:", error);
-    throw new Error(toErrorMessage(error, "No se pudo anular el movimiento."));
+    return { success: false, error: toErrorMessage(error, "No se pudo anular el movimiento.") };
   }
 }
 

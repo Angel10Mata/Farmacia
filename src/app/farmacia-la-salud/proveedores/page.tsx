@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { VerProveedores } from "@/components/(base)/proveedores/VerProveedores";
+import VerProveedores from "@/components/(base)/proveedores/VerProveedores";
 
 export default function ProveedoresPage() {
   return (

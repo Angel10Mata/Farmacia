@@ -2,16 +2,13 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Truck, Clock, Calendar, ChevronDown, ChevronLeft, ChevronRight, Receipt, ShoppingBag } from "lucide-react";
+import { Truck, Clock, Calendar, ChevronDown, ChevronLeft, ChevronRight, Receipt, ShoppingBag, X, Phone, Mail, MapPin, Check } from "lucide-react";
 import Swal from "sweetalert2";
-import { guardarProveedor, eliminarProveedor } from "../actions";
-import { ArrowLeft, Check, Copy, Pencil, X, Mail, Phone, MapPin, Building, Info, FileText, FileDown, Plus } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { cn, fmtQ } from "@/lib/utils";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { guardarProveedor, eliminarProveedor } from "../lib/actions";
 import { createClient } from "@/utils/supabase/client";
 import { CustomDatePicker, obtenerSemanasDelMes } from "@/components/ui/CustomDatePicker";
+import { cn, fmtQ } from "@/lib/utils";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface Proveedor {
   id: string;
@@ -49,7 +46,7 @@ export const formatPhoneDisplay = (phone: string | null | undefined): string => 
 
 export const getWhatsappUrl = (phone: string | null | undefined): string => {
   if (!phone) return "";
-  let cleaned = phone.trim().replace(/[^\d+]/g, ""); // Keep digits and +
+  let cleaned = phone.trim().replace(/[^\d+]/g, ""); 
   if (!cleaned.startsWith("+")) {
     if (cleaned.length === 8) {
       cleaned = "+502" + cleaned;
@@ -74,30 +71,32 @@ export function ProveedorDetalle({
   const [telefonoVal, setTelefonoVal] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Historial logic
   const [compras, setCompras] = useState<any[]>([]);
-  const [loadingCompras, setLoadingCompras] = useState(false);
   const [showHistorial, setShowHistorial] = useState(false);
+
+  const getSwalThemeOpts = () => {
+    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    return {
+      background: isDark ? "#18181b" : "#F5F5F1",
+      color: isDark ? "#F5F5F1" : "#525D53",
+      confirmButtonColor: "#8DA78E",
+      cancelButtonColor: "#525D53",
+      customClass: { popup: "!rounded-3xl border-0" },
+    };
+  };
 
   useEffect(() => {
     async function loadCompras() {
       if (!proveedor?.id) return;
-      setLoadingCompras(true);
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("inv_compras")
-          .select("id, created_at, total, fin_transacciones(id, monto, fecha_movimiento, tipo_movimiento, categoria)")
+          .select("id, created_at, total, numero_factura, estado_pago, fin_transacciones(id, monto, created_at, categoria, notas)")
           .eq("proveedor_id", proveedor.id)
           .order("created_at", { ascending: false });
-        if (data) {
-          setCompras(data);
-        }
-      } catch (err) {
-        console.error("Error al cargar compras de proveedor:", err);
-      } finally {
-        setLoadingCompras(false);
-      }
+        if (data) setCompras(data);
+      } catch (err) { console.error(err); }
     }
     loadCompras();
   }, [proveedor?.id]);
@@ -122,36 +121,16 @@ export function ProveedorDetalle({
     }
   }, [proveedor, defaultEdit]);
 
-  // Helper para obtener colores de SweetAlert según el tema activo (claro/oscuro)
-  const getSwalThemeOpts = () => {
-    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-    return {
-      background: isDark ? "#18181b" : "#F5F5F1",
-      color: isDark ? "#F5F5F1" : "#525D53",
-      confirmButtonColor: "#8DA78E",
-      cancelButtonColor: "#525D53",
-      customClass: {
-        popup: "!rounded-3xl border-0",
-      }
-    };
-  };
-
   const handleSave = async () => {
     const nombreTrimmed = formData.nombre?.trim();
     if (!nombreTrimmed) {
-      Swal.fire({
-        title: "Error",
-        text: "El nombre es requerido",
-        icon: "error",
-        ...getSwalThemeOpts()
-      });
+      Swal.fire({ title: "Error", text: "El nombre es requerido", icon: "error", ...getSwalThemeOpts() });
       return;
     }
 
     setIsSaving(true);
     try {
-      const res = await guardarProveedor({
-        id: proveedor.id,
+      const res = await guardarProveedor(proveedor.id, {
         nombre: nombreTrimmed,
         descripcion: formData.descripcion?.trim() || null,
         nit: formData.nit?.trim() || null,
@@ -159,76 +138,29 @@ export function ProveedorDetalle({
         correo: formData.correo?.trim() || null,
       });
 
-      if (!res.success) {
-        throw new Error(res.error);
-      }
+      if (!res.success) throw new Error(res.code);
 
       setIsEditing(false);
       onUpdate();
-
-      Swal.fire({
-        title: "¡Guardado!",
-        text: "Proveedor actualizado correctamente",
-        icon: "success",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 3000,
-        ...getSwalThemeOpts()
-      });
+      Swal.fire({ title: "¡Guardado!", text: "Proveedor actualizado correctamente", icon: "success", toast: true, position: "top-end", showConfirmButton: false, timer: 3000, ...getSwalThemeOpts() });
     } catch (error: any) {
-      console.error(error);
-      Swal.fire({
-        title: "Error",
-        text: "No se pudo guardar: " + error.message,
-        icon: "error",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 3000,
-        ...getSwalThemeOpts(),
-        confirmButtonColor: "#ef4444"
-      });
+      Swal.fire({ title: "Error", text: error.message || "Error al guardar", icon: "error", ...getSwalThemeOpts() });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleEliminar = async () => {
-    const confirm = await Swal.fire({
-      title: "¿Eliminar Proveedor?",
-      text: `¿Estás seguro de eliminar a "${proveedor.nombre}"? Esta acción no se puede deshacer.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-      ...getSwalThemeOpts(),
-      confirmButtonColor: "#ef4444"
-    });
-
+    const confirm = await Swal.fire({ title: "¿Eliminar Proveedor?", text: `¿Seguro de eliminar a "${proveedor.nombre}"?`, icon: "warning", showCancelButton: true, confirmButtonText: "Sí, eliminar", ...getSwalThemeOpts(), confirmButtonColor: "#ef4444" });
     if (confirm.isConfirmed) {
       try {
         const res = await eliminarProveedor(proveedor.id);
         if (res.success) {
-          Swal.fire({
-            title: "Eliminado",
-            text: "El proveedor ha sido eliminado.",
-            icon: "success",
-            timer: 1500,
-            showConfirmButton: false,
-            ...getSwalThemeOpts()
-          });
           onUpdate();
-        } else {
-          throw new Error(res.error);
-        }
+          onClose();
+        } else throw new Error(res.code);
       } catch (err: any) {
-        Swal.fire({
-          title: "Error",
-          text: err.message || "No se pudo eliminar el proveedor.",
-          icon: "error",
-          ...getSwalThemeOpts()
-        });
+        Swal.fire({ title: "Error", text: err.message, icon: "error", ...getSwalThemeOpts() });
       }
     }
   };
@@ -238,9 +170,9 @@ export function ProveedorDetalle({
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 24 }}
-      className="bg-zinc-100 dark:bg-zinc-800 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-2xl p-4 flex flex-col gap-3 h-full overflow-y-auto w-full animate-fade-in text-left"
+      className="bg-white dark:bg-zinc-800 flex flex-col h-full w-full animate-fade-in text-left"
     >
-      {/* Cabecera */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pt-6 pb-6 space-y-4 custom-scrollbar">
       <div className="flex items-center justify-between pb-2 border-b border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 shrink-0">
         <div className="flex items-center gap-2">
           <div className="shrink-0 size-8 rounded-lg bg-gradient-to-br from-[#C1D1C5] to-[#8DA78E] flex items-center justify-center text-white">
@@ -248,173 +180,120 @@ export function ProveedorDetalle({
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Detalle del Proveedor</span>
         </div>
-        <button
-          onClick={onClose}
-          className="text-slate-400 transition-colors text-base font-bold px-1.5 cursor-pointer shrink-0"
-        >
-          ✕
-        </button>
+        <button onClick={onClose} className="text-slate-400 cursor-pointer">✕</button>
       </div>
 
-      {/* Nombre */}
       <div className="space-y-1">
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Nombre Comercial</h4>
         {isEditing ? (
-          <input 
-            type="text"
-            value={formData.nombre || ""}
-            onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-            className="w-full font-bold text-slate-900 dark:text-white text-sm bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all shadow-sm"
-          />
+          <input type="text" value={formData.nombre || ""} onChange={(e) => setFormData({...formData, nombre: e.target.value})} className="w-full font-bold text-sm bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 rounded-lg px-3 py-2 outline-none" />
         ) : (
-          <h2 className="font-black text-slate-900 dark:text-white text-base leading-tight break-words">{formData.nombre}</h2>
+          <h2 className="font-black text-slate-900 dark:text-white text-base">{formData.nombre}</h2>
         )}
       </div>
 
-      {/* NIT / Identificación */}
       <div className="space-y-1">
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">NIT / Identificación Fiscal</h4>
         {isEditing ? (
-          <input 
-            type="text"
-            value={formData.nit || ""}
-            onChange={(e) => setFormData({...formData, nit: e.target.value})}
-            className="w-full text-xs font-mono text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all shadow-sm"
-            placeholder="1234567-8"
-          />
+          <input type="text" value={formData.nit || ""} onChange={(e) => setFormData({...formData, nit: e.target.value})} className="w-full text-xs font-mono bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 rounded-lg px-3 py-2 outline-none" />
         ) : (
-          <p className="text-xs font-mono text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-3 py-2 uppercase">{formData.nit || "C/F"}</p>
+          <p className="text-xs font-mono bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-3 py-2 uppercase">{formData.nit || "C/F"}</p>
         )}
       </div>
 
-      {/* Teléfono y Correo */}
       <div className="grid grid-cols-2 gap-2.5">
         <div className="space-y-1">
           <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Teléfono</h4>
           {isEditing ? (
             <div className="flex gap-1.5">
-              <select
-                value={areaCode}
-                onChange={(e) => setAreaCode(e.target.value)}
-                className="px-1 py-1.5 border rounded-lg text-xs bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-[#8DA78E] focus:outline-none transition-colors w-16 shrink-0"
-              >
-                <option value="+502">+502</option>
-                <option value="+503">+503</option>
-                <option value="+504">+504</option>
-                <option value="+505">+505</option>
-                <option value="+506">+506</option>
-                <option value="+507">+507</option>
-                <option value="+52">+52</option>
-                <option value="+1">+1</option>
+              <select value={areaCode} onChange={(e) => setAreaCode(e.target.value)} className="w-16 px-1 py-1.5 border rounded-lg text-xs bg-white dark:bg-zinc-900">
+                <option value="+502">+502</option><option value="+503">+503</option><option value="+504">+504</option>
               </select>
-              <input 
-                type="text"
-                value={telefonoVal}
-                onChange={(e) => setTelefonoVal(e.target.value)}
-                className="w-full text-xs text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all shadow-sm"
-                placeholder="5555-1234"
-              />
+              <input type="text" value={telefonoVal} onChange={(e) => setTelefonoVal(e.target.value)} className="w-full text-xs bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 rounded-lg px-2 py-1.5" />
             </div>
           ) : (
             <p className="text-xs text-slate-850 dark:text-slate-200 bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-3 py-2">
-              {formData.telefono ? (
-                <a
-                  href={getWhatsappUrl(formData.telefono)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-green-600 dark:text-green-400 hover:underline font-bold inline-flex items-center gap-1"
-                >
-                  {formatPhoneDisplay(formData.telefono)}
-                </a>
-              ) : (
-                "—"
-              )}
+              {formData.telefono ? <a href={getWhatsappUrl(formData.telefono)} target="_blank" className="text-green-600 hover:underline">{formatPhoneDisplay(formData.telefono)}</a> : "—"}
             </p>
           )}
         </div>
-
         <div className="space-y-1">
-          <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Correo Electrónico</h4>
+          <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Correo</h4>
           {isEditing ? (
-            <input 
-              type="email"
-              value={formData.correo || ""}
-              onChange={(e) => setFormData({...formData, correo: e.target.value})}
-              className="w-full text-xs text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all shadow-sm"
-              placeholder="proveedor@email.com"
-            />
+            <input type="email" value={formData.correo || ""} onChange={(e) => setFormData({...formData, correo: e.target.value})} className="w-full text-xs bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 rounded-lg px-3 py-2" />
           ) : (
-            <p className="text-xs text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-3 py-2 truncate" title={formData.correo || undefined}>{formData.correo || "—"}</p>
+            <p className="text-xs truncate bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-3 py-2">{formData.correo || "—"}</p>
           )}
         </div>
       </div>
 
-      {/* Descripción */}
       <div className="space-y-1">
-        <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Descripción / Notas</h4>
+        <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Descripción</h4>
         {isEditing ? (
-          <textarea 
-            value={formData.descripcion || ""}
-            onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-            rows={3}
-            className="w-full text-xs text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all resize-none shadow-sm"
-            placeholder="Descripción del proveedor..."
-          />
+          <textarea value={formData.descripcion || ""} onChange={(e) => setFormData({...formData, descripcion: e.target.value})} rows={3} className="w-full text-xs bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 rounded-lg px-3 py-2" />
         ) : (
           <p className="text-xs text-slate-600 dark:text-slate-400 italic bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-3 py-2 min-h-[50px]">{formData.descripcion || "Sin descripción."}</p>
         )}
       </div>
 
-      {/* Botones de acción */}
-      <div className="mt-auto pt-3 border-t border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 flex flex-wrap justify-end gap-2">
-        <button
-          onClick={() => setShowHistorial(true)}
-          className="w-fit py-2 px-4 rounded-xl bg-white dark:bg-[#525D53]/20 border border-[#8DA78E] text-[#8DA78E] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-        >
-          Historial de Compras
-        </button>
+      {!isEditing && (
+        <div className="space-y-2 mt-2">
+          <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70 flex items-center gap-1.5">
+            <Receipt className="size-3.5" /> Abonos Realizados
+          </h4>
+          {(() => {
+            const abonosRealizados = compras.flatMap(c => {
+              const pagos = c.fin_transacciones?.filter((t:any) => t.categoria === "pago_proveedor") || [];
+              return pagos.map((p:any) => ({
+                ...p,
+                compraId: c.id,
+                numero_factura: c.numero_factura || c.id.substring(0, 8),
+              }));
+            }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+            if (abonosRealizados.length === 0) {
+              return <p className="text-xs text-slate-500 italic bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-3 py-2">No hay abonos registrados para este proveedor.</p>;
+            }
+
+            return (
+              <div className="space-y-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+                {abonosRealizados.map((abono) => (
+                  <div key={abono.id} className="bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg p-2.5 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
+                    <div>
+                      <p className="text-sm font-black text-[#8DA78E]">{fmtQ(abono.monto)}</p>
+                      <p className="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5"><ShoppingBag className="size-3" /> Factura/Ref: {abono.numero_factura}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300">{new Date(abono.created_at).toLocaleDateString("es-GT")}</p>
+                      <p className="text-[9px] text-slate-400">{new Date(abono.created_at).toLocaleTimeString("es-GT", { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      </div>
+
+      <div className="flex gap-3 p-4 md:p-6 pt-4 border-t border-zinc-200 dark:border-zinc-800 shrink-0 bg-[#F5F5F1] dark:bg-zinc-900 justify-end">
+        <button onClick={() => setShowHistorial(true)} className="flex-1 py-3 px-4 rounded-xl border border-[#8DA78E] text-[#8DA78E] text-xs font-bold transition-all hover:bg-[#8DA78E]/10 flex items-center justify-center gap-2 cursor-pointer shadow-sm">Historial</button>
         {isEditing ? (
           <>
-            <button
-              onClick={() => setIsEditing(false)}
-              disabled={isSaving}
-              className="w-fit px-4 py-2 bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-bold rounded-xl transition-all cursor-pointer uppercase text-center"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="w-fit px-4 py-2 bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold rounded-xl transition-all cursor-pointer uppercase text-center"
-            >
-              {isSaving ? "Guardando..." : "Guardar"}
-            </button>
+            <button onClick={() => setIsEditing(false)} disabled={isSaving} className="flex-1 py-3 px-4 bg-white hover:bg-slate-50 dark:bg-zinc-800 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm">Cancelar</button>
+            <button onClick={handleSave} disabled={isSaving} className="flex-1 py-3 px-4 bg-[#8DA78E] hover:bg-[#7b927c] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm">{isSaving ? "Guardando..." : "Guardar"}</button>
           </>
         ) : (
           <>
-            <button
-              onClick={handleEliminar}
-              className="w-fit px-4 py-2 bg-red-400 text-white text-xs font-bold rounded-xl transition-all cursor-pointer uppercase text-center"
-            >
-              Eliminar
-            </button>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="w-fit px-4 py-2 bg-[#A3BEB0]/20 text-[#525D53] dark:text-[#A3BEB0] text-xs font-bold rounded-xl transition-all cursor-pointer uppercase text-center"
-            >
-              Editar
-            </button>
+            <button onClick={handleEliminar} className="flex-1 py-3 px-4 bg-white hover:bg-rose-50 dark:bg-zinc-800 dark:hover:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm">Eliminar</button>
+            <button onClick={() => setIsEditing(true)} className="flex-1 py-3 px-4 bg-[#8DA78E] hover:bg-[#7b927c] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm">Editar</button>
           </>
         )}
       </div>
       <AnimatePresence>
         {showHistorial && (
-          <HistorialComprasProveedorModal 
-            proveedor={proveedor}
-            compras={compras}
-            onClose={() => setShowHistorial(false)}
-          />
+          <HistorialComprasProveedorModal proveedor={proveedor} compras={compras} onClose={() => setShowHistorial(false)} />
         )}
       </AnimatePresence>
     </motion.div>
@@ -465,27 +344,23 @@ function HistorialComprasProveedorModal({
 
   const comprasFiltradas = useMemo(() => {
     return compras.filter(c => {
-      const fechaCompra = new Date(c.created_at);
+      const fechaCompra = c.created_at.split('T')[0];
       if (tipoFiltroFecha === "dia") {
-        return fechaCompra.toISOString().split('T')[0] === fechaDia;
+        return fechaCompra === fechaDia;
       } else if (tipoFiltroFecha === "semana") {
-        if (fechaCompra.getMonth() !== activeMonth || fechaCompra.getFullYear() !== activeYear) return false;
+        const [y, m] = fechaCompra.split("-").map(Number);
+        if (m - 1 !== activeMonth || y !== activeYear) return false;
         if (selectedWeekIndex !== -1) {
           const semanas = obtenerSemanasDelMes(activeMonth, activeYear);
           const semanaSeleccionada = semanas[selectedWeekIndex];
           if (semanaSeleccionada) {
-            const dateC = new Date(fechaCompra).setHours(0,0,0,0);
-            const desde = new Date(semanaSeleccionada.desde + "T00:00:00").getTime();
-            const hasta = new Date(semanaSeleccionada.hasta + "T00:00:00").getTime();
-            return dateC >= desde && dateC <= hasta;
+            return fechaCompra >= semanaSeleccionada.desde && fechaCompra <= semanaSeleccionada.hasta;
           }
         }
         return true;
       } else if (tipoFiltroFecha === "rango") {
-        const dateC = new Date(fechaCompra).setHours(0,0,0,0);
-        const from = fechaRangoDesde ? new Date(fechaRangoDesde).setHours(0,0,0,0) : 0;
-        const to = fechaRangoHasta ? new Date(fechaRangoHasta).setHours(23,59,59,999) : Infinity;
-        return dateC >= from && dateC <= to;
+        if (!fechaRangoDesde || !fechaRangoHasta) return true;
+        return fechaCompra >= fechaRangoDesde && fechaCompra <= fechaRangoHasta;
       }
       return true;
     });
@@ -493,20 +368,17 @@ function HistorialComprasProveedorModal({
 
   const chartData = useMemo(() => {
     if (tipoFiltroFecha === "dia") {
-      const d = new Date(fechaDia + "T00:00:00");
-      if (isNaN(d.getTime())) return [];
-      const year = d.getFullYear();
-      const month = d.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const parts = fechaDia.split("-").map(Number);
+      if (parts.length < 3) return [];
+      const [year, month] = parts;
+      const daysInMonth = new Date(year, month, 0).getDate();
       
       const data = [];
       for (let i = 1; i <= daysInMonth; i++) {
-        const total = compras.filter(c => {
-          const cDate = new Date(c.created_at);
-          return cDate.getFullYear() === year && cDate.getMonth() === month && cDate.getDate() === i;
-        }).reduce((acc, curr) => acc + curr.total, 0);
+        const dayStr = `${year}-${String(month).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+        const total = compras.filter(c => c.created_at.split('T')[0] === dayStr).reduce((acc, curr) => acc + curr.total, 0);
         data.push({
-          fecha: `${i} ${d.toLocaleDateString("es-GT", { month: "short" })}`,
+          fecha: `${i} ${new Date(year, month - 1, 1).toLocaleDateString("es-GT", { month: "short" })}`,
           total
         });
       }
@@ -516,9 +388,10 @@ function HistorialComprasProveedorModal({
       for (let i = 0; i < 12; i++) {
         const monthDate = new Date(activeYear, i, 1);
         const monthName = monthDate.toLocaleDateString("es-GT", { month: "short" });
+        const monthStr = String(i + 1).padStart(2, "0");
         const total = compras.filter(c => {
-          const date = new Date(c.created_at);
-          return date.getFullYear() === activeYear && date.getMonth() === i;
+          const [vy, vm] = c.created_at.split('T')[0].split("-");
+          return vy === String(activeYear) && vm === monthStr;
         }).reduce((acc, curr) => acc + curr.total, 0);
         data.push({
           fecha: monthName.charAt(0).toUpperCase() + monthName.slice(1),
@@ -537,13 +410,11 @@ function HistorialComprasProveedorModal({
       current.setHours(0,0,0,0);
       let daysCount = 0;
       while (current <= end && daysCount < 366) {
-        const year = current.getFullYear();
-        const month = current.getMonth();
-        const dateDay = current.getDate();
-        const total = compras.filter(c => {
-          const cDate = new Date(c.created_at);
-          return cDate.getFullYear() === year && cDate.getMonth() === month && cDate.getDate() === dateDay;
-        }).reduce((acc, curr) => acc + curr.total, 0);
+        const y = current.getFullYear();
+        const m = String(current.getMonth() + 1).padStart(2, "0");
+        const d = String(current.getDate()).padStart(2, "0");
+        const dayStr = `${y}-${m}-${d}`;
+        const total = compras.filter(c => c.created_at.split('T')[0] === dayStr).reduce((acc, curr) => acc + curr.total, 0);
         
         data.push({
           fecha: current.toLocaleDateString("es-GT", { month: "short", day: "numeric" }),
@@ -574,7 +445,6 @@ function HistorialComprasProveedorModal({
           </div>
 
           <div className="flex-1 flex justify-center w-full md:w-auto">
-            {/* Opciones Dia/Mes/Rango */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full md:w-fit mx-auto sm:mx-0">
               <div className="flex items-center justify-center gap-1 bg-slate-50 dark:bg-zinc-900/50 p-1 rounded-xl border border-slate-100 dark:border-zinc-800 w-full sm:w-auto">
                 {[
@@ -598,7 +468,6 @@ function HistorialComprasProveedorModal({
                 ))}
               </div>
 
-              {/* Selector de Fecha específico según tipo */}
               <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
                 {tipoFiltroFecha === "dia" && (
                   <CustomDatePicker
@@ -610,7 +479,6 @@ function HistorialComprasProveedorModal({
 
                 {tipoFiltroFecha === "semana" && (
                   <div className="flex items-center gap-2 w-full">
-                    {/* Selector de Mes/Año */}
                     <div className="relative w-1/2 sm:w-auto" ref={mesDropdownRef}>
                       <button
                         type="button"
@@ -659,7 +527,7 @@ function HistorialComprasProveedorModal({
                                   onClick={() => {
                                     setActiveMonth(idx);
                                     setMostrarMesDropdown(false);
-                                    setSelectedWeekIndex(-1); // Reset a todo el mes
+                                    setSelectedWeekIndex(-1);
                                   }}
                                   className={cn(
                                     "px-1 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
@@ -677,7 +545,6 @@ function HistorialComprasProveedorModal({
                       </AnimatePresence>
                     </div>
 
-                    {/* Selector de Semana */}
                     <div className="relative w-1/2 sm:w-auto" ref={semanaDropdownRef}>
                       <button
                         type="button"
@@ -792,7 +659,7 @@ function HistorialComprasProveedorModal({
               comprasFiltradas.map(c => {
                 const abonos = c.fin_transacciones?.filter((t:any) => t.categoria === "pago_proveedor").reduce((sum:number, t:any) => sum + Math.abs(Number(t.monto)), 0) || 0;
                 const saldoCompra = Math.max(0, c.total - abonos);
-                const isPaid = abonos >= c.total;
+                const isPaid = abonos >= c.total || c.estado_pago === "Pagado";
 
                 return (
                   <div key={c.id} className="flex justify-between items-center p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30">

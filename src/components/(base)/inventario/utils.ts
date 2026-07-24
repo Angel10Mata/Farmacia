@@ -2,19 +2,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { fmtNum, fmtQ } from "@/lib/utils";
 
-export const getSwalThemeOpts = () => {
-  const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-  return {
-    background: isDark ? "#18181b" : "#F5F5F1",
-    color: isDark ? "#F5F5F1" : "#525D53",
-    confirmButtonColor: "#8DA78E",
-    cancelButtonColor: "#525D53",
-    customClass: {
-      popup: "!rounded-3xl border-0",
-    }
-  };
-};
-
 export const exportarPDF = (productos: any[]) => {
   const doc = new jsPDF();
   

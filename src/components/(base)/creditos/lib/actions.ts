@@ -2,25 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 
-export interface CreditoResumen {
-  cliente_id: string;
-  nombre: string;
-  nit: string;
-  limite_credito: string;
-  total_consumido: number;
-  saldo_pendiente: number;
-  estado: "Al día" | "Atrasado" | "Solventado";
-  dias_atraso: number;
-}
-
-export interface CuentaPorPagar {
-  compra_id: string;
-  proveedor_nombre: string;
-  numero_factura: string | null;
-  fecha_compra: string;
-  total: number;
-  saldo_pendiente: number;
-}
+import type { CreditoResumen, VentaCreditoDetalle } from "./zod";
 
 export async function obtenerResumenCreditos(): Promise<CreditoResumen[]> {
   try {
@@ -108,16 +90,18 @@ export async function obtenerResumenCreditos(): Promise<CreditoResumen[]> {
   }
 }
 
-export async function obtenerCuentasPorPagar(): Promise<CuentaPorPagar[]> {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("fin_cuentas_por_pagar");
+export async function obtenerDetalleCredito(clienteId: string): Promise<VentaCreditoDetalle[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("ventas")
+    .select("id, created_at, tipo_venta, total, observaciones, fin_transacciones(id, monto, fecha_movimiento, tipo_movimiento, categoria)")
+    .eq("cliente_id", clienteId)
+    .eq("tipo_venta", "Crédito")
+    .order("created_at", { ascending: false });
 
-    if (error) throw new Error(error.message);
-
-    return (data ?? []) as CuentaPorPagar[];
-  } catch (error: unknown) {
-    console.error("Error en obtenerCuentasPorPagar:", error);
-    throw new Error("No se pudieron cargar las cuentas por pagar.");
+  if (error) {
+    throw new Error(error.message);
   }
+
+  return data || [];
 }

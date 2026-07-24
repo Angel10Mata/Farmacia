@@ -22,12 +22,12 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
-import { cn, fmtNum, fmtQ } from "@/lib/utils";
+import { cn, fmtNum, fmtQ, getSwalThemeOpts } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import ImageUploader from "@/components/imgs/ImageUploader";
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
-import { getSwalThemeOpts } from "./lib/utils";
-
+import { useProductos, useEliminarProducto } from "./lib/hooks";
+import { ModalConfirmDelete, ModalShell } from "@/components/ui/general-modal";
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Producto {
   id: string;
@@ -255,7 +255,7 @@ const CustomDatePicker = ({
   align?: "left" | "right";
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const getParsedDate = () => {
     if (!value) return new Date();
     const [y, m, d] = value.split("-").map(Number);
@@ -358,7 +358,7 @@ const CustomDatePicker = ({
               >
                 <ChevronLeft className="size-4" />
               </button>
-              
+
               <span className="text-xs font-bold text-slate-700 dark:text-[#A3BEB0] tracking-wide select-none">
                 {nombresMeses[navMonth]} {navYear}
               </span>
@@ -399,15 +399,14 @@ const CustomDatePicker = ({
                     key={idx}
                     type="button"
                     onClick={() => handleSelectDay(cell)}
-                    className={`py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${
-                      isSelected
+                    className={`py-1.5 rounded-lg text-xs font-medium transition-all duration-150 cursor-pointer ${isSelected
                         ? "bg-[#8DA78E] text-white shadow-sm shadow-[#8DA78E]/30 scale-105 font-bold"
                         : cell.isCurrentMonth
-                        ? isToday()
-                          ? "border border-[#8DA78E] text-[#8DA78E] dark:text-[#A3BEB0] font-bold bg-[#8DA78E]/5 hover:bg-[#8DA78E]/10"
-                          : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-900/60"
-                        : "text-slate-400/50 dark:text-slate-650/30 hover:bg-slate-50/50 dark:hover:bg-zinc-900/10"
-                    }`}
+                          ? isToday()
+                            ? "border border-[#8DA78E] text-[#8DA78E] dark:text-[#A3BEB0] font-bold bg-[#8DA78E]/5 hover:bg-[#8DA78E]/10"
+                            : "text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-900/60"
+                          : "text-slate-400/50 dark:text-slate-650/30 hover:bg-slate-50/50 dark:hover:bg-zinc-900/10"
+                      }`}
                   >
                     {cell.day}
                   </button>
@@ -452,83 +451,13 @@ const CustomDatePicker = ({
 function ProductoDetalle({
   producto,
   onClose,
-  onUpdate,
-  defaultEdit = false,
+  onEditClick
 }: {
   producto: Producto;
   onClose: () => void;
-  onUpdate: () => void;
-  defaultEdit?: boolean;
+  onEditClick: () => void;
 }) {
   const isLowStock = producto.stock_actual <= producto.stock_minimo;
-  const [isEditing, setIsEditing] = useState(defaultEdit);
-  const [formData, setFormData] = useState(producto);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Sync state if producto prop changes
-  useEffect(() => {
-    setFormData(producto);
-    setIsEditing(defaultEdit);
-  }, [producto, defaultEdit]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("inv_productos")
-        .update({
-          nombre: formData.nombre,
-          descripcion: formData.descripcion,
-          codigo: formData.codigo,
-          precio_base: formData.precio_base,
-          stock_actual: formData.stock_actual,
-          stock_minimo: formData.stock_minimo,
-          activo: formData.activo,
-          imagen_url: formData.imagen_url,
-          imagen_url_2: formData.imagen_url_2,
-          imagen_url_3: formData.imagen_url_3,
-          fecha_vencimiento: formData.fecha_vencimiento || null,
-          numero_lote: formData.numero_lote?.trim() || null,
-          ubicacion: formData.ubicacion?.trim() || "Sin asignar"
-        })
-        .eq("id", producto.id);
-
-      if (error) throw new Error(error.message);
-
-      setIsEditing(false);
-      onUpdate();
-
-      const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-      Swal.fire({
-        title: "Guardado",
-        text: "Producto actualizado correctamente",
-        icon: "success",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 3000,
-        background: isDark ? "#18181b" : "#F5F5F1",
-        color: isDark ? "#F5F5F1" : "#525D53",
-      });
-    } catch (error: any) {
-      console.error(error);
-      const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-      Swal.fire({
-        title: "Error",
-        text: "No se pudo guardar: " + error.message,
-        icon: "error",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 3000,
-        background: isDark ? "#18181b" : "#F5F5F1",
-        color: isDark ? "#F5F5F1" : "#525D53",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   return (
     <motion.div
@@ -556,69 +485,22 @@ function ProductoDetalle({
       {/* Nombre */}
       <div className="space-y-1">
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Nombre</h4>
-        {isEditing ? (
-          <textarea
-            value={formData.nombre}
-            onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-            rows={1}
-            className="w-full font-black text-slate-900 dark:text-white text-base leading-tight bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all resize-none break-words shadow-sm"
-          />
-        ) : (
-          <h2 className="font-black text-slate-900 dark:text-white text-base leading-tight break-words">{formData.nombre}</h2>
-        )}
+        <h2 className="font-black text-slate-900 dark:text-white text-base leading-tight break-words">{producto.nombre}</h2>
       </div>
 
-      {/* Código y Estado Switch */}
+      {/* Código y Estado */}
       <div className="grid grid-cols-3 gap-2.5">
         <div className="col-span-2 space-y-1">
           <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Código de Barras</h4>
-          {isEditing ? (
-            <input
-              type="text"
-              value={formData.codigo}
-              onChange={(e) => setFormData({ ...formData, codigo: e.target.value })}
-              className="w-full text-xs font-mono text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all shadow-sm"
-            />
-          ) : (
-            <p className="text-xs font-mono text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-3 py-2 uppercase">{formData.codigo || "Sin Código"}</p>
-          )}
+          <p className="text-xs font-mono text-slate-800 dark:text-slate-200 bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-3 py-2 uppercase">{producto.codigo || "Sin Código"}</p>
         </div>
 
         <div className="space-y-1">
           <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Estado</h4>
           <div className="bg-white dark:bg-zinc-900/40 border border-[#C1D1C5]/20 rounded-lg px-2.5 py-1.5 flex items-center justify-center gap-2 h-[38px] shadow-sm">
-            {isEditing ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, activo: !formData.activo })}
-                  className={cn(
-                    "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                    formData.activo ? "bg-[#8DA78E]" : "bg-red-500 dark:bg-red-600"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "pointer-events-none inline-block size-3.5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out",
-                      formData.activo ? "translate-x-3.5" : "translate-x-0"
-                    )}
-                  />
-                </button>
-                <span className={cn(
-                  "text-[9px] font-bold uppercase tracking-wider select-none",
-                  formData.activo ? "text-[#8DA78E] dark:text-[#A3BEB0]" : "text-red-500"
-                )}>
-                  {formData.activo ? "Activo" : "Inactivo"}
-                </span>
-              </div>
-            ) : (
-              <span className={cn(
-                "text-[10px] font-bold uppercase",
-                formData.activo ? "text-[#8DA78E] dark:text-[#A3BEB0]" : "text-red-500"
-              )}>
-                {formData.activo ? "Activo" : "Inactivo"}
-              </span>
-            )}
+            <span className={`text-[10px] font-bold uppercase ${producto.activo ? "text-[#8DA78E] dark:text-[#A3BEB0]" : "text-red-500"}`}>
+              {producto.activo ? "Activo" : "Inactivo"}
+            </span>
           </div>
         </div>
       </div>
@@ -626,17 +508,9 @@ function ProductoDetalle({
       {/* Descripción */}
       <div className="space-y-1 mt-1">
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Descripción</h4>
-        {isEditing ? (
-          <textarea
-            value={formData.descripcion || ""}
-            onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-            className="w-full text-xs text-slate-600 dark:text-slate-300 leading-normal bg-white dark:bg-zinc-900 p-2.5 rounded-lg border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 min-h-[50px] h-[50px] focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all shadow-sm resize-none"
-          />
-        ) : (
-          <p className="text-xs text-slate-600 dark:text-slate-300 leading-normal bg-white dark:bg-zinc-900/50 p-2.5 rounded-lg border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10">
-            {formData.descripcion || "Sin descripción registrada para este producto."}
-          </p>
-        )}
+        <p className="text-xs text-slate-600 dark:text-slate-300 leading-normal bg-white dark:bg-zinc-900/50 p-2.5 rounded-lg border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10">
+          {producto.descripcion || "Sin descripción registrada para este producto."}
+        </p>
       </div>
 
       {/* Datos técnicos */}
@@ -646,110 +520,51 @@ function ProductoDetalle({
           {/* Existencias */}
           <div className="bg-white dark:bg-[#525D53]/10 rounded-xl px-2 py-1.5 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 flex items-center justify-between gap-1 h-[38px] shadow-sm">
             <span className="text-[9px] text-[#525D53] dark:text-[#A3BEB0]/70 font-bold uppercase tracking-wider shrink-0">Existencias</span>
-            {isEditing ? (
-              <input
-                type="number"
-                value={formData.stock_actual}
-                onChange={(e) => setFormData({ ...formData, stock_actual: Number(e.target.value) })}
-                className="w-12 text-xs font-bold text-center bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-md py-0.5 text-[#8DA78E] dark:text-[#A3BEB0] focus:ring-1 focus:ring-[#8DA78E] outline-none"
-              />
-            ) : (
-              <span className={`text-xs font-black ${isLowStock ? "text-red-400" : "text-[#8DA78E] dark:text-[#A3BEB0]"}`}>{fmtNum(formData.stock_actual)}</span>
-            )}
+            <span className={`text-xs font-black ${isLowStock ? "text-red-400 animate-pulse" : "text-[#8DA78E] dark:text-[#A3BEB0]"}`}>{fmtNum(producto.stock_actual)}</span>
           </div>
 
           {/* Alerta Mínima */}
           <div className="bg-white dark:bg-[#525D53]/10 rounded-xl px-2 py-1.5 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 flex items-center justify-between gap-1 h-[38px] shadow-sm">
             <span className="text-[9px] text-[#525D53] dark:text-[#A3BEB0]/70 font-bold uppercase tracking-wider shrink-0">Mínimo</span>
-            {isEditing ? (
-              <input
-                type="number"
-                value={formData.stock_minimo}
-                onChange={(e) => setFormData({ ...formData, stock_minimo: Number(e.target.value) })}
-                className="w-12 text-xs font-bold text-center bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-md py-0.5 text-[#8DA78E] dark:text-[#A3BEB0] focus:ring-1 focus:ring-[#8DA78E] outline-none"
-              />
-            ) : (
-              <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">{fmtNum(formData.stock_minimo)}</span>
-            )}
+            <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">{fmtNum(producto.stock_minimo)}</span>
           </div>
 
           {/* Precio Unitario */}
           <div className="bg-white dark:bg-[#525D53]/10 rounded-xl px-2 py-1.5 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 flex items-center justify-between gap-1 h-[38px] shadow-sm">
             <span className="text-[9px] text-[#525D53] dark:text-[#A3BEB0]/70 font-bold uppercase tracking-wider shrink-0">Precio U.</span>
-            {isEditing ? (
-              <div className="flex items-center bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-md px-1 py-0.5 w-[56px] focus-within:ring-1 focus-within:ring-[#8DA78E] transition-all">
-                <span className="text-[10px] font-bold text-slate-400 select-none mr-0.5">Q</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.precio_base}
-                  onChange={(e) => setFormData({ ...formData, precio_base: Number(e.target.value) })}
-                  className="w-full text-xs font-bold text-center bg-transparent border-0 p-0 text-[#8DA78E] dark:text-[#A3BEB0] focus:ring-0 outline-none"
-                />
-              </div>
-            ) : (
-              <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">{fmtQ(formData.precio_base)}</span>
-            )}
+            <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">{fmtQ(producto.precio_base)}</span>
           </div>
 
           {/* Proveedor */}
           <div className="col-span-3 bg-white dark:bg-[#525D53]/10 rounded-xl p-2.5 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10">
             <span className="text-[9px] text-[#525D53] dark:text-[#A3BEB0]/70 font-semibold uppercase tracking-wide block mb-0.5">Proveedor</span>
             <p className="text-xs font-bold text-[#8DA78E] dark:text-[#A3BEB0] truncate">
-              {formData.inv_proveedores?.nombre || formData.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre || "Sin Proveedor"}
+              {producto.inv_proveedores?.nombre || producto.inv_compras_detalles?.[0]?.inv_compras?.inv_proveedores?.nombre || "Sin Proveedor"}
             </p>
           </div>
 
           {/* Ubicación */}
           <div className="col-span-3 bg-white dark:bg-[#525D53]/10 rounded-xl p-2.5 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10">
             <span className="text-[9px] text-[#525D53] dark:text-[#A3BEB0]/70 font-semibold uppercase tracking-wide block mb-0.5">Ubicación</span>
-            {isEditing ? (
-              <input
-                type="text"
-                value={formData.ubicacion || ""}
-                onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
-                placeholder="Ej: Estante A3, Bodega - Refrigerador 2"
-                className="w-full text-xs font-bold bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-lg px-3 py-2 text-[#8DA78E] dark:text-[#A3BEB0] focus:ring-2 focus:ring-[#8DA78E] outline-none transition-all shadow-sm"
-              />
-            ) : (
-              <p className="text-xs font-bold text-[#8DA78E] dark:text-[#A3BEB0] truncate flex items-center gap-1">
-                <MapPin className="size-3 shrink-0" /> {formData.ubicacion || "Sin asignar"}
-              </p>
-            )}
+            <p className="text-xs font-bold text-[#8DA78E] dark:text-[#A3BEB0] truncate flex items-center gap-1">
+              <MapPin className="size-3 shrink-0" /> {producto.ubicacion || "Sin asignar"}
+            </p>
           </div>
 
           {/* Vencimiento y Lote */}
           <div className="col-span-3 grid grid-cols-2 gap-2 mt-1">
             <div className="bg-white dark:bg-[#525D53]/10 rounded-xl px-2 py-1.5 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 flex items-center justify-between gap-1 h-[38px] shadow-sm">
               <span className="text-[9px] text-[#525D53] dark:text-[#A3BEB0]/70 font-bold uppercase tracking-wider shrink-0">Vence</span>
-              {isEditing ? (
-                <CustomDatePicker
-                  value={formData.fecha_vencimiento || ""}
-                  onChange={(val) => setFormData({ ...formData, fecha_vencimiento: val })}
-                  placeholder="dd/mm/aaaa"
-                  align="left"
-                />
-              ) : (
-                <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">
-                  {formData.fecha_vencimiento ? new Date(formData.fecha_vencimiento).toLocaleDateString("es-GT") : "—"}
-                </span>
-              )}
+              <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">
+                {producto.fecha_vencimiento ? new Date(producto.fecha_vencimiento).toLocaleDateString("es-GT") : "—"}
+              </span>
             </div>
 
             <div className="bg-white dark:bg-[#525D53]/10 rounded-xl px-2 py-1.5 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 flex items-center justify-between gap-1 h-[38px] shadow-sm">
               <span className="text-[9px] text-[#525D53] dark:text-[#A3BEB0]/70 font-bold uppercase tracking-wider shrink-0">Lote</span>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={formData.numero_lote || ""}
-                  onChange={(e) => setFormData({ ...formData, numero_lote: e.target.value })}
-                  className="w-[100px] text-xs font-bold text-center bg-white dark:bg-zinc-900 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-md py-0.5 px-1 text-[#8DA78E] dark:text-[#A3BEB0] focus:ring-1 focus:ring-[#8DA78E] outline-none"
-                />
-              ) : (
-                <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">
-                  {formData.numero_lote || "—"}
-                </span>
-              )}
+              <span className="text-xs font-black text-[#8DA78E] dark:text-[#A3BEB0]">
+                {producto.numero_lote || "—"}
+              </span>
             </div>
           </div>
         </div>
@@ -759,76 +574,30 @@ function ProductoDetalle({
       <div className="space-y-1.5 mt-1">
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Galería de Imágenes</h4>
         <div className="grid grid-cols-3 gap-2">
-          {isEditing ? (
-            <>
-              {[
-                { field: "imagen_url", val: formData.imagen_url },
-                { field: "imagen_url_2", val: formData.imagen_url_2 },
-                { field: "imagen_url_3", val: formData.imagen_url_3 },
-              ].map((imgInfo, idx) => (
-                <div key={idx} className="aspect-[3/4] rounded-xl bg-white dark:bg-zinc-900/60 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 overflow-hidden relative shadow-sm">
-                  <ImageUploader
-                    bucketName="Imagenes_Farmacia"
-                    currentImagePath={imgInfo.val ?? null}
-                    onUploadSuccess={(path) => setFormData({ ...formData, [imgInfo.field]: path })}
-                    onDeleteSuccess={() => setFormData({ ...formData, [imgInfo.field]: null })}
-                    aspect={3 / 4}
-                    permitirTodos={true}
-                    compact={true}
-                    previewClassName="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </>
-          ) : (
-            <>
-              {[producto.imagen_url, producto.imagen_url_2, producto.imagen_url_3].map((imgUrl, idx) => {
-                const publicUrl = imgUrl ? createClient().storage.from("Imagenes_Farmacia").getPublicUrl(imgUrl).data.publicUrl : null;
-                return (
-                  <div key={idx} className="aspect-[3/4] rounded-xl bg-white dark:bg-zinc-900/60 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/20 flex items-center justify-center overflow-hidden shadow-xs">
-                    {publicUrl ? (
-                      <img src={publicUrl} alt={`${producto.nombre} - img ${idx + 1}`} className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="size-5 text-slate-300 dark:text-slate-600" />
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          )}
+          {[producto.imagen_url, producto.imagen_url_2, producto.imagen_url_3].map((imgUrl, idx) => {
+            const publicUrl = imgUrl ? createClient().storage.from("Imagenes_Farmacia").getPublicUrl(imgUrl).data.publicUrl : null;
+            return (
+              <div key={idx} className="aspect-[3/4] rounded-xl bg-white dark:bg-zinc-900/60 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/20 flex items-center justify-center overflow-hidden shadow-xs">
+                {publicUrl ? (
+                  <img src={publicUrl} alt={`${producto.nombre} - img ${idx + 1}`} className="w-full h-full object-cover" />
+                ) : (
+                  <Package className="size-5 text-slate-300 dark:text-slate-600" />
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Acciones */}
       <div className="flex justify-start items-center mt-4 pt-3 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10 shrink-0">
-        {isEditing ? (
-          <div className="flex items-center justify-start gap-3 w-full">
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              disabled={isSaving}
-              className="w-fit py-2 px-6 rounded-xl bg-transparent border border-[#8DA78E] hover:bg-[#8DA78E]/10 text-[#8DA78E] dark:text-[#A3BEB0] dark:border-[#A3BEB0]/30 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="w-fit py-2 px-6 rounded-xl bg-[#A3BEB0] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer disabled:opacity-50"
-            >
-              {isSaving ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="w-fit py-2.5 px-8 rounded-xl bg-[#A3BEB0] hover:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-          >
-            Editar Producto
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onEditClick}
+          className="w-fit py-2.5 px-8 rounded-xl bg-[#A3BEB0] hover:bg-[#8DA78E] text-[#F5F5F1] text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+        >
+          Editar Producto
+        </button>
       </div>
     </motion.div>
   );
@@ -843,15 +612,17 @@ export function VerInventario() {
   const [filtroEstado, setFiltroEstado] = useState<"todos" | "activos" | "inactivos">("activos");
   const [filtroUbicacion, setFiltroUbicacion] = useState("");
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
-  const [modoEdicionDetalle, setModoEdicionDetalle] = useState(false);
+
 
   // Estados de Base de Datos Real
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const { data: productos = [], isLoading, refetch: refetchProductos } = useProductos();
+  const { mutateAsync: eliminarProductoAsync } = useEliminarProducto();
+  const [showDeleteModal, setShowDeleteModal] = useState<Producto | null>(null);
+  const [mostrarBajoStock, setMostrarBajoStock] = useState(false);
 
   // Escáner de código de barras
   const [barcodeBuffer, setBarcodeBuffer] = useState("");
   const lastKeyTime = useRef<number>(Date.now());
-  const [isLoading, setIsLoading] = useState(true);
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
@@ -862,70 +633,6 @@ export function VerInventario() {
   const filtroEstadoDropdownRef = useRef<HTMLDivElement>(null);
 
 
-
-  // Cargar productos de la base de datos
-  const loadDbProductos = async () => {
-    setIsLoading(true);
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("inv_productos")
-        .select("*, inv_proveedores(nombre), inv_compras_detalles(inv_compras(inv_proveedores(nombre)))")
-        .order("nombre", { ascending: true });
-
-      if (error) {
-        console.error("Error al cargar productos desde Supabase:", error);
-        Swal.fire({
-          title: "Error de Conexión",
-          text: "No se pudieron obtener los productos desde Supabase: " + error.message,
-          icon: "error",
-          toast: true,
-          position: "top-end",
-          showConfirmButton: false,
-          timer: 4000,
-          ...getSwalThemeOpts()
-        });
-        setProductos([]);
-      } else if (data) {
-        // Mapear datos
-        const mapped: Producto[] = data.map((row: any) => ({
-          id: row.id,
-          codigo: row.codigo || "",
-          nombre: row.nombre || "Producto sin nombre",
-          descripcion: row.descripcion || "",
-          precio_base: row.precio_base || 0,
-          stock_actual: row.stock_actual || 0,
-          stock_minimo: row.stock_minimo || 0,
-          activo: row.activo !== false,
-          imagen_url: row.imagen_url || null,
-          imagen_url_2: row.imagen_url_2 || null,
-          imagen_url_3: row.imagen_url_3 || null,
-          fecha_vencimiento: row.fecha_vencimiento || null,
-          numero_lote: row.numero_lote || null,
-          ubicacion: row.ubicacion || null,
-          proveedor_id: row.proveedor_id || null,
-          inv_proveedores: row.inv_proveedores || null,
-          inv_compras_detalles: row.inv_compras_detalles || []
-        }));
-        setProductos(mapped);
-
-        // Sincronizar selección actual
-        setProductoSeleccionado((prev) => {
-          if (!prev) return null;
-          const fresh = mapped.find((p) => p.id === prev.id);
-          return fresh || null;
-        });
-      }
-    } catch (err: any) {
-      console.error("Error en loadDbProductos:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadDbProductos();
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1055,49 +762,19 @@ export function VerInventario() {
     router.push("/farmacia-la-salud/inventario/nuevo");
   };
 
-  const handleEliminarProducto = async (producto: Producto) => {
-    const confirm = await Swal.fire({
-      title: "¿Eliminar producto?",
-      html: `¿Estás seguro de que deseas eliminar <strong>${producto.nombre}</strong>? Esta acción no se puede deshacer.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-      ...getSwalThemeOpts(),
-      confirmButtonColor: "#ef4444"
-    });
-    if (!confirm.isConfirmed) return;
+  const handleEliminarProducto = (producto: Producto) => {
+    setShowDeleteModal(producto);
+  };
 
+  const confirmDelete = async () => {
+    if (!showDeleteModal) return;
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("inv_productos")
-        .delete()
-        .eq("id", producto.id);
-
-      if (error) throw new Error(error.message);
-
-      if (productoSeleccionado?.id === producto.id) setProductoSeleccionado(null);
-
-      Swal.fire({
-        title: "Eliminado",
-        text: `${producto.nombre} fue eliminado del inventario.`,
-        icon: "success",
-        timer: 2000,
-        timerProgressBar: true,
-        showConfirmButton: false,
-        ...getSwalThemeOpts()
-      });
-
-      loadDbProductos();
+      await eliminarProductoAsync(showDeleteModal.id);
+      Swal.fire({ title: "Eliminado", text: `${showDeleteModal.nombre} fue eliminado del inventario.`, icon: "success", ...getSwalThemeOpts() });
+      if (productoSeleccionado?.id === showDeleteModal.id) setProductoSeleccionado(null);
+      setShowDeleteModal(null);
     } catch (err: any) {
-      Swal.fire({
-        title: "Error",
-        text: "No se pudo eliminar el producto: " + err.message,
-        icon: "error",
-        ...getSwalThemeOpts(),
-        confirmButtonColor: "#ef4444"
-      });
+      Swal.fire({ title: "Error", text: "No se pudo eliminar el producto: " + err.message, icon: "error", ...getSwalThemeOpts() });
     }
   };
 
@@ -1285,8 +962,8 @@ export function VerInventario() {
                 setCurrentPage(1);
               }}
               className={`w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border text-[11px] md:text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer ${filtroStockBajo
-                  ? "border-red-400 bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800"
-                  : "border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                ? "border-red-400 bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800"
+                : "border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
                 } ${hayStockBajoGlobal && !filtroStockBajo ? "animate-pulse" : ""}`}
             >
               <AlertTriangle className="size-3 md:size-3.5" /> Stock Bajo
@@ -1300,8 +977,8 @@ export function VerInventario() {
                 setCurrentPage(1);
               }}
               className={`w-full md:w-auto justify-center px-1.5 md:px-4 py-2.5 rounded-xl border text-[11px] md:text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer ${filtroProximoVencer
-                  ? "border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
-                  : "border-amber-200 dark:border-amber-900/50 text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                ? "border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+                : "border-amber-200 dark:border-amber-900/50 text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20"
                 } ${hayProximoVencerGlobal && !filtroProximoVencer ? "animate-pulse" : ""}`}
             >
               <Calendar className="size-3 md:size-3.5" /> Vencimiento
@@ -1333,35 +1010,31 @@ export function VerInventario() {
           <div className="w-full flex-1 overflow-y-auto custom-scrollbar">
             {/* Mobile: Product Cards */}
             <div className="md:hidden flex flex-col gap-3 pr-2">
-            {productosPaginados.length === 0 ? (
-              <div className="text-center py-14 text-slate-400 font-bold text-sm">
-                No se encontraron productos
-              </div>
-            ) : (
-              productosPaginados.map((p) => (
-                <ProductoCard
-                  key={p.id}
-                  producto={p}
-                  destacarRojo={filtroStockBajo && p.stock_actual <= p.stock_minimo}
-                  onClick={() => {
-                    setProductoSeleccionado(p);
-                    setModoEdicionDetalle(false);
-                  }}
-                  onEdit={() => {
-                    setProductoSeleccionado(p);
-                    setModoEdicionDetalle(true);
-                  }}
-                  onDelete={() => handleEliminarProducto(p)}
-                />
-              ))
-            )}
-          </div>
+              {productosPaginados.length === 0 ? (
+                <div className="text-center py-14 text-slate-400 font-bold text-sm">
+                  No se encontraron productos
+                </div>
+              ) : (
+                productosPaginados.map((p) => (
+                  <ProductoCard
+                    key={p.id}
+                    producto={p}
+                    destacarRojo={filtroStockBajo && p.stock_actual <= p.stock_minimo}
+                    onClick={() => {
+                      setProductoSeleccionado(p);
+                    }}
+                    onEdit={() => router.push("/farmacia-la-salud/inventario/editar/" + p.id)}
+                    onDelete={() => handleEliminarProducto(p)}
+                  />
+                ))
+              )}
+            </div>
 
             {/* Desktop: Table */}
             <div className="hidden md:block overflow-x-auto w-full pb-4">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#F5F5F1] dark:bg-[#525D53]/20 text-[#525D53] dark:text-[#A3BEB0] font-bold uppercase tracking-wider border-b border-[#C1D1C5]/40 dark:border-[#A3BEB0]/20">
+                  <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 font-black uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700">
                     <th className="px-5 py-3.5">Código</th>
                     <th className="px-5 py-3.5">Producto</th>
                     <th className="px-5 py-3.5">Ubicación</th>
@@ -1373,7 +1046,7 @@ export function VerInventario() {
                     <th className="px-5 py-3.5 text-center">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#C1D1C5]/20 dark:divide-zinc-800/40 text-slate-700 dark:text-slate-300">
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-300">
                   {productosPaginados.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="text-center py-14 text-slate-400 font-bold">
@@ -1411,7 +1084,6 @@ export function VerInventario() {
                           key={p.id}
                           onClick={() => {
                             setProductoSeleccionado(isSelected ? null : p);
-                            setModoEdicionDetalle(false);
                           }}
                           className={cn(
                             "hover:bg-[#8DA78E]/10 dark:hover:bg-[#A3BEB0]/15 transition-all cursor-pointer",
@@ -1475,7 +1147,7 @@ export function VerInventario() {
                               <button
                                 onClick={() => {
                                   setProductoSeleccionado(p);
-                                  setModoEdicionDetalle(true);
+                                  router.push("/farmacia-la-salud/inventario/editar/" + p.id);
                                 }}
                                 className="px-3 py-1.5 bg-[#C1D1C5]/30 hover:bg-[#8DA78E] text-[#525D53] hover:text-white dark:bg-[#A3BEB0]/20 dark:text-[#A3BEB0] dark:hover:bg-[#A3BEB0] dark:hover:text-zinc-900 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                               >
@@ -1535,13 +1207,28 @@ export function VerInventario() {
                 <ProductoDetalle
                   producto={productoSeleccionado}
                   onClose={() => setProductoSeleccionado(null)}
-                  onUpdate={() => loadDbProductos()}
-                  defaultEdit={modoEdicionDetalle}
+                  onEditClick={() => router.push(`/farmacia-la-salud/inventario/editar/${productoSeleccionado.id}`)}
                 />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Modal de eliminación */}
+        <ModalShell
+          isOpen={!!showDeleteModal}
+          onClose={() => setShowDeleteModal(null)}
+          title="Advertencia"
+        >
+          {showDeleteModal && (
+            <ModalConfirmDelete
+              title="¿Eliminar producto?"
+              description={`¿Estás seguro de que deseas eliminar ${showDeleteModal.nombre}? Esta acción no se puede deshacer.`}
+              onConfirm={confirmDelete}
+              onCancel={() => setShowDeleteModal(null)}
+            />
+          )}
+        </ModalShell>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -17,18 +17,12 @@ import {
   Download,
   TrendingUp,
   X,
-  Eye,
   Clock,
-  Receipt,
   ChevronDown,
   Check,
   User,
-  AlertCircle
 } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { createClient } from "@/utils/supabase/client";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { cn, fmtQ } from "@/lib/utils";
 import {
   Select,
@@ -38,6 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Swal from "sweetalert2";
+import { getSwalThemeOpts } from "@/lib/utils";
+
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
@@ -46,23 +42,9 @@ import { CustomDatePicker, obtenerSemanasDelMes } from "@/components/ui/CustomDa
 import { CrearCliente } from "./forms/CrearCliente";
 import { EditarCliente } from "./forms/EditarCliente";
 import { formatPhoneDisplay, getWhatsappUrl } from "../proveedores/forms/ProveedorDetalle";
+import { useClientes, useVentasCliente } from "./lib/hooks";
+import type { Cliente, VentaCliente, TransaccionVenta } from "./lib/zod";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-interface Cliente {
-  id: string;
-  nombre: string;
-  email: string;
-  telefono: string;
-  direccion: string;
-  nit: string;
-  totalCompras: number;
-  ultimaCompra: string;
-  saldo: number;
-  creditosPendientes?: number;
-  activo: boolean;
-}
-
-// ─── Panel de detalle ──────────────────────────────────────────────────────────
 function ClienteDetalle({
   cliente,
   onClose,
@@ -72,53 +54,17 @@ function ClienteDetalle({
   onClose: () => void;
   onEdit: () => void;
 }) {
-  const [ventas, setVentas] = useState<any[]>([]);
-  const [loadingVentas, setLoadingVentas] = useState(false);
+  const { data: ventas = [], isLoading: loadingVentas } = useVentasCliente(cliente.id);
   const [showHistorial, setShowHistorial] = useState(false);
-
-  useEffect(() => {
-    async function loadVentas() {
-      setLoadingVentas(true);
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("ventas")
-          .select("id, created_at, tipo_venta, total, observaciones, fin_transacciones(id, monto, fecha_movimiento, tipo_movimiento, categoria)")
-          .eq("cliente_id", cliente.id)
-          .order("created_at", { ascending: false });
-        if (data) {
-          setVentas(data);
-        }
-      } catch (err) {
-        console.error("Error al cargar ventas de cliente:", err);
-      } finally {
-        setLoadingVentas(false);
-      }
-    }
-    loadVentas();
-  }, [cliente.id]);
-
-  // Helper para obtener colores de SweetAlert según el tema activo (claro/oscuro)
-  const getSwalThemeOpts = () => {
-    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-    return {
-      background: isDark ? "#18181b" : "#F5F5F1",
-      color: isDark ? "#F5F5F1" : "#525D53",
-      confirmButtonColor: "#8DA78E",
-      cancelButtonColor: "#525D53",
-      customClass: {
-        popup: "!rounded-3xl border-0",
-      }
-    };
-  };
 
   return (
     <motion.div
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 24 }}
-      className="bg-[#F5F5F1] dark:bg-zinc-900/90 border border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 rounded-2xl p-5 flex flex-col gap-4 h-full overflow-y-auto"
+      className="bg-white dark:bg-zinc-800 flex flex-col h-full w-full animate-fade-in text-left"
     >
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pt-6 pb-6 space-y-4 custom-scrollbar">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="shrink-0 size-8 rounded-lg bg-[#8DA78E]/10 border border-[#8DA78E]/20 flex items-center justify-center">
@@ -136,7 +82,6 @@ function ClienteDetalle({
         </button>
       </div>
 
-      {/* Datos de contacto */}
       <div className="space-y-2">
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Contacto</h4>
         <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
@@ -168,18 +113,17 @@ function ClienteDetalle({
         </div>
       </div>
 
-      {/* Estado Financiero */}
       <div className="space-y-3 pt-2 border-t border-[#C1D1C5]/20">
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70">Estado Financiero</h4>
         {loadingVentas ? (
           <p className="text-xs text-slate-400">Cargando transacciones...</p>
         ) : (() => {
-          const ventasPendientes = ventas.filter((v) => {
+          const ventasPendientes = (ventas as VentaCliente[]).filter((v) => {
             if (v.tipo_venta !== "Crédito") return false;
             const abonos = v.fin_transacciones
               ? v.fin_transacciones
-                  .filter((t: any) => t.categoria === "abono_cliente" || t.categoria === "venta")
-                  .reduce((sum: number, t: any) => sum + Number(t.monto), 0)
+                  .filter((t: TransaccionVenta) => t.categoria === "abono_cliente" || t.categoria === "venta")
+                  .reduce((sum: number, t: TransaccionVenta) => sum + Number(t.monto), 0)
               : 0;
             return (v.total || 0) - abonos > 0;
           });
@@ -205,14 +149,13 @@ function ClienteDetalle({
         })()}
       </div>
 
-      {/* Estadísticas */}
       <div>
         <h4 className="text-[10px] uppercase tracking-widest font-black text-[#525D53] dark:text-[#A3BEB0]/70 mb-2">Estadísticas</h4>
         <div className="grid grid-cols-3 gap-2">
           {[
             { icon: ShoppingBag, label: "Total Compras", value: cliente.totalCompras, color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
             { icon: TrendingUp, label: "Pendiente", value: `${cliente.creditosPendientes || 0} créditos`, color: "text-rose-500" },
-            { icon: Calendar, label: "Última Compra", value: cliente.ultimaCompra ? new Date(cliente.ultimaCompra).toLocaleDateString("es-GT") : "Sin compras", color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
+            { icon: Calendar, label: "Última Compra", value: cliente.ultimaCompra ? (() => { const parts = cliente.ultimaCompra.split("T")[0].split("-"); return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString("es-GT"); })() : "Sin compras", color: "text-[#8DA78E] dark:text-[#A3BEB0]" },
           ].map(({ icon: Icon, label, value, color }) => (
             <div key={label} className="bg-white dark:bg-[#525D53]/10 rounded-lg p-2 border border-[#C1D1C5]/30 dark:border-[#A3BEB0]/10 flex flex-col justify-center">
               <div className="flex items-center gap-1 mb-0.5">
@@ -225,17 +168,18 @@ function ClienteDetalle({
         </div>
       </div>
 
-      {/* Acciones */}
-      <div className="mt-auto pt-3 border-t border-[#C1D1C5]/20 flex flex-wrap justify-end gap-2">
+      </div>
+
+      <div className="flex gap-3 p-4 md:p-6 pt-4 border-t border-zinc-200 dark:border-zinc-800 shrink-0 bg-[#F5F5F1] dark:bg-zinc-900 justify-end">
         <button
           onClick={() => setShowHistorial(true)}
-          className="w-fit py-2 px-4 rounded-xl bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          className="flex-1 py-3 px-4 rounded-xl border border-[#8DA78E] text-[#8DA78E] text-xs font-bold transition-all hover:bg-[#8DA78E]/10 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
         >
           Historial de Compras
         </button>
         <button
           onClick={onEdit}
-          className="w-fit max-w-full py-2 px-4 rounded-xl bg-[#8DA78E] text-[#F5F5F1] text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          className="flex-1 py-3 px-4 rounded-xl bg-[#8DA78E] hover:bg-[#7b927c] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
         >
           Editar Cliente
         </button>
@@ -243,9 +187,9 @@ function ClienteDetalle({
 
       <AnimatePresence>
         {showHistorial && (
-          <HistorialComprasModal 
+          <HistorialComprasModal
             cliente={cliente}
-            ventas={ventas}
+            ventas={ventas as VentaCliente[]}
             onClose={() => setShowHistorial(false)}
           />
         )}
@@ -254,21 +198,22 @@ function ClienteDetalle({
   );
 }
 
-// ─── Modal Historial Compras ──────────────────────────────────────────────────
 function HistorialComprasModal({
   cliente,
   ventas,
   onClose
 }: {
   cliente: Cliente;
-  ventas: any[];
+  ventas: VentaCliente[];
   onClose: () => void;
 }) {
   const [tipoFiltroFecha, setTipoFiltroFecha] = useState<string>("semana");
   const [fechaDia, setFechaDia] = useState<string>(() => {
-    const pad = (n: number) => n.toString().padStart(2, "0");
     const d = new Date();
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
   });
 
   const [activeMonth, setActiveMonth] = useState(() => new Date().getMonth());
@@ -276,7 +221,7 @@ function HistorialComprasModal({
   const [selectedWeekIndex, setSelectedWeekIndex] = useState(-1);
   const [mostrarMesDropdown, setMostrarMesDropdown] = useState(false);
   const [mostrarSemanaDropdown, setMostrarSemanaDropdown] = useState(false);
-  
+
   const [fechaRangoDesde, setFechaRangoDesde] = useState<string>("");
   const [fechaRangoHasta, setFechaRangoHasta] = useState<string>("");
 
@@ -298,27 +243,23 @@ function HistorialComprasModal({
 
   const ventasFiltradas = useMemo(() => {
     return ventas.filter(v => {
-      const fechaVenta = new Date(v.created_at);
+      const fechaCal = v.created_at.split("T")[0];
       if (tipoFiltroFecha === "dia") {
-        return fechaVenta.toISOString().split('T')[0] === fechaDia;
+        return fechaCal === fechaDia;
       } else if (tipoFiltroFecha === "semana") {
-        if (fechaVenta.getMonth() !== activeMonth || fechaVenta.getFullYear() !== activeYear) return false;
+        const [vy, vm] = fechaCal.split("-").map(Number);
+        if (vm - 1 !== activeMonth || vy !== activeYear) return false;
         if (selectedWeekIndex !== -1) {
           const semanas = obtenerSemanasDelMes(activeMonth, activeYear);
           const semanaSeleccionada = semanas[selectedWeekIndex];
           if (semanaSeleccionada) {
-            const dateV = new Date(fechaVenta).setHours(0,0,0,0);
-            const desde = new Date(semanaSeleccionada.desde + "T00:00:00").getTime();
-            const hasta = new Date(semanaSeleccionada.hasta + "T00:00:00").getTime();
-            return dateV >= desde && dateV <= hasta;
+            return fechaCal >= semanaSeleccionada.desde && fechaCal <= semanaSeleccionada.hasta;
           }
         }
         return true;
       } else if (tipoFiltroFecha === "rango") {
-        const dateV = new Date(fechaVenta).setHours(0,0,0,0);
-        const from = fechaRangoDesde ? new Date(fechaRangoDesde).setHours(0,0,0,0) : 0;
-        const to = fechaRangoHasta ? new Date(fechaRangoHasta).setHours(23,59,59,999) : Infinity;
-        return dateV >= from && dateV <= to;
+        if (!fechaRangoDesde || !fechaRangoHasta) return true;
+        return fechaCal >= fechaRangoDesde && fechaCal <= fechaRangoHasta;
       }
       return true;
     });
@@ -326,20 +267,19 @@ function HistorialComprasModal({
 
   const chartData = useMemo(() => {
     if (tipoFiltroFecha === "dia") {
-      const d = new Date(fechaDia + "T00:00:00");
-      if (isNaN(d.getTime())) return [];
-      const year = d.getFullYear();
-      const month = d.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      
+      const parts = fechaDia.split("-").map(Number);
+      if (parts.length < 3) return [];
+      const [year, month] = parts;
+      const daysInMonth = new Date(year, month, 0).getDate();
+
       const data = [];
       for (let i = 1; i <= daysInMonth; i++) {
-        const total = ventas.filter(v => {
-          const vDate = new Date(v.created_at);
-          return vDate.getFullYear() === year && vDate.getMonth() === month && vDate.getDate() === i;
-        }).reduce((acc, curr) => acc + curr.total, 0);
+        const dayStr = `${year}-${String(month).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+        const total = ventas
+          .filter(v => v.created_at.split("T")[0] === dayStr)
+          .reduce((acc, curr) => acc + curr.total, 0);
         data.push({
-          fecha: `${i} ${d.toLocaleDateString("es-GT", { month: "short" })}`,
+          fecha: `${i} ${new Date(year, month - 1, 1).toLocaleDateString("es-GT", { month: "short" })}`,
           total
         });
       }
@@ -349,10 +289,13 @@ function HistorialComprasModal({
       for (let i = 0; i < 12; i++) {
         const monthDate = new Date(activeYear, i, 1);
         const monthName = monthDate.toLocaleDateString("es-GT", { month: "short" });
-        const total = ventas.filter(v => {
-          const date = new Date(v.created_at);
-          return date.getFullYear() === activeYear && date.getMonth() === i;
-        }).reduce((acc, curr) => acc + curr.total, 0);
+        const monthStr = String(i + 1).padStart(2, "0");
+        const total = ventas
+          .filter(v => {
+            const [vy, vm] = v.created_at.split("T")[0].split("-");
+            return vy === String(activeYear) && vm === monthStr;
+          })
+          .reduce((acc, curr) => acc + curr.total, 0);
         data.push({
           fecha: monthName.charAt(0).toUpperCase() + monthName.slice(1),
           total
@@ -364,20 +307,20 @@ function HistorialComprasModal({
       const start = new Date(fechaRangoDesde + "T00:00:00");
       const end = new Date(fechaRangoHasta + "T23:59:59");
       if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return [];
-      
+
       const data = [];
       const current = new Date(start);
-      current.setHours(0,0,0,0);
+      current.setHours(0, 0, 0, 0);
       let daysCount = 0;
       while (current <= end && daysCount < 366) {
-        const year = current.getFullYear();
-        const month = current.getMonth();
-        const dateDay = current.getDate();
-        const total = ventas.filter(v => {
-          const vDate = new Date(v.created_at);
-          return vDate.getFullYear() === year && vDate.getMonth() === month && vDate.getDate() === dateDay;
-        }).reduce((acc, curr) => acc + curr.total, 0);
-        
+        const y = current.getFullYear();
+        const m = String(current.getMonth() + 1).padStart(2, "0");
+        const d = String(current.getDate()).padStart(2, "0");
+        const dayStr = `${y}-${m}-${d}`;
+        const total = ventas
+          .filter(v => v.created_at.split("T")[0] === dayStr)
+          .reduce((acc, curr) => acc + curr.total, 0);
+
         data.push({
           fecha: current.toLocaleDateString("es-GT", { month: "short", day: "numeric" }),
           total
@@ -407,7 +350,6 @@ function HistorialComprasModal({
           </div>
 
           <div className="flex-1 flex justify-center w-full md:w-auto">
-            {/* Opciones Dia/Mes/Rango */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full md:w-fit mx-auto sm:mx-0">
               <div className="flex items-center justify-center gap-1 bg-slate-50 dark:bg-zinc-900/50 p-1 rounded-xl border border-slate-100 dark:border-zinc-800 w-full sm:w-auto">
                 {[
@@ -431,7 +373,6 @@ function HistorialComprasModal({
                 ))}
               </div>
 
-              {/* Selector de Fecha específico según tipo */}
               <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
                 {tipoFiltroFecha === "dia" && (
                   <CustomDatePicker
@@ -443,7 +384,6 @@ function HistorialComprasModal({
 
                 {tipoFiltroFecha === "semana" && (
                   <div className="flex items-center gap-2 w-full">
-                    {/* Selector de Mes/Año */}
                     <div className="relative w-1/2 sm:w-auto" ref={mesDropdownRef}>
                       <button
                         type="button"
@@ -492,13 +432,13 @@ function HistorialComprasModal({
                                   onClick={() => {
                                     setActiveMonth(idx);
                                     setMostrarMesDropdown(false);
-                                    setSelectedWeekIndex(-1); // Reset a todo el mes
+                                    setSelectedWeekIndex(-1);
                                   }}
                                   className={cn(
                                     "px-1 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
                                     activeMonth === idx
                                       ? "bg-[#8DA78E] text-white"
-                                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900"
+                                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-900"
                                   )}
                                 >
                                   {m}
@@ -510,7 +450,6 @@ function HistorialComprasModal({
                       </AnimatePresence>
                     </div>
 
-                    {/* Selector de Semana */}
                     <div className="relative w-1/2 sm:w-auto" ref={semanaDropdownRef}>
                       <button
                         type="button"
@@ -522,7 +461,7 @@ function HistorialComprasModal({
                         </span>
                         <ChevronDown className="size-3 text-slate-400 shrink-0" />
                       </button>
-                      
+
                       <AnimatePresence>
                         {mostrarSemanaDropdown && (
                           <motion.div
@@ -605,7 +544,7 @@ function HistorialComprasModal({
               <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="fecha" stroke="#888888" fontSize={10} tickLine={false} axisLine={false} />
                 <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => `Q${value}`} />
-                <Tooltip 
+                <Tooltip
                   formatter={(value: any) => [fmtQ(Number(value)), "Total"]}
                   labelStyle={{ color: '#000' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
@@ -641,137 +580,18 @@ function HistorialComprasModal({
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
 export function VerClientes() {
   const [busqueda, setBusqueda] = useState("");
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
-
-  // Estados de Base de Datos Real
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [clienteParaEditar, setClienteParaEditar] = useState<Cliente | null>(null);
-  
-  // Criterio de Orden
   const [criterioOrden, setCriterioOrden] = useState<"nombre-asc" | "nombre-desc" | "compras-desc" | "saldo-asc" | "saldo-desc">("nombre-asc");
-
-  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Helper para obtener colores de SweetAlert según el tema activo (claro/oscuro)
-  const getSwalThemeOpts = () => {
-    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-    return {
-      background: isDark ? "#18181b" : "#F5F5F1",
-      color: isDark ? "#F5F5F1" : "#525D53",
-      confirmButtonColor: "#8DA78E",
-      cancelButtonColor: "#525D53",
-      customClass: {
-        popup: "!rounded-3xl border-0",
-      }
-    };
-  };
+  const { data: clientes = [], isLoading, refetch } = useClientes();
 
-  // Función para cargar los clientes reales desde Supabase
-  const loadDbClientes = async () => {
-    setIsLoading(true);
-    try {
-      const supabase = createClient();
-      
-      // 1. Obtener todos los clientes
-      const { data: clientesData, error: cliError } = await supabase
-        .from("ven_clientes")
-        .select("*")
-        .order("nombre", { ascending: true });
-
-      if (cliError) throw cliError;
-
-      // 2. Obtener todas las ventas para calcular estadísticas de consumo y saldos
-      const { data: ventasData, error: ventasError } = await supabase
-        .from("ventas")
-        .select("id, cliente_id, total, tipo_venta, created_at")
-        .not("cliente_id", "is", null);
-
-      if (ventasError) throw ventasError;
-
-      // Obtener cuentas por cobrar reales para saber cuántos créditos pendientes tiene cada cliente
-      const { data: cuentasPendientes } = await supabase.rpc("fin_cuentas_por_cobrar");
-
-      const clientSalesMap = new Map<string, any[]>();
-      if (ventasData) {
-        ventasData.forEach((v) => {
-          if (v.cliente_id) {
-            const list = clientSalesMap.get(v.cliente_id) || [];
-            list.push(v);
-            clientSalesMap.set(v.cliente_id, list);
-          }
-        });
-      }
-
-      if (clientesData) {
-        const mapped: Cliente[] = clientesData.map((row: any) => {
-          const clientSales = clientSalesMap.get(row.id) || [];
-          const totalCompras = clientSales.length;
-
-          let ultimaCompra = "";
-          if (totalCompras > 0) {
-            const sorted = [...clientSales].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            ultimaCompra = sorted[0].created_at;
-          }
-
-          // Contar cuántos créditos pendientes tiene este cliente según el RPC
-          const creditosPendientes = cuentasPendientes 
-            ? cuentasPendientes.filter((c: any) => c.cliente_id === row.id).length
-            : 0;
-
-          return {
-            id: row.id,
-            nombre: row.nombre || "Cliente sin nombre",
-            email: row.email || "No registrado",
-            telefono: row.telefono || "No registrado",
-            direccion: row.direccion || "No registrada",
-            nit: row.nit || "C/F",
-            totalCompras,
-            ultimaCompra,
-            saldo: 0, 
-            creditosPendientes,
-            activo: true,
-          };
-        });
-
-        setClientes(mapped);
-        setClienteSeleccionado((prev) => {
-          if (!prev) return null;
-          const fresh = mapped.find((c) => c.id === prev.id);
-          return fresh || null;
-        });
-      }
-    } catch (err: any) {
-      console.error("Error en loadDbClientes:", err);
-      Swal.fire({
-        title: "Error de Conexión",
-        text: "No se pudieron obtener los clientes desde Supabase: " + err.message,
-        icon: "error",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 4000,
-        ...getSwalThemeOpts()
-      });
-      setClientes([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Cargar al montar la página
-  useEffect(() => {
-    loadDbClientes();
-  }, []);
-
-  // Filtrado de clientes por término de búsqueda
   const clientesFiltrados = clientes.filter((c) => {
     return (
       c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -781,40 +601,26 @@ export function VerClientes() {
     );
   });
 
-  // Ordenamiento de Clientes
   const clientesOrdenados = [...clientesFiltrados].sort((a, b) => {
-    if (criterioOrden === "nombre-asc") {
-      return a.nombre.localeCompare(b.nombre);
-    } else if (criterioOrden === "nombre-desc") {
-      return b.nombre.localeCompare(a.nombre);
-    } else if (criterioOrden === "compras-desc") {
-      return b.totalCompras - a.totalCompras;
-    } else if (criterioOrden === "saldo-asc") {
-      return a.saldo - b.saldo;
-    } else if (criterioOrden === "saldo-desc") {
-      return b.saldo - a.saldo;
-    }
+    if (criterioOrden === "nombre-asc") return a.nombre.localeCompare(b.nombre);
+    if (criterioOrden === "nombre-desc") return b.nombre.localeCompare(a.nombre);
+    if (criterioOrden === "compras-desc") return b.totalCompras - a.totalCompras;
+    if (criterioOrden === "saldo-asc") return a.saldo - b.saldo;
+    if (criterioOrden === "saldo-desc") return b.saldo - a.saldo;
     return 0;
   });
 
-  // Paginación logic
   const totalPages = Math.ceil(clientesOrdenados.length / pageSize) || 1;
   const paginatedClientes = clientesOrdenados.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
 
-  // Función para agregar nuevo cliente interactivo
-  const handleNuevoCliente = () => {
-    setIsCreateOpen(true);
-  };
-
-  // Función para exportar PDF
   const handleExportarPDF = () => {
     try {
       const doc = new jsPDF();
       doc.text("Reporte General de Clientes", 14, 15);
-      
+
       const tableData = clientesOrdenados.map((c) => [
         c.nombre,
         c.telefono,
@@ -823,20 +629,20 @@ export function VerClientes() {
         c.totalCompras.toString(),
         `${fmtQ(c.saldo)}`
       ]);
-      
+
       autoTable(doc, {
         head: [["Nombre", "Teléfono", "Email", "NIT", "Compras", "Saldo Pendiente"]],
         body: tableData,
         startY: 22,
         theme: "striped",
         headStyles: {
-          fillColor: [141, 167, 142], 
-          textColor: [245, 245, 241], 
+          fillColor: [141, 167, 142],
+          textColor: [245, 245, 241],
           fontStyle: "bold",
           fontSize: 10
         },
         alternateRowStyles: {
-          fillColor: [245, 245, 241] 
+          fillColor: [245, 245, 241]
         },
         margin: { top: 40 },
         styles: {
@@ -844,33 +650,16 @@ export function VerClientes() {
           cellPadding: 3
         }
       });
-      
+
       doc.save(`Reporte_Clientes_${new Date().toISOString().slice(0, 10)}.pdf`);
-      
-      Swal.fire({
-        title: "¡PDF Exportado!",
-        text: "El reporte de clientes se ha descargado exitosamente.",
-        icon: "success",
-        timer: 2000,
-        timerProgressBar: true,
-        showConfirmButton: false,
-        ...getSwalThemeOpts()
-      });
-    } catch (error: any) {
-      console.error("Error al exportar PDF:", error);
-      Swal.fire({
-        title: "Error",
-        text: "No se pudo generar el archivo PDF: " + error.message,
-        icon: "error",
-        ...getSwalThemeOpts(),
-        confirmButtonColor: "#ef4444"
-      });
+      Swal.fire({ title: "Éxito", text: "PDF exportado exitosamente.", icon: "success", ...getSwalThemeOpts() });
+    } catch {
+      Swal.fire({ title: "Error", text: "No se pudo generar el archivo PDF.", icon: "error", ...getSwalThemeOpts() });
     }
   };
 
   return (
     <div className="w-full flex flex-col gap-6 p-4 md:p-6 pt-32 md:pt-24 min-h-screen">
-      {/* Header */}
       <div className="flex items-center justify-between gap-4 w-full">
         <div className="flex items-center gap-4">
           <div className="shrink-0 size-12 rounded-2xl bg-[#8DA78E]/10 border border-[#8DA78E]/20 flex items-center justify-center overflow-hidden">
@@ -884,34 +673,31 @@ export function VerClientes() {
           </div>
         </div>
 
-        {/* Botón Nuevo Cliente */}
         <button
-          onClick={handleNuevoCliente}
+          onClick={() => setIsCreateOpen(true)}
           className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-[#8DA78E] text-[#F5F5F1] text-xs sm:text-sm font-bold transition-all shadow-sm cursor-pointer shrink-0"
         >
           <Plus className="size-4" /> Nuevo Cliente
         </button>
       </div>
 
-      {/* Buscador, Ordenamiento y Exportar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar por nombre, email, teléfono o NIT..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-zinc-900/60 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/30 focus:border-[#8DA78E] transition-all"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-zinc-900/60 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/30 focus:border-[#8DA78E] transition-all"
           />
         </div>
         <div className="flex gap-2 shrink-0">
-          <Select 
-            value={criterioOrden} 
-            onValueChange={(val) => setCriterioOrden(val as any)}
+          <Select
+            value={criterioOrden}
+            onValueChange={(val) => setCriterioOrden(val as typeof criterioOrden)}
           >
             <SelectTrigger className="w-[280px] h-10 rounded-xl bg-white dark:bg-zinc-900 border-slate-200 dark:border-slate-700/60 text-xs font-bold text-slate-700 dark:text-white focus:ring-1 focus:ring-[#8DA78E] shadow-sm">
-              <SelectValue placeholder="Ordenar por..." />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800 bg-white dark:bg-zinc-950 shadow-md">
               <SelectItem value="nombre-asc" className="text-xs font-semibold cursor-pointer">Nombre (A-Z)</SelectItem>
@@ -930,7 +716,6 @@ export function VerClientes() {
         </div>
       </div>
 
-      {/* Grid de clientes + detalle */}
       <div className="flex gap-4 relative w-full flex-1 min-h-0 overflow-x-hidden p-1">
         {isLoading && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-xs flex items-center justify-center z-50 rounded-2xl">
@@ -941,224 +726,228 @@ export function VerClientes() {
           </div>
         )}
 
-        {/* Contenedor principal de tarjetas/tabla y paginación */}
         <div className="flex flex-col flex-1 min-w-0 bg-[#F5F5F1] dark:bg-zinc-900/60 border border-[#C1D1C5]/40 dark:border-zinc-800 rounded-3xl p-5 shadow-sm overflow-hidden">
           <div className="w-full flex-1 overflow-y-auto custom-scrollbar">
-            {/* Vista Mobile: Tarjetas */}
             <div className="md:hidden flex flex-col gap-3 pr-2 w-full">
-          {paginatedClientes.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 font-bold text-sm bg-white dark:bg-zinc-900/40 rounded-2xl border border-slate-100 dark:border-zinc-800/40">
-              No se encontraron clientes.
-            </div>
-          ) : (
-            paginatedClientes.map((cliente) => (
-              <motion.div
-                key={cliente.id}
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.97 }}
-                className={cn(
-                  "relative border rounded-xl p-3 flex gap-3 items-center min-h-[96px] transition-all bg-white dark:bg-[#525D53]/10 border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 hover:border-[#8DA78E] dark:hover:border-[#A3BEB0]/60"
-                )}
-              >
-                <div className="shrink-0 size-10 rounded-xl flex items-center justify-center border bg-[#8DA78E]/10 border-[#8DA78E]/20 text-[#8DA78E] dark:text-[#A3BEB0]">
-                  <User className="size-5" />
+              {paginatedClientes.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 font-bold text-sm bg-white dark:bg-zinc-900/40 rounded-2xl border border-slate-100 dark:border-zinc-800/40">
+                  No se encontraron clientes.
                 </div>
-
-                <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
-                  <div>
-                    <div className="flex items-start justify-between gap-1.5">
-                      <h3 className="font-black text-xs text-slate-900 dark:text-white truncate uppercase leading-tight">
-                        {cliente.nombre}
-                      </h3>
-                      <span className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 bg-slate-100 dark:bg-zinc-850 text-slate-500 rounded-full shrink-0 leading-none">
-                        NIT: {cliente.nit || "C/F"}
-                      </span>
+              ) : (
+                paginatedClientes.map((cliente) => (
+                  <motion.div
+                    key={cliente.id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    className={cn(
+                      "relative border rounded-xl p-3 flex gap-3 items-center min-h-[96px] transition-all bg-white dark:bg-[#525D53]/10 border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 hover:border-[#8DA78E] dark:hover:border-[#A3BEB0]/60"
+                    )}
+                  >
+                    <div className="shrink-0 size-10 rounded-xl flex items-center justify-center border bg-[#8DA78E]/10 border-[#8DA78E]/20 text-[#8DA78E] dark:text-[#A3BEB0]">
+                      <User className="size-5" />
                     </div>
-                    
-                    <div className="flex items-center gap-3 mt-1 text-[10px]">
-                      {cliente.telefono && cliente.telefono !== "No registrado" && (
-                        <a
-                          href={getWhatsappUrl(cliente.telefono)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline font-bold"
-                        >
-                          <Phone className="size-3" /> {formatPhoneDisplay(cliente.telefono)}
-                        </a>
-                      )}
-                      {cliente.email && cliente.email !== "No registrado" && (
-                        <span className="text-slate-400 dark:text-slate-500 truncate flex items-center gap-0.5">
-                          <Mail className="size-3 shrink-0" /> {cliente.email}
-                        </span>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="mt-2 flex items-center justify-between gap-2 pt-1.5 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10">
-                    <div className="flex gap-2.5 text-[9px] leading-none">
+                    <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
                       <div>
-                        <span className="text-[#525D53]/60 dark:text-[#A3BEB0]/50 font-bold uppercase">Compras:</span>
-                        <span className="font-bold ml-0.5 text-zinc-700 dark:text-zinc-200 tabular-nums">
-                          {cliente.totalCompras}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-[#525D53]/60 dark:text-[#A3BEB0]/50 font-bold uppercase">Saldo:</span>
-                        <span className="font-black ml-0.5 text-[#8DA78E] dark:text-[#A3BEB0] tabular-nums tracking-tight">
-                          {fmtQ(cliente.saldo)}
-                        </span>
-                      </div>
-                    </div>
+                        <div className="flex items-start justify-between gap-1.5">
+                          <h3 className="font-black text-xs text-slate-900 dark:text-white truncate uppercase leading-tight">
+                            {cliente.nombre}
+                          </h3>
+                          <span className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 bg-slate-100 dark:bg-zinc-850 text-slate-500 rounded-full shrink-0 leading-none">
+                            NIT: {cliente.nit || "C/F"}
+                          </span>
+                        </div>
 
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setClienteParaEditar(cliente);
-                          setIsEditOpen(true);
-                        }}
-                        className="px-2 py-1 bg-[#A3BEB0]/20 hover:bg-[#A3BEB0]/40 text-[#525D53] dark:text-[#A3BEB0] text-[9px] font-bold rounded-md transition-all cursor-pointer uppercase"
-                      >
-                        Editar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </div>
+                        <div className="flex items-center gap-3 mt-1 text-[10px]">
+                          {cliente.telefono && cliente.telefono !== "No registrado" && (
+                            <a
+                              href={getWhatsappUrl(cliente.telefono)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline font-bold"
+                            >
+                              <Phone className="size-3" /> {formatPhoneDisplay(cliente.telefono)}
+                            </a>
+                          )}
+                          {cliente.email && cliente.email !== "No registrado" && (
+                            <span className="text-slate-400 dark:text-slate-500 truncate flex items-center gap-0.5">
+                              <Mail className="size-3 shrink-0" /> {cliente.email}
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-            {/* Vista Desktop: Tabla */}
-            <div className="hidden md:block overflow-x-auto w-full pb-4">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-[#C1D1C5]/30 dark:border-zinc-800 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  <th className="px-5 py-3.5 text-center w-12">#</th>
-                  <th className="px-5 py-3.5">Nombre Completo</th>
-                  <th className="px-5 py-3.5">Teléfono</th>
-                  <th className="px-5 py-3.5">Correo Electrónico</th>
-                  <th className="px-5 py-3.5">NIT</th>
-                  <th className="px-5 py-3.5 text-right">Compras</th>
-                  <th className="px-5 py-3.5 text-right">Saldo Pendiente</th>
-                  <th className="px-5 py-3.5 text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#C1D1C5]/15 dark:divide-zinc-800/40 text-slate-700 dark:text-slate-300">
-                {paginatedClientes.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-12 text-slate-400">
-                      No se encontraron clientes.
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedClientes.map((cliente, index) => (
-                    <tr
-                      key={cliente.id}
-                      onClick={() => {
-                        const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
-                        if (!isMobile) {
-                          setClienteSeleccionado(clienteSeleccionado?.id === cliente.id ? null : cliente);
-                        }
-                      }}
-                      className={cn(
-                        "hover:bg-[#8DA78E]/10 dark:hover:bg-[#A3BEB0]/15 transition-all cursor-pointer",
-                        clienteSeleccionado?.id === cliente.id && "bg-[#8DA78E]/20 dark:bg-[#8DA78E]/25"
-                      )}
-                    >
-                      <td className="px-5 py-3.5 text-center font-bold text-slate-400 dark:text-slate-500">
-                        {(currentPage - 1) * pageSize + index + 1}
-                      </td>
-                      <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
-                        {cliente.nombre}
-                      </td>
-                      <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
-                        {cliente.telefono && cliente.telefono !== "No registrado" ? (
-                          <a
-                            href={getWhatsappUrl(cliente.telefono)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline font-bold"
-                          >
-                            <Phone className="size-3" /> {formatPhoneDisplay(cliente.telefono)}
-                          </a>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 text-slate-500">{cliente.email}</td>
-                      <td className="px-5 py-3.5 font-mono text-slate-500">{cliente.nit}</td>
-                      <td className="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-white">
-                        {cliente.totalCompras}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-black text-[#8DA78E] dark:text-[#A3BEB0]">
-                        {fmtQ(cliente.saldo)}
-                      </td>
-                      <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-2">
+                      <div className="mt-2 flex items-center justify-between gap-2 pt-1.5 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10">
+                        <div className="flex gap-2.5 text-[9px] leading-none">
+                          <div>
+                            <span className="text-[#525D53]/60 dark:text-[#A3BEB0]/50 font-bold uppercase">Compras:</span>
+                            <span className="font-bold ml-0.5 text-zinc-700 dark:text-zinc-200 tabular-nums">
+                              {cliente.totalCompras}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[#525D53]/60 dark:text-[#A3BEB0]/50 font-bold uppercase">Saldo:</span>
+                            <span className="font-black ml-0.5 text-[#8DA78E] dark:text-[#A3BEB0] tabular-nums tracking-tight">
+                              {fmtQ(cliente.saldo)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-1 shrink-0">
                           <button
+                            type="button"
                             onClick={() => {
                               setClienteParaEditar(cliente);
                               setIsEditOpen(true);
                             }}
-                            className="px-3 py-1.5 bg-[#A3BEB0]/20 hover:bg-[#A3BEB0]/40 text-[#525D53] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
+                            className="px-2 py-1 bg-[#A3BEB0]/20 hover:bg-[#A3BEB0]/40 text-[#525D53] dark:text-[#A3BEB0] text-[9px] font-bold rounded-md transition-all cursor-pointer uppercase"
                           >
                             Editar
                           </button>
                         </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 font-black uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700">
+                    <th className="px-5 py-3.5 text-center w-12">#</th>
+                    <th className="px-5 py-3.5">Nombre Completo</th>
+                    <th className="px-5 py-3.5">Teléfono</th>
+                    <th className="px-5 py-3.5">Correo Electrónico</th>
+                    <th className="px-5 py-3.5">NIT</th>
+                    <th className="px-5 py-3.5 text-right">Compras</th>
+                    <th className="px-5 py-3.5 text-right">Saldo Pendiente</th>
+                    <th className="px-5 py-3.5 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-300">
+                  {paginatedClientes.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-12 text-slate-400">
+                        No se encontraron clientes.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    paginatedClientes.map((cliente, index) => (
+                      <tr
+                        key={cliente.id}
+                        onClick={() => {
+                          const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+                          if (!isMobile) {
+                            setClienteSeleccionado(clienteSeleccionado?.id === cliente.id ? null : cliente);
+                          }
+                        }}
+                        className={cn(
+                          "hover:bg-[#8DA78E]/10 dark:hover:bg-[#A3BEB0]/15 transition-all cursor-pointer",
+                          clienteSeleccionado?.id === cliente.id && "bg-[#8DA78E]/20 dark:bg-[#8DA78E]/25"
+                        )}
+                      >
+                        <td className="px-5 py-3.5 text-center font-bold text-slate-400 dark:text-slate-500">
+                          {(currentPage - 1) * pageSize + index + 1}
+                        </td>
+                        <td className="px-5 py-3.5 font-bold text-slate-900 dark:text-white">
+                          {cliente.nombre}
+                        </td>
+                        <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+                          {cliente.telefono && cliente.telefono !== "No registrado" ? (
+                            <a
+                              href={getWhatsappUrl(cliente.telefono)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 hover:underline font-bold"
+                            >
+                              <Phone className="size-3" /> {formatPhoneDisplay(cliente.telefono)}
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5 text-slate-500">{cliente.email}</td>
+                        <td className="px-5 py-3.5 font-mono text-slate-500">{cliente.nit}</td>
+                        <td className="px-5 py-3.5 text-right font-bold text-slate-900 dark:text-white">
+                          {cliente.totalCompras}
+                        </td>
+                        <td className="px-5 py-3.5 text-right font-black text-[#8DA78E] dark:text-[#A3BEB0]">
+                          {fmtQ(cliente.saldo)}
+                        </td>
+                        <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => {
+                                setClienteParaEditar(cliente);
+                                setIsEditOpen(true);
+                              }}
+                              className="px-3 py-1.5 bg-[#A3BEB0]/20 hover:bg-[#A3BEB0]/40 text-[#525D53] dark:text-[#A3BEB0] font-bold rounded-lg transition-colors cursor-pointer text-[10px] uppercase"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Paginación */}
           {!isLoading && clientesOrdenados.length > 0 && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4 pt-4 border-t border-[#C1D1C5]/40 dark:border-zinc-800 text-slate-600 dark:text-slate-400">
-            <PageSizeSelect
-              pageSize={pageSize}
-              setPageSize={(size) => {
-                setPageSize(size);
-                setCurrentPage(1);
-              }}
-            />
-            <div className="flex justify-start sm:justify-center w-full sm:w-auto">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(p) => setCurrentPage(p)}
+              <PageSizeSelect
+                pageSize={pageSize}
+                setPageSize={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
               />
-            </div>
-          </div>
-        )}
-        </div>
-
-        {/* Panel de detalle */}
-        <AnimatePresence>
-          {clienteSeleccionado && (
-            <motion.div
-              initial={{ x: "100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "100%", opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="hidden md:block absolute top-0 right-0 h-full w-[450px] z-20 shadow-2xl"
-            >
-              <div className="h-full">
-                <ClienteDetalle
-                  cliente={clienteSeleccionado}
-                  onClose={() => setClienteSeleccionado(null)}
-                  onEdit={() => {
-                    setClienteParaEditar(clienteSeleccionado);
-                    setIsEditOpen(true);
-                  }}
+              <div className="flex justify-start sm:justify-center w-full sm:w-auto">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={(p) => setCurrentPage(p)}
                 />
               </div>
-            </motion.div>
+            </div>
+          )}
+        </div>
+
+        <AnimatePresence>
+          {clienteSeleccionado && (
+            <div className="fixed inset-0 z-[100] flex justify-end">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setClienteSeleccionado(null)}
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer"
+              />
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="relative w-full max-w-md h-[calc(100%-2rem)] m-4 bg-white dark:bg-zinc-900 shadow-2xl flex flex-col rounded-[2rem] overflow-hidden"
+              >
+                <div className="h-full">
+                  <ClienteDetalle
+                    cliente={clienteSeleccionado}
+                    onClose={() => setClienteSeleccionado(null)}
+                    onEdit={() => {
+                      setClienteParaEditar(clienteSeleccionado);
+                      setIsEditOpen(true);
+                    }}
+                  />
+                </div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
@@ -1166,7 +955,7 @@ export function VerClientes() {
       <CrearCliente
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onSuccess={loadDbClientes}
+        onSuccess={() => refetch()}
       />
 
       <EditarCliente
@@ -1175,11 +964,9 @@ export function VerClientes() {
           setIsEditOpen(false);
           setClienteParaEditar(null);
         }}
-        onSuccess={loadDbClientes}
+        onSuccess={() => refetch()}
         cliente={clienteParaEditar}
       />
-
-
     </div>
   );
 }

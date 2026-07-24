@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
-import { guardarProveedor } from "../actions";
+import { guardarProveedor } from "../lib/actions";
 import Swal from "sweetalert2";
 
 interface Proveedor {
@@ -91,8 +91,7 @@ export function EditarProveedor({ isOpen, onClose, onSuccess, proveedor }: Edita
 
     setIsLoading(true);
     try {
-      const res = await guardarProveedor({
-        id: proveedor.id,
+      const res = await guardarProveedor(proveedor.id, {
         nombre: nombreTrimmed,
         descripcion: descripcion.trim() || null,
         nit: nit.trim() || null,
@@ -101,7 +100,7 @@ export function EditarProveedor({ isOpen, onClose, onSuccess, proveedor }: Edita
       });
 
       if (!res.success) {
-        throw new Error(res.error);
+        throw new Error(res.code);
       }
 
       Swal.fire({

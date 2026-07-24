@@ -1,61 +1,100 @@
-import { createClient } from "@/utils/supabase/client";
+"use server";
 
-export interface ActionResult<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+import { createClient } from "@/utils/supabase/server";
+import { revalidatePath } from "next/cache";
+import { productSchema, type ProductFormValues } from "./zod";
 
-// Fetch all inventory products
-export async function getProductos(): Promise<ActionResult<any[]>> {
+export async function obtenerProductos() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { code: "UNAUTHORIZED" as const };
+
     const { data, error } = await supabase
       .from("inv_productos")
       .select("*, inv_proveedores(nombre), inv_compras_detalles(inv_compras(inv_proveedores(nombre)))")
       .order("nombre", { ascending: true });
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
-    return { success: true, data: data || [] };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+    if (error) return { code: "INTERNAL" as const };
+    return { success: true as const, data: data ?? [] };
+  } catch {
+    return { code: "INTERNAL" as const };
   }
 }
 
-// Delete product
-export async function eliminarProducto(id: string): Promise<ActionResult> {
+export async function obtenerUbicaciones() {
   try {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("inv_productos")
-      .delete()
-      .eq("id", id);
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { code: "UNAUTHORIZED" as const };
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+    const { data, error } = await supabase
+      .from("inv_productos")
+      .select("ubicacion")
+      .not("ubicacion", "is", null)
+      .not("ubicacion", "eq", "")
+      .not("ubicacion", "eq", "Sin asignar");
+
+    if (error) return { code: "INTERNAL" as const };
+
+    const uniqueUbis = Array.from(new Set(data.map((d: any) => d.ubicacion))).filter(Boolean) as string[];
+    return { success: true as const, data: uniqueUbis.sort() };
+  } catch {
+    return { code: "INTERNAL" as const };
   }
 }
 
-// Update product
-export async function updateProducto(id: string, values: any): Promise<ActionResult> {
+export async function eliminarProducto(id: string) {
   try {
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("inv_productos")
-      .update(values)
-      .eq("id", id);
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { code: "UNAUTHORIZED" as const };
 
-    if (error) {
-      return { success: false, error: error.message };
+    const { error } = await supabase.from("inv_productos").delete().eq("id", id);
+    if (error) return { code: "INTERNAL" as const };
+
+    revalidatePath("/farmacia-la-salud/inventario");
+    return { success: true as const };
+  } catch {
+    return { code: "INTERNAL" as const };
+  }
+}
+
+export async function guardarProducto(id: string | undefined, input: ProductFormValues) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { code: "UNAUTHORIZED" as const };
+
+    const parsed = productSchema.safeParse(input);
+    if (!parsed.success) return { code: "VALIDATION" as const };
+
+    const payload = {
+      nombre: parsed.data.nombre,
+      codigo: parsed.data.codigo || null,
+      descripcion: parsed.data.descripcion || null,
+      precio_base: parsed.data.precio_base,
+      stock_actual: parsed.data.stock_actual,
+      stock_minimo: parsed.data.stock_minimo,
+      activo: parsed.data.activo,
+      imagen_url: parsed.data.imagen_url || null,
+      imagen_url_2: parsed.data.imagen_url_2 || null,
+      imagen_url_3: parsed.data.imagen_url_3 || null,
+      proveedor_id: parsed.data.proveedor_id || null,
+      ubicacion: parsed.data.ubicacion || null,
+    };
+
+    if (id) {
+      const { error } = await supabase.from("inv_productos").update(payload).eq("id", id);
+      if (error) return { code: "INTERNAL" as const };
+    } else {
+      const { error } = await supabase.from("inv_productos").insert(payload);
+      if (error) return { code: "INTERNAL" as const };
     }
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+
+    revalidatePath("/farmacia-la-salud/inventario");
+    return { success: true as const };
+  } catch {
+    return { code: "INTERNAL" as const };
   }
 }

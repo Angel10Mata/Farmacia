@@ -153,22 +153,22 @@ export function VerUsuarios() {
 
         <div className="flex flex-col flex-1 min-w-0 bg-card border border-border rounded-xl mx-4 overflow-hidden shadow-sm">
           <div className="w-full flex-1 overflow-auto custom-scrollbar">
-            <table className="w-full text-sm text-left border-separate border-spacing-0">
-            <thead className="sticky top-0 bg-muted/80 backdrop-blur-md z-20">
-              <tr>
-                <th className="px-6 py-3 border-b border-border">
+            <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 font-black uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700">
+                <th className="px-5 py-3.5">
                   <select
                     value={sortOrder}
                     onChange={(e) =>
                       setSortOrder(e.target.value as "asc" | "desc")
                     }
-                    className="bg-transparent font-semibold text-foreground focus:outline-none cursor-pointer hover:text-primary transition-colors uppercase text-xs w-full sm:w-auto"
+                    className="bg-transparent font-black uppercase tracking-wider focus:outline-none cursor-pointer transition-colors w-full sm:w-auto"
                   >
                     <option value="asc">Ordenar (A-Z)</option>
                     <option value="desc">Ordenar (Z-A)</option>
                   </select>
                 </th>
-                <th className="px-6 py-3 border-b border-border text-right">
+                <th className="px-5 py-3.5 text-right">
                   <div className="flex items-center justify-end gap-1">
                     <select
                       value={roleFilter}
@@ -176,7 +176,7 @@ export function VerUsuarios() {
                         setRoleFilter(e.target.value);
                         setCurrentPage(1);
                       }}
-                      className="bg-transparent text-foreground focus:outline-none cursor-pointer hover:text-primary transition-colors text-xs font-medium text-right"
+                      className="bg-transparent font-black uppercase tracking-wider focus:outline-none cursor-pointer transition-colors text-right"
                     >
                       <option value="all">Rol: Todos</option>
                       {availableRoles.map((role) => (
@@ -189,7 +189,7 @@ export function VerUsuarios() {
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-300">
               {paginatedUsers.map((userItem, index) => {
                 const firstLetter = (userItem.nombre || "#")
                   .charAt(0)
@@ -208,7 +208,7 @@ export function VerUsuarios() {
                       <tr>
                         <td
                           colSpan={2}
-                          className="bg-muted/30 px-6 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-y border-border/50"
+                          className="bg-zinc-100 dark:bg-zinc-800/50 px-5 py-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-widest"
                         >
                           {firstLetter}
                         </td>
@@ -216,12 +216,12 @@ export function VerUsuarios() {
                     )}
                     <tr
                       onClick={() => handleUserClick(userItem.id)}
-                      className="group hover:bg-muted/40 transition-colors cursor-pointer"
+                      className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
                     >
-                      <td className="px-6 py-3 font-medium group-hover:text-primary transition-colors border-b border-border/40">
+                      <td className="px-5 py-3.5 font-medium group-hover:text-primary transition-colors">
                         {userItem.nombre || "Sin Nombre"}
                       </td>
-                      <td className="px-6 py-3 border-b border-border/40 text-right">
+                      <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <span className="capitalize text-[10px] font-bold bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
                             {userItem.rol ? roleLabels[userItem.rol] || userItem.rol : "Sin Rol"}

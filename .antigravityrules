@@ -1,45 +1,254 @@
-# Estructura Modular de Componentes
-Cada componente debe estar encarpetado individualmente con la siguiente jerarquía estricta:
-/[nombredelcomponente]
-    /lib
-        actions.ts  # Server Actions con tipado estricto
-        zod.ts      # Esquemas de validación y tipos inferidos de Zod
-        hooks.ts    # Hooks personalizados de React y TanStack Query
-        utils.ts    # Funciones de utilidad pura
-    /forms
-        [nombreForm].tsx # Modales y formularios de captura de datos
-    [nombrecomponenteprincipal].tsx # Componente principal de la vista
+---
+description: Stack, estructura de carpetas, código, enrutamiento y fechas timestamptz
+alwaysApply: true
+---
 
-    Al crear las rutas para acceder al sistema se manda a llamar el componente principal se manda a llamar con suspense como se ve a continuación 
+# Estructura de proyecto
 
-    import { Suspense } from "react";
+## Stack
 
-    import { Dashboard } from "@/components/(base)/dashboard";
+- Next.js (App Router), TypeScript estricto, Supabase (Auth, RLS, Storage), Tailwind CSS, TanStack Query, Zod.
 
-    export default function DashboardPage() {
-    return (
-        <Suspense>
-        <Dashboard />
-        </Suspense>
-    );
-    }
-    
-    Al crear los archivos y carpetas colocarle nombres cortos con prefijo 
-# Reglas de Tipado Estricto (TypeScript)
-- Prohibido el uso de 'any'. Todo parámetro, retorno y estado debe estar explícitamente tipado.
-- Las Server Actions deben retornar tipos estructurados { success: boolean; data?: T; error?: string }.
+## Estructura de componentes
 
-# Paleta de Colores del Proyecto (Look 1, Look 2 y Blanco Suave)
-Define y utiliza exclusivamente las siguientes constantes de color en tus estilos o configuración de Tailwind CSS:
-- LOOK_1_OLIVO_OSCURO: "#525D53"
-- LOOK_1_SALVIA_SUAVE: "#A3BEB0"
-- LOOK_2_SALVIA_MENTA: "#8DA78E"
-- LOOK_2_PASTEL_CLARO: "#C1D1C5"
-- BLANCO_SUAVE_HUESO:  "#F5F5F1"
+Todo componente es autocontenido en `components/[nombre-componente]/`:
 
-# Reglas de Temas y Estilos Generales
-- Utilizar para el tema claro bg-zinc-100 y para el tema oscuro bg-zinc-800.
-- Cuando el tema esté en claro, el texto debe ser oscuro, y cuando esté en tema oscuro, el texto debe ser claro.
-- Los botones principales deben tener un fondo verde sólido (estilo filled) con el texto en color blanco o claro.
-- Los botones secundarios deben tener un estilo "outline" con fondo transparente, borde verde y el texto en color verde.
-- Siempre se deben respetar los temas seleccionados en todos los componentes.
+- `NombreRepresentativo.tsx` — entrada y render (nombre según función, no genérico)
+- `forms/Crear.tsx` — inserción
+- `forms/VerEditar.tsx` — edición
+- `lib/hooks.ts` — hooks y TanStack Query
+- `lib/actions.ts` — Server Actions
+- `lib/zod.ts` — schemas y tipos (`z.infer`, sin `types.ts` ni `interfaces.ts`)
+
+Prohibido dispersar lógica del módulo fuera de esa carpeta.
+
+## Código
+
+- Sin comentarios explicativos en archivos de código.
+- Sin `any`; `strictNullChecks` obligatorio.
+- Mutaciones: Server Actions en `lib/actions.ts`.
+- Cliente async: TanStack Query (`useQuery` / `useMutation`), no `useEffect` para carga de datos.
+- Antes de crear features, inspeccionar la carpeta del componente y respetar su estructura existente.
+
+## Server Actions (seguridad)
+
+- Validar sesión Supabase antes de mutar o leer datos privados.
+- Validar input con `.safeParse()` de `lib/zod.ts`; nunca pasar formularios directo a Supabase.
+- `try/catch`; devolver códigos/mensajes controlados, no errores internos de DB/OS.
+
+## Fechas y `timestamptz` (Guatemala UTC-6)
+
+La app opera en Guatemala (`America/Guatemala`, UTC-6, sin horario de verano). En Supabase las fechas de actividad suelen ser `timestamptz`. Un `YYYY-MM-DD` del `<input type="date">` guardado tal cual se interpreta como medianoche UTC y al mostrarlo con `new Date()` en local baja un día.
+
+### Guardar (Server Actions)
+
+- Fechas de **día calendario** (actividad, inicio/fin de evento, etc.): no persistir solo `YYYY-MM-DD`.
+- Convertir a mediodía Guatemala antes del insert/update: `` `${fecha}T12:00:00-06:00` ``.
+- Instantes reales (`created_at`, confirmación, terminado): usar `toISOString()` o el valor temporal completo; no forzar mediodía.
+
+### Mostrar y filtrar (UI)
+
+- Día calendario desde `timestamptz`: tomar la parte `YYYY-MM-DD` (`split('T')[0]` o equivalente) y formatear con `new Date(y, m - 1, d)`. No usar `getDate()` / `toLocaleDateString` sobre el instante UTC crudo.
+- `<input type="date">` al editar: hidratar solo con `YYYY-MM-DD` (normalizar si viene ISO).
+- Instantes reales (creación, confirmación): sí convertir a zona local Guatemala.
+- Agrupar/filtrar por fecha de actividad con la misma clave calendario `YYYY-MM-DD`, no con el offset local del timestamp.
+
+### Prohibido
+
+- `new Date(iso).getDate()` / `getMonth()` para fechas de solo día.
+- Asumir que el string ISO completo es seguro en un `type="date"` sin normalizar.
+- Guardar `YYYY-MM-DD` crudo en columnas `timestamptz` de fechas de actividad.
+
+## Enrutamiento (`app/`)
+
+- `page.tsx` solo importa el componente principal dentro de `<Suspense>`.
+- Prohibido UI compleja, lógica de negocio o estado en `page.tsx`.
+
+```typescript
+import { Suspense } from "react";
+import { NombreComponentePrincipal } from "@/components/mi-componente/NombreComponentePrincipal";
+
+export default function Page() {
+  return (
+    <Suspense>
+      <NombreComponentePrincipal />
+    </Suspense>
+  );
+}
+```
+
+## Modales
+
+Implementación única en `components/ui/general-modal.tsx`. Los formularios reutilizan `ModalShell`, inputs y footer; el feedback con `toast` de react-toastify y `modalActionMessage` de `modal-toast.ts`.
+
+### Comportamiento
+
+- Portal al `body` con `createPortal`; `z-index` por encima del header de la app.
+- Bloquear scroll del `body` mientras el modal esté abierto.
+- **Escritorio:** modal centrado, ancho máximo moderado, padding alrededor.
+- **Teléfono:** pantalla completa (`100dvh`), sin padding exterior, sin borde animado; panel plano zinc de borde a borde.
+
+### Overlay
+
+- Escritorio: tinte `zinc-700` semitransparente con `backdrop-blur` suave; sin capa blanca.
+- Teléfono: fondo sólido zinc (claro `zinc-100` / oscuro `zinc-900`), sin blur.
+
+### Contenedor (escritorio)
+
+- Esquinas muy redondeadas.
+- Borde animado celeste (gradiente radial que sigue el cursor) solo en escritorio; en teléfono no aplica.
+- Sombra ligera.
+
+### Superficies y tema
+
+- Tema claro: modal en `zinc-100` uniforme en header y cuerpo.
+- Tema oscuro: header/footer en `zinc-800`; zona de campos en `zinc-900`.
+- Tonos zinc alineados con header y layout de la app.
+
+### Header
+
+- Título en `foreground`; subtítulo en mayúsculas pequeñas, tracking amplio, color apagado.
+- Sin icono decorativo ni línea divisoria.
+- Cierre únicamente con X celeste, área táctil amplia, hover suave.
+- En teléfono: respetar safe area superior (notch).
+
+### Campos
+
+- Sin placeholder.
+- Borde celeste de marca, grosor visible; fondo transparente; texto `foreground`; focus ring celeste.
+- Ancho completo del contenedor (especialmente en teléfono).
+
+### Acción principal
+
+- Un solo botón «Guardar», centrado en el footer.
+- Estilo outline esmeralda (sin relleno sólido).
+- Footer con safe area inferior en teléfono.
+- Todos los botones con `cursor-pointer`; deshabilitado con `cursor-not-allowed`.
+
+### Feedback (toastify)
+
+- Un solo `ToastContainer` global en el layout (`ObsToastContainer`): `position="top-center"`, `autoClose={3000}`, `theme="colored"`.
+- En formularios y acciones: `import { toast } from "react-toastify"` y `toast.success()` / `toast.error()` / `toast.warn()` directo, como en el resto del sistema.
+- Códigos de server action: `modalActionMessage` + `MODAL_ACTION_ERRORS` desde `modal-toast.ts`.
+- Confirmaciones destructivas en modales: `ModalConfirmDelete` dentro del modal, no SweetAlert.
+- Estilo: variables `--toastify-*` en `globals.css` (fondo sólido por tipo, sin sombra).
+
+### Prohibido
+
+- `Dialog` de shadcn u otros modales ad hoc para formularios del sistema.
+- SweetAlert en formularios que usen `ModalShell`.
+- Fondos negro/blanco fijos fuera de la paleta zinc.
+- Alturas mínimas artificiales en el cuerpo del modal.
+
+
+
+---
+alwaysApply: true
+---
+# Diseño UX/UI
+
+## Tema y fondos
+
+- Tema claro: fondo de página blanco; cards y componentes en zinc claro (`zinc-50`, header/layout `zinc-100`).
+- Tema oscuro: fondo de página `zinc-900`; cards y componentes en un tono de gris más claro (`zinc-800`).
+- La UI usa tonos zinc para fondos de superficie.
+
+## Botones (UI general)
+
+- Texto y borde en color de acento del proyecto (primary o token de marca).
+- Fondo: `bg-zinc-100` en tema claro, `dark:bg-zinc-800` en tema oscuro.
+- Hover: un tono más claro u oscuro según el tema.
+- Siempre `cursor-pointer`; deshabilitado: `cursor-not-allowed`.
+
+## Modales
+
+Implementación única: `components/ui/general-modal.tsx` (`ModalShell`, `ModalInput`, `ModalLabel`, `ModalTextarea`, `ModalSubmit`, `ModalFooter`, `ModalConfirmDelete`).
+
+### Comportamiento
+
+- Portal al `body` con `createPortal`; `z-[200]` por encima del header.
+- Bloquear scroll del `body` mientras el modal esté abierto.
+- **Escritorio:** modal centrado, ancho máximo moderado, padding alrededor.
+- **Teléfono:** pantalla completa (`100dvh`), sin padding exterior, sin borde animado; panel plano zinc de borde a borde.
+
+### Overlay
+
+- Escritorio: `bg-zinc-700/20` + `backdrop-blur-sm`; sin capa blanca.
+- Teléfono: fondo sólido zinc (`zinc-100` claro / `zinc-900` oscuro), sin blur.
+
+### Contenedor (escritorio)
+
+- Esquinas muy redondeadas (`rounded-3xl`).
+- Borde animado celeste solo en escritorio: padding 3px y gradiente radial (`#1a95d3` → `#5ec8f0`) que sigue el cursor; interior sólido encima.
+- Sombra ligera.
+
+### Superficies
+
+- Tema claro: `bg-zinc-100` uniforme en header y cuerpo.
+- Tema oscuro: header/footer `zinc-800`; zona de campos `zinc-900`.
+
+### Header y cierre
+
+- Título `foreground`; subtítulo `text-[10px] uppercase tracking-widest text-muted-foreground`.
+- Sin icono decorativo ni línea divisoria.
+- Cierre únicamente con X celeste, área táctil amplia, hover suave.
+- En teléfono: safe area superior e inferior.
+
+### Campos y acción
+
+- Sin placeholder; `border-2 border-celeste-trifinio`; fondo transparente; focus ring celeste; ancho completo.
+- Un solo botón «Guardar» centrado en el footer; outline esmeralda (`border-emerald-600` / `dark:border-emerald-400`), sin relleno sólido.
+
+### Feedback en modales
+
+- `toast.success()` / `toast.error()` / `toast.warn()` de react-toastify (ver sección Toastify).
+- Códigos de server action: `modalActionMessage` + `MODAL_ACTION_ERRORS` en `modal-toast.ts`.
+- Confirmaciones destructivas: `ModalConfirmDelete` dentro del modal.
+
+### Prohibido en modales
+
+- `Dialog` de shadcn u otros modales ad hoc para formularios.
+- SweetAlert en formularios con `ModalShell`.
+- Botones Cancelar, Atrás o segundo control de cierre.
+- Fondos negro/blanco fijos fuera de la paleta zinc; `min-h-*` artificial en el body.
+- `ToastContainer` duplicado por página (usar el global del layout).
+
+## Toastify (notificaciones)
+
+Siempre **react-toastify** para éxito, error y advertencia en toda la app.
+
+### Contenedor (único)
+
+- `ObsToastContainer` en el layout raíz; **no** montar otro `ToastContainer` en páginas o módulos.
+- Configuración obligatoria: `position="top-center"`, `autoClose={3000}`, `theme="colored"`.
+- Importar estilos una vez: `react-toastify/dist/ReactToastify.css`.
+
+### Uso en código
+
+```typescript
+import { toast } from "react-toastify";
+
+toast.success("Guardado correctamente.");
+toast.error("No se pudo guardar.");
+toast.warn("Revisa los datos del formulario.");
+```
+
+- Llamadas directas a `toast.*`; sin wrappers ni SweetAlert para feedback simple.
+- `autoClose` distinto solo si el mensaje lo requiere: `toast.warn("...", { autoClose: 6000 })`.
+- Códigos de API: `modalActionMessage(code, fallback)` desde `modal-toast.ts`.
+
+### Apariencia (obligatoria)
+
+Definida en `globals.css` con variables `--toastify-*`; **no** sobrescribir con `theme="light"` ni `theme="dark"` en el contenedor.
+
+- Fondo **entero** del color semántico (verde éxito, rojo error, ámbar advertencia).
+- **Sin sombra** (`--toastify-toast-shadow: none`).
+- **Sin** tarjeta blanca ni borde fino de contraste.
+- Texto blanco en éxito/error; texto oscuro en advertencia.
+- `z-index` 10000 (por encima de modales `z-[200]`).
+- Esquinas `0.75rem`; tipografía en negrita.
+
+### Confirmaciones que requieren decisión
+
+- SweetAlert 2 solo fuera de `ModalShell` cuando haga falta un diálogo de confirmación complejo en legacy.
+- Dentro de modales: `ModalConfirmDelete` (inline), nunca SweetAlert.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Wallet,
@@ -15,76 +15,40 @@ import {
   ArrowDownRight,
   ChevronLeft,
   ChevronRight,
-  ListTree,
-  HandCoins,
   ChevronDown,
   Check,
 } from "lucide-react";
 import Swal from "sweetalert2";
+import { getSwalThemeOpts } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { Pagination, PageSizeSelect } from "@/components/ui/pagination";
 import AnimatedIcon from "@/components/ui/AnimatedIcon";
 import { CustomDatePicker, obtenerSemanasDelMes } from "@/components/ui/CustomDatePicker";
-import {
-  obtenerMovimientosFinancieros,
-  obtenerResumenFinanciero,
-  eliminarMovimiento,
-} from "./actions";
+
 import {
   CATEGORIA_LABELS,
   FILTROS_TIPO,
   type FiltroTipo,
-  type TransaccionFinanciera,
-  type ResumenFinanciero,
-  type CuentaPorCobrar,
-  type CuentaPorPagar,
 } from "./schemas";
 import { NuevoMovimiento } from "./forms/NuevoMovimiento";
+import {
+  useMovimientosFinancieros,
+  useResumenFinanciero,
+  useEliminarMovimiento,
+} from "./lib/hooks";
+import type { TransaccionFinanciera } from "./lib/zod";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
-const RESUMEN_VACIO: ResumenFinanciero = {
-  total_ingresos: 0,
-  total_egresos: 0,
-  balance: 0,
-};
-
-const getSwalThemeOpts = () => {
-  const isDark = document.documentElement.classList.contains("dark");
-  return {
-    background: isDark ? "#171a17" : "#ffffff",
-    color: isDark ? "#ffffff" : "#000000",
-    confirmButtonColor: "#8DA78E",
-    cancelButtonColor: isDark ? "#3f3f46" : "#e4e4e7",
-    customClass: {
-      popup: "rounded-3xl border border-[#C1D1C5]/20 dark:border-[#525D53]/30",
-      title: "text-lg font-bold text-[#525D53] dark:text-[#A3BEB0]",
-      htmlContainer: "text-sm text-muted-foreground",
-      confirmButton: "rounded-xl font-bold tracking-wide cursor-pointer",
-      cancelButton:
-        "rounded-xl font-bold tracking-wide text-zinc-800 dark:text-zinc-200 cursor-pointer",
-    },
-  };
-};
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
-
 export function VerFinanzas() {
-  const [movimientos, setMovimientos] = useState<TransaccionFinanciera[]>([]);
-  const [resumen, setResumen] = useState<ResumenFinanciero>(RESUMEN_VACIO);
-  const [totalRegistros, setTotalRegistros] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("todos");
+  
   const [showNuevoMovimiento, setShowNuevoMovimiento] = useState(false);
   const [defaultTipo, setDefaultTipo] = useState<"ingreso" | "egreso">("ingreso");
-
   const [prefillVentaId, setPrefillVentaId] = useState<string | null>(null);
   const [prefillCompraId, setPrefillCompraId] = useState<string | null>(null);
 
@@ -108,6 +72,10 @@ export function VerFinanzas() {
   const [fechaRangoHasta, setFechaRangoHasta] = useState<string>("");
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteDesc, setDeleteDesc] = useState<string>("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -135,113 +103,61 @@ export function VerFinanzas() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const loadMovimientos = useCallback(async () => {
-    setIsLoading(true);
-
-    let desde = undefined;
-    let hasta = undefined;
+  const { desde, hasta } = useMemo(() => {
+    let d = undefined;
+    let h = undefined;
 
     if (tipoFiltroFecha === "dia" && fechaDia) {
-      desde = `${fechaDia}T00:00:00.000-06:00`;
-      hasta = `${fechaDia}T23:59:59.999-06:00`;
+      d = `${fechaDia}T00:00:00.000-06:00`;
+      h = `${fechaDia}T23:59:59.999-06:00`;
     } else if (tipoFiltroFecha === "semana") {
       const semanas = obtenerSemanasDelMes(activeMonth, activeYear);
       if (selectedWeekIndex === -1) {
-        // Todas las semanas del mes
         const pad = (n: number) => n.toString().padStart(2, "0");
         const ultimoDia = new Date(activeYear, activeMonth + 1, 0).getDate();
-        desde = `${activeYear}-${pad(activeMonth + 1)}-01T00:00:00.000-06:00`;
-        hasta = `${activeYear}-${pad(activeMonth + 1)}-${pad(ultimoDia)}T23:59:59.999-06:00`;
+        d = `${activeYear}-${pad(activeMonth + 1)}-01T00:00:00.000-06:00`;
+        h = `${activeYear}-${pad(activeMonth + 1)}-${pad(ultimoDia)}T23:59:59.999-06:00`;
       } else {
         const sem = semanas[selectedWeekIndex];
         if (sem) {
-          desde = `${sem.desde}T00:00:00.000-06:00`;
-          hasta = `${sem.hasta}T23:59:59.999-06:00`;
+          d = `${sem.desde}T00:00:00.000-06:00`;
+          h = `${sem.hasta}T23:59:59.999-06:00`;
         }
       }
     } else if (tipoFiltroFecha === "rango") {
-      if (fechaRangoDesde) desde = `${fechaRangoDesde}T00:00:00.000-06:00`;
-      if (fechaRangoHasta) hasta = `${fechaRangoHasta}T23:59:59.999-06:00`;
+      if (fechaRangoDesde) d = `${fechaRangoDesde}T00:00:00.000-06:00`;
+      if (fechaRangoHasta) h = `${fechaRangoHasta}T23:59:59.999-06:00`;
     }
 
-    try {
-      const [listado, resumenData] = await Promise.all([
-        obtenerMovimientosFinancieros({
-          page,
-          pageSize,
-          tipo: filtroTipo,
-          search: searchTerm,
-          desde,
-          hasta
-        }),
-        obtenerResumenFinanciero(),
-      ]);
+    return { desde: d, hasta: h };
+  }, [tipoFiltroFecha, fechaDia, activeMonth, activeYear, selectedWeekIndex, fechaRangoDesde, fechaRangoHasta]);
 
-      setMovimientos(listado.data);
-      setTotalRegistros(listado.count);
-      setResumen(resumenData);
-    } catch (error: unknown) {
-      console.error(error);
-      Swal.fire({
-        title: "Error",
-        text: toErrorMessage(error, "No se pudieron cargar los movimientos financieros."),
-        icon: "error",
-        ...getSwalThemeOpts(),
-        confirmButtonColor: "#ef4444",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
+  // Consultas a BD con React Query
+  const { data: listado, isLoading } = useMovimientosFinancieros({
     page,
     pageSize,
-    filtroTipo,
-    searchTerm,
-    tipoFiltroFecha,
-    fechaDia,
-    activeMonth,
-    activeYear,
-    selectedWeekIndex,
-    fechaRangoDesde,
-    fechaRangoHasta
-  ]);
+    tipo: filtroTipo,
+    search: searchTerm,
+    desde,
+    hasta
+  });
+  
+  const { data: resumen = { total_ingresos: 0, total_egresos: 0, balance: 0 } } = useResumenFinanciero();
+  const { mutateAsync: anularMovimiento } = useEliminarMovimiento();
 
-  useEffect(() => {
-    loadMovimientos();
-  }, [loadMovimientos]);
+  const movimientos = listado?.data || [];
+  const totalRegistros = listado?.count || 0;
 
-  const handleDelete = async (id: string, descripcion: string) => {
-    const result = await Swal.fire({
-      title: "¿Anular registro?",
-      text: `Se creará un registro inverso para anular: "${descripcion}". Esta acción no se puede deshacer.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sí, anular",
-      cancelButtonText: "Cancelar",
-      ...getSwalThemeOpts(),
-      confirmButtonColor: "#ef4444",
-    });
-
-    if (!result.isConfirmed) return;
-
+  const handleDelete = async (id: string) => {
+    setIsDeleting(true);
     try {
-      await eliminarMovimiento(id);
-      Swal.fire({
-        title: "Anulado",
-        text: "El registro ha sido anulado correctamente.",
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-        ...getSwalThemeOpts(),
-      });
-      loadMovimientos();
-    } catch (error: unknown) {
-      Swal.fire({
-        title: "Error",
-        text: toErrorMessage(error, "No se pudo anular el registro"),
-        icon: "error",
-        ...getSwalThemeOpts(),
-      });
+      await anularMovimiento(id);
+      Swal.fire({ title: "Anulado", text: "El registro ha sido anulado correctamente.", icon: "success", ...getSwalThemeOpts() });
+    } catch (error: any) {
+      Swal.fire({ title: "Error", text: error.message || "No se pudo anular el registro", icon: "error", ...getSwalThemeOpts() });
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
     }
   };
 
@@ -356,11 +272,8 @@ export function VerFinanzas() {
 
         {/* Filtros de Fecha */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 px-4 md:px-0">
-          
           <div className="flex-1 w-full sm:w-auto">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 bg-white dark:bg-[#171a17] border border-[#C1D1C5]/30 dark:border-[#525D53]/30 rounded-2xl p-2 shadow-sm w-full md:w-fit z-20 mx-auto sm:mx-0">
-                
-                {/* Opciones Dia/Mes/Rango */}
                 <div className="flex items-center justify-center gap-1 bg-slate-50 dark:bg-zinc-900/50 p-1 rounded-xl border border-slate-100 dark:border-zinc-800 w-full sm:w-auto">
                   {[
                     { id: "dia", label: "Día" },
@@ -383,7 +296,6 @@ export function VerFinanzas() {
                   ))}
                 </div>
 
-                {/* Selector de Fecha específico según tipo */}
                 <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
                   {tipoFiltroFecha === "dia" && (
                     <CustomDatePicker
@@ -395,7 +307,6 @@ export function VerFinanzas() {
 
                   {tipoFiltroFecha === "semana" && (
                     <div className="flex items-center gap-2 w-full">
-                      {/* Selector de Mes/Año */}
                       <div className="relative w-1/2 sm:w-auto" ref={mesDropdownRef}>
                         <button
                           type="button"
@@ -444,7 +355,7 @@ export function VerFinanzas() {
                                     onClick={() => {
                                       setActiveMonth(idx);
                                       setMostrarMesDropdown(false);
-                                      setSelectedWeekIndex(-1); // Reset a todo el mes
+                                      setSelectedWeekIndex(-1);
                                     }}
                                     className={cn(
                                       "px-1 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer",
@@ -462,7 +373,6 @@ export function VerFinanzas() {
                         </AnimatePresence>
                       </div>
 
-                      {/* Selector de Semana */}
                       <div className="relative w-1/2 sm:w-auto" ref={semanaDropdownRef}>
                         <button
                           type="button"
@@ -550,7 +460,6 @@ export function VerFinanzas() {
       </div>
 
         <div className="w-full flex flex-col flex-1 min-w-0 bg-white dark:bg-[#171a17] border-y md:border border-[#C1D1C5]/30 dark:border-[#525D53]/30 md:rounded-3xl p-0 overflow-hidden shadow-sm relative">
-          {/* Toolbar */}
           <div className="p-4 md:p-5 border-b border-[#C1D1C5]/20 dark:border-[#525D53]/20 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="relative w-full sm:max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -607,7 +516,6 @@ export function VerFinanzas() {
               </div>
             ) : (
               <>
-                {/* Vista Mobile: Tarjetas (estilo Inventario) */}
                 <div className="md:hidden flex flex-col gap-3 px-1">
                   {movimientos.map((mov) => {
                     const isIngreso = mov.tipo_movimiento === "ingreso";
@@ -623,21 +531,15 @@ export function VerFinanzas() {
                           "relative border rounded-xl p-3 flex gap-3 items-center min-h-[88px] transition-all bg-white dark:bg-[#525D53]/10 border-[#C1D1C5]/60 dark:border-[#A3BEB0]/20 hover:border-[#8DA78E] dark:hover:border-[#A3BEB0]/60"
                         )}
                       >
-                        {/* Icon Left */}
                         <div className={cn(
                           "shrink-0 size-10 rounded-xl flex items-center justify-center border",
                           isIngreso 
                             ? "bg-[#8DA78E]/10 border-[#8DA78E]/20 text-[#8DA78E] dark:text-[#A3BEB0]" 
                             : "bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/30 text-rose-500"
                         )}>
-                          {isIngreso ? (
-                            <TrendingUp className="size-5" />
-                          ) : (
-                            <TrendingDown className="size-5" />
-                          )}
+                          {isIngreso ? <TrendingUp className="size-5" /> : <TrendingDown className="size-5" />}
                         </div>
 
-                        {/* Content Right */}
                         <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
                           <div>
                             <div className="flex items-start justify-between gap-1.5">
@@ -663,7 +565,6 @@ export function VerFinanzas() {
                             </div>
                           </div>
 
-                          {/* Bottom Stats & Action */}
                           <div className="mt-2 flex items-center justify-between gap-2 pt-1 border-t border-[#C1D1C5]/20 dark:border-[#A3BEB0]/10">
                             <div className="flex gap-3 text-[9px] leading-none">
                               <div>
@@ -686,7 +587,10 @@ export function VerFinanzas() {
 
                             <button
                               type="button"
-                              onClick={() => handleDelete(mov.id, mov.descripcion)}
+                              onClick={() => {
+                                setDeleteId(mov.id);
+                                setDeleteDesc(mov.descripcion);
+                              }}
                               className="p-1 rounded-lg text-zinc-400 hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-500/10 transition-all cursor-pointer shrink-0"
                               title="Anular registro"
                             >
@@ -699,35 +603,26 @@ export function VerFinanzas() {
                   })}
                 </div>
 
-                {/* Vista Desktop: Tabla */}
                 <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-full table-fixed sm:table-auto">
+                  <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="border-b border-[#C1D1C5]/20 dark:border-[#525D53]/20 bg-[#f4f7f5]/50 dark:bg-[#151f19]/30">
-                        <th className="px-2 sm:px-5 py-3 sm:py-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[#8DA78E] w-20 sm:w-32">
-                          Fecha
-                        </th>
-                        <th className="px-2 sm:px-5 py-3 sm:py-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[#8DA78E]">
-                          Concepto / Categoría
-                        </th>
-                        <th className="px-2 sm:px-5 py-3 sm:py-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[#8DA78E] text-right w-20 sm:w-auto">
-                          Monto
-                        </th>
-                        <th className="px-2 sm:px-5 py-3 sm:py-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[#8DA78E] text-right w-20 sm:w-auto">
-                          Saldo
-                        </th>
-                        <th className="px-1 sm:px-5 py-3 sm:py-4 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-[#8DA78E] w-8 sm:w-20 text-center">
+                      <tr className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 font-black uppercase tracking-wider border-b border-zinc-200 dark:border-zinc-700">
+                        <th className="px-5 py-3.5">Fecha</th>
+                        <th className="px-5 py-3.5">Concepto / Categoría</th>
+                        <th className="px-5 py-3.5 text-right">Monto</th>
+                        <th className="px-5 py-3.5 text-right">Saldo</th>
+                        <th className="px-5 py-3.5 text-center">
                           <span className="sr-only">Acciones</span>
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50 text-zinc-700 dark:text-zinc-300">
                       {movimientos.map((mov) => (
                         <motion.tr
                           key={mov.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="border-b border-[#C1D1C5]/10 dark:border-[#525D53]/10 hover:bg-[#8DA78E]/5 transition-colors group"
+                          className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group"
                         >
                           <td className="px-2 sm:px-5 py-3 sm:py-4 align-top sm:align-middle">
                             <div className="flex items-center gap-1 sm:gap-2">
@@ -774,7 +669,21 @@ export function VerFinanzas() {
                           <td className="px-1 sm:px-5 py-3 sm:py-4 text-center align-top sm:align-middle">
                             <button
                               type="button"
-                              onClick={() => handleDelete(mov.id, mov.descripcion)}
+                              onClick={() => {
+                                Swal.fire({
+                                  title: "¿Anular registro?",
+                                  text: `Se creará un registro inverso para anular: "${mov.descripcion}". Esta acción no se puede deshacer.`,
+                                  icon: "warning",
+                                  showCancelButton: true,
+                                  confirmButtonText: "Sí, anular",
+                                  cancelButtonText: "Cancelar",
+                                  ...getSwalThemeOpts()
+                                }).then((result) => {
+                                  if (result.isConfirmed) {
+                                    handleDelete(mov.id);
+                                  }
+                                });
+                              }}
                               className="p-1 sm:p-2 rounded-xl text-zinc-400 hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-500/10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all focus:opacity-100 cursor-pointer"
                               title="Anular registro"
                             >
@@ -790,7 +699,6 @@ export function VerFinanzas() {
             )}
           </div>
 
-          {/* Paginación */}
           {!isLoading && totalRegistros > 0 && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-t border-[#C1D1C5]/40 dark:border-[#525D53]/30 text-slate-600 dark:text-slate-400">
               <PageSizeSelect
@@ -811,20 +719,19 @@ export function VerFinanzas() {
           )}
         </div>
 
-      <AnimatePresence>
-        {showNuevoMovimiento && (
-          <NuevoMovimiento
-            defaultTipo={defaultTipo}
-            defaultVentaId={prefillVentaId}
-            defaultCompraId={prefillCompraId}
-            onClose={() => setShowNuevoMovimiento(false)}
-            onSuccess={() => {
-              setShowNuevoMovimiento(false);
-              loadMovimientos();
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {showNuevoMovimiento && (
+        <NuevoMovimiento
+          defaultTipo={defaultTipo}
+          defaultVentaId={prefillVentaId}
+          defaultCompraId={prefillCompraId}
+          onClose={() => setShowNuevoMovimiento(false)}
+          onSuccess={() => {
+            setShowNuevoMovimiento(false);
+          }}
+        />
+      )}
+
+
     </div>
   );
 }

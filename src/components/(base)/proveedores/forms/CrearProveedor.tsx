@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
-import { guardarProveedor } from "../actions";
+import { guardarProveedor } from "../lib/actions";
 import Swal from "sweetalert2";
 
 interface CrearProveedorProps {
@@ -65,7 +65,7 @@ export function CrearProveedor({ isOpen, onClose, onSuccess }: CrearProveedorPro
 
     setIsLoading(true);
     try {
-      const res = await guardarProveedor({
+      const res = await guardarProveedor(undefined, {
         nombre: nombreTrimmed,
         descripcion: descripcion.trim() || null,
         nit: nit.trim() || null,
@@ -74,7 +74,7 @@ export function CrearProveedor({ isOpen, onClose, onSuccess }: CrearProveedorPro
       });
 
       if (!res.success) {
-        throw new Error(res.error);
+        throw new Error(res.code);
       }
 
       Swal.fire({

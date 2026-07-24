@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Save, TrendingUp, TrendingDown, FileText, Tag, DollarSign, Loader2, ListTree, ChevronDown, Check } from "lucide-react";
 import Swal from "sweetalert2";
+import { getSwalThemeOpts } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { registrarMovimiento, obtenerCuentasPorCobrar, obtenerCuentasPorPagar } from "../actions";
-import type { CuentaPorCobrar, CuentaPorPagar } from "../schemas";
+import { useRegistrarMovimiento, useCuentasPorCobrar, useCuentasPorPagar } from "../lib/hooks";
 
 interface Props {
   defaultTipo: "ingreso" | "egreso";
@@ -15,16 +15,6 @@ interface Props {
   onClose: () => void;
   onSuccess: () => void;
 }
-
-const getSwalThemeOpts = () => {
-  const isDark = document.documentElement.classList.contains("dark");
-  return {
-    background: isDark ? "#171a17" : "#ffffff",
-    color: isDark ? "#ffffff" : "#000000",
-    confirmButtonColor: "#8DA78E",
-    cancelButtonColor: isDark ? "#3f3f46" : "#e4e4e7",
-  };
-};
 
 export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, onClose, onSuccess }: Props) {
   const [tipo, setTipo] = useState<"ingreso" | "egreso">(defaultTipo);
@@ -35,13 +25,14 @@ export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, 
   const [ventaId, setVentaId] = useState(defaultVentaId || "");
   const [compraId, setCompraId] = useState(defaultCompraId || "");
   
-  const [cuentasCobrar, setCuentasCobrar] = useState<CuentaPorCobrar[]>([]);
-  const [cuentasPagar, setCuentasPagar] = useState<CuentaPorPagar[]>([]);
-  const [isLoadingCuentas, setIsLoadingCuentas] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [isOpen, setIsOpen] = useState(false);
   const catDropdownRef = useRef<HTMLDivElement>(null);
+
+  const { data: cuentasCobrar = [], isLoading: loadingCobrar } = useCuentasPorCobrar();
+  const { data: cuentasPagar = [], isLoading: loadingPagar } = useCuentasPorPagar();
+  const { mutateAsync: registrarMovimiento, isPending: isSubmitting } = useRegistrarMovimiento();
+
+  const isLoadingCuentas = tipo === "ingreso" ? loadingCobrar : loadingPagar;
 
   const categoriasIngreso = [
     { id: "abono_cliente", label: "Abono de Cliente" },
@@ -75,57 +66,28 @@ export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, 
     };
   }, []);
 
-  useEffect(() => {
-    const fetchCuentas = async () => {
-      setIsLoadingCuentas(true);
-      try {
-        if (tipo === "ingreso") {
-          setCuentasCobrar(await obtenerCuentasPorCobrar());
-        } else {
-          setCuentasPagar(await obtenerCuentasPorPagar());
-        }
-      } catch (error) {
-        console.error("Error cargando cuentas", error);
-      } finally {
-        setIsLoadingCuentas(false);
-      }
-    };
-    fetchCuentas();
-  }, [tipo]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoria || !monto || !descripcion) {
-      Swal.fire({
-        title: "Campos incompletos",
-        text: "Por favor llena todos los campos.",
-        icon: "warning",
-        ...getSwalThemeOpts()
-      });
+      Swal.fire({ title: "Atención", text: "Por favor llena todos los campos.", icon: "warning", ...getSwalThemeOpts() });
       return;
     }
 
     if (categoria === "abono_cliente" && !ventaId) {
-      Swal.fire({ title: "Falta Venta", text: "Selecciona la venta a abonar.", icon: "warning", ...getSwalThemeOpts() });
+      Swal.fire({ title: "Atención", text: "Selecciona la venta a abonar.", icon: "warning", ...getSwalThemeOpts() });
       return;
     }
     if (categoria === "pago_proveedor" && !compraId) {
-      Swal.fire({ title: "Falta Compra", text: "Selecciona la compra a pagar.", icon: "warning", ...getSwalThemeOpts() });
+      Swal.fire({ title: "Atención", text: "Selecciona la compra a pagar.", icon: "warning", ...getSwalThemeOpts() });
       return;
     }
 
     const numMonto = parseFloat(monto);
     if (isNaN(numMonto) || numMonto <= 0) {
-      Swal.fire({
-        title: "Monto inválido",
-        text: "El monto debe ser un número mayor a cero.",
-        icon: "warning",
-        ...getSwalThemeOpts()
-      });
+      Swal.fire({ title: "Atención", text: "El monto debe ser un número mayor a cero.", icon: "warning", ...getSwalThemeOpts() });
       return;
     }
 
-    setIsSubmitting(true);
     try {
       await registrarMovimiento({
         tipo_movimiento: tipo,
@@ -136,38 +98,20 @@ export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, 
         compra_id: categoria === "pago_proveedor" ? compraId : null,
       });
 
-      Swal.fire({
-        title: "Registrado",
-        text: `El ${tipo} se ha registrado correctamente.`,
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-        ...getSwalThemeOpts()
-      });
+      Swal.fire({ title: "Éxito", text: `El ${tipo} se ha registrado correctamente.`, icon: "success", ...getSwalThemeOpts() });
       onSuccess();
     } catch (error: any) {
-      Swal.fire({
-        title: "Error",
-        text: error.message || "No se pudo registrar el movimiento.",
-        icon: "error",
-        ...getSwalThemeOpts()
-      });
-    } finally {
-      setIsSubmitting(false);
+      Swal.fire({ title: "Error", text: error.message || "No se pudo registrar el movimiento.", icon: "error", ...getSwalThemeOpts() });
     }
   };
 
   return (
-    <>
-      <div 
-        className="fixed inset-0 bg-background/40 backdrop-blur-sm z-50 transition-opacity" 
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95%] max-w-md bg-white dark:bg-[#171a17] rounded-3xl shadow-2xl border border-[#C1D1C5]/30 dark:border-[#525D53]/30 overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative w-[95%] max-w-md bg-white dark:bg-[#171a17] rounded-3xl shadow-2xl border border-[#C1D1C5]/30 dark:border-[#525D53]/30 overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#C1D1C5]/30 dark:border-[#525D53]/30 bg-[#f4f7f5]/50 dark:bg-[#151f19]/30">
           <div className="flex items-center gap-3">
@@ -215,6 +159,7 @@ export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, 
                   onChange={(e) => setMonto(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-white dark:bg-black/20 border border-[#C1D1C5]/40 dark:border-[#525D53]/40 rounded-xl text-lg font-black focus:outline-none focus:ring-2 focus:ring-[#8DA78E]/40 transition-all placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
                   autoFocus
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                 />
               </div>
             </div>
@@ -339,9 +284,9 @@ export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, 
               className={cn(
                 "w-fit max-w-full flex items-center justify-center gap-2 text-white px-5 py-3.5 rounded-xl text-sm font-bold transition-all mt-2 active:scale-[0.98] cursor-pointer",
                 tipo === "ingreso" 
-                  ? "bg-[#8DA78E] cursor-pointer" 
-                  : "bg-rose-500 cursor-pointer",
-                isSubmitting && "opacity-70 pointer-events-none cursor-pointer"
+                  ? "bg-[#8DA78E] hover:bg-[#8DA78E]/90" 
+                  : "bg-rose-500 hover:bg-rose-600",
+                isSubmitting && "opacity-70 pointer-events-none"
               )}
             >
               {isSubmitting ? (
@@ -354,6 +299,6 @@ export function NuevoMovimiento({ defaultTipo, defaultVentaId, defaultCompraId, 
           </form>
         </div>
       </motion.div>
-    </>
+    </div>
   );
 }

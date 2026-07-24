@@ -234,3 +234,26 @@ input[type=number] {
   }
 }
 
+/* Toastify Customization */
+:root {
+  --toastify-color-success: #10b981;
+  --toastify-color-error: #ef4444;
+  --toastify-color-warning: #f59e0b;
+  --toastify-toast-shadow: none;
+  --toastify-toast-bd-radius: 0.75rem;
+  --toastify-z-index: 10000;
+  --toastify-text-color-warning: #1c1917;
+}
+
+.Toastify__toast {
+  font-weight: bold;
+  border: none;
+}
+
+.Toastify__toast--warning {
+  color: var(--toastify-text-color-warning);
+}
+.Toastify__toast--warning svg {
+  fill: var(--toastify-text-color-warning);
+}
+

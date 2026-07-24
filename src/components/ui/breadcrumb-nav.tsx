@@ -55,16 +55,14 @@ export function BreadcrumbNav() {
 
   // ── Navegación hacia atrás (botón flecha izquierda) ────────────────────────
   let backHref = "/farmacia-la-salud";
-  if (rawSegments.includes("qr")) {
+  const moduleName = rawSegments.length > 1 ? rawSegments[1] : "";
+
+  if (rawSegments.includes("qr") || rawSegments.includes("editar")) {
     const detalleIdx = rawSegments.indexOf("ver");
     const id = detalleIdx >= 0 && detalleIdx + 1 < rawSegments.length ? rawSegments[detalleIdx + 1] : "";
-    backHref = id ? `/farmacia-la-salud/proyectos/ver/${id}` : "/farmacia-la-salud/proyectos";
-  } else if (rawSegments.includes("editar")) {
-    const detalleIdx = rawSegments.indexOf("ver");
-    const id = detalleIdx >= 0 && detalleIdx + 1 < rawSegments.length ? rawSegments[detalleIdx + 1] : "";
-    backHref = id ? `/farmacia-la-salud/proyectos/ver/${id}` : "/farmacia-la-salud/proyectos";
+    backHref = id ? `/farmacia-la-salud/${moduleName}/ver/${id}` : `/farmacia-la-salud/${moduleName}`;
   } else if (rawSegments.includes("ver")) {
-    backHref = "/farmacia-la-salud/proyectos";
+    backHref = `/farmacia-la-salud/${moduleName}`;
   } else if (rawSegments.length > 1) {
     backHref = `/${rawSegments.slice(0, -1).join("/")}`;
   }
